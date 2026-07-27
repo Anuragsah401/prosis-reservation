@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Core foundation models (multi-tenant: everything scoped by restaurantId)
+// Business-logic modules (Auth, Floor Plan, Notifications, Analytics, Billing)
+// will extend these in later migrations.
+// ---------------------------------------------------------------------------
+
+model Restaurant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  email     String?
+  phone     String?
+  address   String?
+  timezone  String   @default("UTC")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles        Role[]
+  users        User[]
+  tables       Table[]
+  customers    Customer[]
+  reservations Reservation[]
+
+  @@map("restaurants")
+}
+
+model Role {
+  id           String   @id @default(cuid())
+  name         String
+  permissions  String[] @default([])
+  restaurantId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  users      User[]
+
+  @@unique([restaurantId, name])
+  @@map("roles")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  isActive     Boolean  @default(true)
+  restaurantId String?
+  roleId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant          Restaurant?   @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  role                Role?         @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  createdReservations Reservation[] @relation("ReservationCreatedBy")
+
+  @@index([restaurantId])
+  @@map("users")
+}
+
+model Table {
+  id           String      @id @default(cuid())
+  restaurantId String
+  number       String
+  capacity     Int
+  status       TableStatus @default(AVAILABLE)
+  section      String?
+  positionX    Float?
+  positionY    Float?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@unique([restaurantId, number])
+  @@index([restaurantId])
+  @@map("tables")
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  restaurantId String
+  name         String
+  email        String?
+  phone        String?
+  notes        String?
+  tags         String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@index([restaurantId])
+  @@map("customers")
+}
+
+model Reservation {
+  id           String            @id @default(cuid())
+  restaurantId String
+  tableId      String?
+  customerId   String
+  partySize    Int
+  reservedFor  DateTime
+  status       ReservationStatus @default(PENDING)
+  notes        String?
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table      Table?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdBy  User?      @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([restaurantId])
+  @@index([tableId])
+  @@index([customerId])
+  @@index([reservedFor])
+  @@map("reservations")
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
