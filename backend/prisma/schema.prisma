@@ -76,8 +76,13 @@ model Table {
   capacity     Int
   status       TableStatus @default(AVAILABLE)
   section      String?
+  floor        String      @default("Main Floor")
+  shape        TableShape  @default(RECTANGLE)
   positionX    Float?
   positionY    Float?
+  width        Float       @default(140)
+  height       Float       @default(90)
+  rotation     Float       @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -137,6 +142,12 @@ enum TableStatus {
   OCCUPIED
   RESERVED
   MAINTENANCE
+}
+
+enum TableShape {
+  RECTANGLE
+  SQUARE
+  CIRCLE
 }
 
 enum ReservationStatus {

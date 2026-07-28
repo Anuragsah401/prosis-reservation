@@ -1,30 +1,67 @@
 import type { FloorPlanTable } from "@/features/floor-plan/floor-plan-data"
+import { API_URL } from "@/lib/config"
 
-const STORAGE_KEY = "prosisit:floor-plan:positions"
+const STORAGE_KEY = "prosisit:floor-plan:layout"
 
-export type TablePosition = Pick<FloorPlanTable, "id" | "positionX" | "positionY">
+export type TableLayout = Pick<
+  FloorPlanTable,
+  "id" | "positionX" | "positionY" | "width" | "height" | "shape" | "rotation" | "floor"
+>
 
 /**
- * Persists table positions.
+ * Persists table layout (position, size, shape, rotation, floor).
  *
- * NOTE: This currently saves to localStorage as a placeholder. The backend's
- * table update endpoint (PATCH /api/tables/:id) does not yet accept
- * positionX/positionY — only name, capacity, location, and status. Once the
- * backend exposes those fields, replace this function's body with a
- * PATCH request per table (or a dedicated bulk endpoint) without changing
- * its signature, so callers (floor-plan-builder.tsx) don't need to change.
+ * Attempts the real backend endpoint first — `PATCH /api/tables/layout`
+ * (see `backend/src/modules/table/table.routes.ts`), which requires an
+ * authenticated session. Since the frontend does not yet have a wired-up
+ * login flow, any failure (401, network, no restaurantId) falls back to
+ * localStorage so the designer remains fully usable in the meantime. Once
+ * auth is wired up, pass a real `restaurantId` and bearer token and this
+ * will transparently persist server-side.
  */
-export async function savePositions(positions: TablePosition[]): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 300)) // simulate network latency
+export async function savePositions(
+  layout: TableLayout[],
+  restaurantId?: string,
+): Promise<{ persisted: "server" | "local" }> {
+  if (restaurantId) {
+    try {
+      const res = await fetch(`${API_URL}/tables/layout`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restaurantId, tables: layout }),
+      })
+      if (res.ok) {
+        saveLocal(layout)
+        return { persisted: "server" }
+      }
+    } catch {
+      // fall through to local persistence
+    }
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 250)) // simulate latency
+  saveLocal(layout)
+  return { persisted: "local" }
+}
+
+function saveLocal(layout: TableLayout[]) {
   const existing = loadPositions()
   const merged = { ...existing }
-  for (const pos of positions) {
-    merged[pos.id] = { positionX: pos.positionX, positionY: pos.positionY }
+  for (const t of layout) {
+    merged[t.id] = {
+      positionX: t.positionX,
+      positionY: t.positionY,
+      width: t.width,
+      height: t.height,
+      shape: t.shape,
+      rotation: t.rotation,
+      floor: t.floor,
+    }
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
 }
 
-export function loadPositions(): Record<string, { positionX: number; positionY: number }> {
+export function loadPositions(): Record<string, Partial<TableLayout>> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? JSON.parse(raw) : {}
@@ -32,3 +69,4 @@ export function loadPositions(): Record<string, { positionX: number; positionY: 
     return {}
   }
 }
+

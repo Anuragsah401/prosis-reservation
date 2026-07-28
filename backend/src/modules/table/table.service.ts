@@ -16,6 +16,16 @@ export const tableService = {
     return tables.map(toApiShape)
   },
 
+  async listFloors(restaurantId: string) {
+    const rows = await prisma.table.findMany({
+      where: { restaurantId },
+      select: { floor: true },
+      distinct: ["floor"],
+      orderBy: { floor: "asc" },
+    })
+    return rows.map((r) => r.floor)
+  },
+
   async getById(id: string) {
     const table = await prisma.table.findUnique({ where: { id } })
     return table ? toApiShape(table) : null
@@ -27,6 +37,13 @@ export const tableService = {
     capacity: number
     location?: string
     status?: Prisma.TableCreateInput["status"]
+    floor?: string
+    shape?: Prisma.TableCreateInput["shape"]
+    positionX?: number
+    positionY?: number
+    width?: number
+    height?: number
+    rotation?: number
   }) {
     const existing = await prisma.table.findUnique({
       where: { restaurantId_number: { restaurantId: data.restaurantId, number: data.name } },
@@ -42,6 +59,13 @@ export const tableService = {
         capacity: data.capacity,
         section: data.location,
         status: data.status,
+        floor: data.floor,
+        shape: data.shape,
+        positionX: data.positionX,
+        positionY: data.positionY,
+        width: data.width,
+        height: data.height,
+        rotation: data.rotation,
       },
     })
     return toApiShape(table)
@@ -54,6 +78,13 @@ export const tableService = {
       capacity: number
       location: string
       status: Prisma.TableUpdateInput["status"]
+      floor: string
+      shape: Prisma.TableUpdateInput["shape"]
+      positionX: number
+      positionY: number
+      width: number
+      height: number
+      rotation: number
     }>,
   ) {
     const existing = await prisma.table.findUnique({ where: { id } })
@@ -68,6 +99,13 @@ export const tableService = {
         capacity: data.capacity,
         section: data.location,
         status: data.status,
+        floor: data.floor,
+        shape: data.shape,
+        positionX: data.positionX,
+        positionY: data.positionY,
+        width: data.width,
+        height: data.height,
+        rotation: data.rotation,
       },
     })
     return toApiShape(table)
@@ -80,4 +118,53 @@ export const tableService = {
     }
     return prisma.table.delete({ where: { id } })
   },
+
+  /**
+   * Bulk-persist floor plan layout changes (position, size, shape, rotation,
+   * floor assignment) for many tables in a single transaction. Used by the
+   * floor plan designer's "Save layout" action.
+   */
+  async saveLayout(
+    restaurantId: string,
+    tables: Array<{
+      id: string
+      positionX: number
+      positionY: number
+      width?: number
+      height?: number
+      shape?: Prisma.TableUpdateInput["shape"]
+      rotation?: number
+      floor?: string
+    }>,
+  ) {
+    const ids = tables.map((t) => t.id)
+    const owned = await prisma.table.findMany({
+      where: { id: { in: ids }, restaurantId },
+      select: { id: true },
+    })
+    const ownedIds = new Set(owned.map((t) => t.id))
+    const missing = ids.filter((id) => !ownedIds.has(id))
+    if (missing.length > 0) {
+      throw new Error(`Tables not found for this restaurant: ${missing.join(", ")}`)
+    }
+
+    const updated = await prisma.$transaction(
+      tables.map((t) =>
+        prisma.table.update({
+          where: { id: t.id },
+          data: {
+            positionX: t.positionX,
+            positionY: t.positionY,
+            width: t.width,
+            height: t.height,
+            shape: t.shape,
+            rotation: t.rotation,
+            floor: t.floor,
+          },
+        }),
+      ),
+    )
+    return updated.map(toApiShape)
+  },
 }
+

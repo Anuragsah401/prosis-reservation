@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express"
 import { tableService } from "@/modules/table/table.service"
-import { createTableSchema, updateTableSchema } from "@/modules/table/table.validation"
+import { createTableSchema, updateTableSchema, saveLayoutSchema } from "@/modules/table/table.validation"
 
 export const tableController = {
   async list(req: Request, res: Response, next: NextFunction) {
@@ -9,6 +9,32 @@ export const tableController = {
       const result = await tableService.list(restaurantId)
       res.status(200).json(result)
     } catch (err) {
+      next(err)
+    }
+  },
+
+  async listFloors(req: Request, res: Response, next: NextFunction) {
+    try {
+      const restaurantId = String(req.query.restaurantId)
+      const result = await tableService.listFloors(restaurantId)
+      res.status(200).json(result)
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async saveLayout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = saveLayoutSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
+      }
+      const result = await tableService.saveLayout(parsed.data.restaurantId, parsed.data.tables)
+      res.status(200).json(result)
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("Tables not found")) {
+        return res.status(404).json({ error: err.message })
+      }
       next(err)
     }
   },
