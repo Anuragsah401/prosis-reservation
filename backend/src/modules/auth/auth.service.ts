@@ -2,8 +2,10 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { prisma } from "@/db/client"
 import { env } from "@/config/env"
+import { slugify } from "@/utils/slugify"
+import type { RegisterInput, LoginInput } from "@/modules/auth/auth.validation"
 
-const SALT_ROUNDS = 10
+const SALT_ROUNDS = 12
 
 export type JwtPayload = {
   sub: string
@@ -33,13 +35,7 @@ function toSafeUser(user: {
 }
 
 export const authService = {
-  async register(data: {
-    email: string
-    password: string
-    name: string
-    restaurantId?: string
-    roleId?: string
-  }) {
+  async register(data: RegisterInput) {
     const existing = await prisma.user.findUnique({ where: { email: data.email } })
     if (existing) {
       throw new Error("Email already in use")
@@ -47,6 +43,59 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS)
 
+    // Self-signup: create a brand-new restaurant + an "Owner" role with full
+    // permissions + the user, all in one transaction so a failed step never
+    // leaves an orphaned restaurant or role behind.
+    if (data.restaurantName) {
+      const user = await prisma.$transaction(async (tx) => {
+        const baseSlug = slugify(data.restaurantName!) || "restaurant"
+        let slug = baseSlug
+        let suffix = 1
+        while (await tx.restaurant.findUnique({ where: { slug } })) {
+          suffix += 1
+          slug = `${baseSlug}-${suffix}`
+        }
+
+        const restaurant = await tx.restaurant.create({
+          data: {
+            name: data.restaurantName!,
+            slug,
+            phone: data.restaurantPhone,
+            timezone: data.restaurantTimezone || "UTC",
+            email: data.email,
+          },
+        })
+
+        const ownerRole = await tx.role.create({
+          data: {
+            name: "Owner",
+            permissions: ["*"],
+            restaurantId: restaurant.id,
+          },
+        })
+
+        return tx.user.create({
+          data: {
+            email: data.email,
+            passwordHash,
+            name: data.name,
+            restaurantId: restaurant.id,
+            roleId: ownerRole.id,
+          },
+        })
+      })
+
+      const token = signToken({
+        sub: user.id,
+        email: user.email,
+        restaurantId: user.restaurantId,
+        roleId: user.roleId,
+      })
+
+      return { user: toSafeUser(user), token }
+    }
+
+    // Staff-invite path: join an existing restaurant/role.
     const user = await prisma.user.create({
       data: {
         email: data.email,
@@ -67,14 +116,14 @@ export const authService = {
     return { user: toSafeUser(user), token }
   },
 
-  async login(data: { email: string; password: string }) {
+  async login(data: LoginInput) {
     const user = await prisma.user.findUnique({ where: { email: data.email } })
-    if (!user || !user.isActive) {
-      throw new Error("Invalid credentials")
-    }
+    // Compare against a dummy hash when the user doesn't exist so the
+    // response time doesn't leak whether an email is registered.
+    const hashToCompare = user?.passwordHash ?? "$2a$12$invalidsaltinvalidsaltinvalidsaltinvalidsaltinvalidsa"
+    const isValid = await bcrypt.compare(data.password, hashToCompare)
 
-    const isValid = await bcrypt.compare(data.password, user.passwordHash)
-    if (!isValid) {
+    if (!user || !user.isActive || !isValid) {
       throw new Error("Invalid credentials")
     }
 

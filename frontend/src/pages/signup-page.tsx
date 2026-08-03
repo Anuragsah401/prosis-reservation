@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectTrigger,
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
+import { authClient, AuthError } from "@/features/auth/auth-client"
 
 const steps = [
   { title: "Your account", icon: User },
@@ -73,6 +73,9 @@ export function SignupPage() {
       if (password.length < 8) {
         return "Password must be at least 8 characters."
       }
+      if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        return "Password must contain at least one letter and one number."
+      }
     }
     if (current === 1) {
       if (!restaurantName.trim() || !cuisine) {
@@ -111,12 +114,24 @@ export function SignupPage() {
     }
     setError(null)
     setLoading(true)
-    // Mock account creation — swap for a real POST /api/auth/register call
-    // once the frontend is wired to the backend auth module.
-    setTimeout(() => {
-      setLoading(false)
-      navigate("/reservations")
-    }, 600)
+
+    authClient
+      .register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        restaurantName: restaurantName.trim(),
+        restaurantPhone: phone.trim() || undefined,
+      })
+      .then(() => {
+        navigate("/reservations")
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof AuthError ? err.message : "Something went wrong. Please try again.")
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }
 
   const isLastStep = step === steps.length - 1
@@ -351,21 +366,6 @@ export function SignupPage() {
                 )}
               </div>
             </form>
-
-            {step === 0 && (
-              <>
-                <div className="flex items-center gap-3">
-                  <Separator className="flex-1" />
-                  <span className="text-muted-foreground text-xs">OR</span>
-                  <Separator className="flex-1" />
-                </div>
-
-                <Button variant="outline" className="w-full" type="button">
-                  <UtensilsCrossed className="size-4" />
-                  Continue with Google
-                </Button>
-              </>
-            )}
 
             <p className="text-muted-foreground text-center text-sm">
               Already have an account?{" "}

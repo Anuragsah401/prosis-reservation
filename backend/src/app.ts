@@ -12,8 +12,21 @@ import { customerRouter } from "@/modules/customer/customer.routes"
 
 export const app = express()
 
+const allowedOrigins = env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+
 app.use(helmet())
-app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }))
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Allow non-browser requests (curl, server-to-server, no Origin header)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+      callback(new Error(`Origin ${origin} not allowed by CORS`))
+    },
+    credentials: true,
+  }),
+)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"))

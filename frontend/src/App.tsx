@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { RequireAuth, RedirectIfAuthenticated } from '@/features/auth/require-auth'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { DashboardPage } from '@/pages/dashboard-page'
 import { TablesPage } from '@/pages/tables-page'
@@ -17,18 +18,34 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthenticated>
+            <LoginPage />
+          </RedirectIfAuthenticated>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <RedirectIfAuthenticated>
+            <SignupPage />
+          </RedirectIfAuthenticated>
+        }
+      />
       <Route path="/restaurant/:id/book" element={<PublicBookingPage />} />
-      <Route element={<DashboardLayout />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/tables" element={<TablesPage />} />
-        <Route path="/floor-plan" element={<FloorPlanPage />} />
-        <Route path="/reservations" element={<ReservationsPage />} />
-        <Route path="/customers" element={<CustomersPage />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/tables" element={<TablesPage />} />
+          <Route path="/floor-plan" element={<FloorPlanPage />} />
+          <Route path="/reservations" element={<ReservationsPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

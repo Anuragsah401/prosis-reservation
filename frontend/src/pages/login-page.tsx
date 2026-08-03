@@ -1,12 +1,12 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Eye, EyeOff, Loader2, UtensilsCrossed } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { authClient, AuthError } from "@/features/auth/auth-client"
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -26,12 +26,17 @@ export function LoginPage() {
     }
 
     setLoading(true)
-    // Mock authentication — swap for a real POST /api/auth/login call once
-    // the frontend is wired to the backend auth module.
-    setTimeout(() => {
-      setLoading(false)
-      navigate("/reservations")
-    }, 600)
+    authClient
+      .login({ email: email.trim(), password })
+      .then(() => {
+        navigate("/reservations")
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof AuthError ? err.message : "Something went wrong. Please try again.")
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }
 
   return (
@@ -109,17 +114,6 @@ export function LoginPage() {
                 Sign in
               </Button>
             </form>
-
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-muted-foreground text-xs">OR</span>
-              <Separator className="flex-1" />
-            </div>
-
-            <Button variant="outline" className="w-full" type="button">
-              <UtensilsCrossed className="size-4" />
-              Continue with Google
-            </Button>
 
             <p className="text-muted-foreground text-center text-sm">
               Don&apos;t have an account?{" "}

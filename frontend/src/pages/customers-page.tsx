@@ -1,53 +1,19 @@
-import { Plus, Search, Phone, ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { Plus, Search, Phone, Loader2 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+import { apiClient, ApiError, getCurrentRestaurantId } from "@/lib/api-client"
 
-type CustomerStatus = "ACTIVE" | "INACTIVE" | "VIP" | "BLOCKED"
-
-const statusOptions: CustomerStatus[] = ["ACTIVE", "VIP", "INACTIVE", "BLOCKED"]
-
-const statusStyles: Record<CustomerStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  ACTIVE: "default",
-  VIP: "secondary",
-  INACTIVE: "outline",
-  BLOCKED: "destructive",
-}
-
-const statusLabels: Record<CustomerStatus, string> = {
-  ACTIVE: "Active",
-  VIP: "VIP",
-  INACTIVE: "Inactive",
-  BLOCKED: "Blocked",
-}
-
-interface Customer {
+interface ApiCustomer {
+  id: string
   name: string
-  email: string
-  phone: string
-  visits: number
+  email: string | null
+  phone: string | null
   tags: string[]
-  status: CustomerStatus
 }
-
-const initialCustomers: Customer[] = [
-  { name: "Alicia Ford", email: "alicia@example.com", phone: "+1 555 0102", visits: 12, tags: ["VIP"], status: "VIP" },
-  { name: "Marcus Lee", email: "marcus@example.com", phone: "+1 555 0187", visits: 3, tags: [], status: "ACTIVE" },
-  { name: "Priya Nair", email: "priya@example.com", phone: "+1 555 0143", visits: 8, tags: ["Regular"], status: "ACTIVE" },
-  { name: "Diego Alvarez", email: "diego@example.com", phone: "+1 555 0199", visits: 1, tags: ["New"], status: "INACTIVE" },
-  { name: "Hannah Kim", email: "hannah@example.com", phone: "+1 555 0121", visits: 5, tags: [], status: "BLOCKED" },
-]
 
 function initials(name: string) {
   return name
@@ -59,13 +25,53 @@ function initials(name: string) {
 }
 
 export function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
+  const [customers, setCustomers] = useState<ApiCustomer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
 
-  function handleStatusChange(email: string, status: CustomerStatus) {
-    setCustomers((prev) =>
-      prev.map((c) => (c.email === email ? { ...c, status } : c)),
+  useEffect(() => {
+    let active = true
+    const restaurantId = getCurrentRestaurantId()
+    if (!restaurantId) {
+      Promise.resolve().then(() => {
+        if (active) {
+          setError("No restaurant associated with your account yet.")
+          setLoading(false)
+        }
+      })
+      return () => {
+        active = false
+      }
+    }
+
+    apiClient
+      .get<ApiCustomer[]>(`/customers?restaurantId=${encodeURIComponent(restaurantId)}`)
+      .then((data) => {
+        if (active) setCustomers(data)
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof ApiError ? err.message : "Failed to load customers.")
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return customers
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.email ?? "").toLowerCase().includes(q) ||
+        (c.phone ?? "").toLowerCase().includes(q),
     )
-  }
+  }, [customers, search])
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,66 +90,69 @@ export function CustomersPage() {
 
       <div className="relative w-full max-w-sm">
         <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-        <Input placeholder="Search customers..." className="pl-9" />
+        <Input
+          placeholder="Search customers..."
+          className="pl-9"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {customers.map((c) => (
-          <Card key={c.email}>
-            <CardContent className="flex items-start gap-3">
-              <Avatar>
-                <AvatarFallback>{initials(c.name)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
+      {loading && (
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <Loader2 className="size-4 animate-spin" />
+          Loading customers&hellip;
+        </div>
+      )}
+
+      {!loading && error && (
+        <Card>
+          <CardContent className="text-muted-foreground py-6 text-sm">{error}</CardContent>
+        </Card>
+      )}
+
+      {!loading && !error && filtered.length === 0 && (
+        <Card>
+          <CardContent className="text-muted-foreground py-6 text-sm">
+            {customers.length === 0
+              ? "No customers yet. New customers will appear here once reservations come in."
+              : "No customers match your search."}
+          </CardContent>
+        </Card>
+      )}
+
+      {!loading && !error && filtered.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((c) => (
+            <Card key={c.id}>
+              <CardContent className="flex items-start gap-3">
+                <Avatar>
+                  <AvatarFallback>{initials(c.name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{c.name}</p>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="shrink-0">
-                        <Badge
-                          variant={statusStyles[c.status]}
-                          className="flex cursor-pointer items-center gap-1"
-                        >
-                          {statusLabels[c.status]}
-                          <ChevronDown className="size-3" />
+                  {c.email && <p className="text-muted-foreground truncate text-xs">{c.email}</p>}
+                  {c.phone && (
+                    <p className="text-muted-foreground flex items-center gap-1 truncate text-xs">
+                      <Phone className="size-3" />
+                      {c.phone}
+                    </p>
+                  )}
+                  {c.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {c.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
                         </Badge>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Set status</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {statusOptions.map((status) => (
-                        <DropdownMenuItem
-                          key={status}
-                          onClick={() => handleStatusChange(c.email, status)}
-                        >
-                          <Badge variant={statusStyles[status]} className="mr-1">
-                            {statusLabels[status]}
-                          </Badge>
-                        </DropdownMenuItem>
                       ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </div>
+                  )}
                 </div>
-                <p className="text-muted-foreground truncate text-xs">{c.email}</p>
-                <p className="text-muted-foreground flex items-center gap-1 truncate text-xs">
-                  <Phone className="size-3" />
-                  {c.phone}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <Badge variant="outline">{c.visits} visits</Badge>
-                  {c.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
-

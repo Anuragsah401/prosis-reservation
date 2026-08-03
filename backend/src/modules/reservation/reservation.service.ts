@@ -46,8 +46,18 @@ export const reservationService = {
     const reservations = await prisma.reservation.findMany({
       where: { restaurantId },
       orderBy: { reservedFor: "asc" },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        table: { select: { id: true, number: true, section: true } },
+      },
     })
-    return reservations.map(toApiShape)
+    return reservations.map((r) => {
+      const { table, ...rest } = r
+      return toApiShape({
+        ...rest,
+        table: table ? { id: table.id, name: table.number, location: table.section } : null,
+      })
+    })
   },
 
   async getById(id: string) {

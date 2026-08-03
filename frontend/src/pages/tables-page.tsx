@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -8,17 +9,17 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
+import { apiClient, ApiError, getCurrentRestaurantId } from "@/lib/api-client"
 
-const tables = [
-  { name: "T1", capacity: 2, location: "Window", status: "AVAILABLE" },
-  { name: "T2", capacity: 6, location: "Main Hall", status: "RESERVED" },
-  { name: "T3", capacity: 4, location: "Patio", status: "AVAILABLE" },
-  { name: "T4", capacity: 4, location: "Main Hall", status: "OCCUPIED" },
-  { name: "T5", capacity: 2, location: "Bar", status: "AVAILABLE" },
-  { name: "T6", capacity: 8, location: "Private Room", status: "MAINTENANCE" },
-]
+interface ApiTable {
+  id: string
+  name: string
+  capacity: number
+  location: string | null
+  status: "AVAILABLE" | "OCCUPIED" | "RESERVED" | "MAINTENANCE"
+}
 
-const statusStyles: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const statusStyles: Record<ApiTable["status"], "default" | "secondary" | "destructive" | "outline"> = {
   AVAILABLE: "default",
   OCCUPIED: "secondary",
   RESERVED: "outline",
@@ -26,6 +27,42 @@ const statusStyles: Record<string, "default" | "secondary" | "destructive" | "ou
 }
 
 export function TablesPage() {
+  const [tables, setTables] = useState<ApiTable[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    const restaurantId = getCurrentRestaurantId()
+    if (!restaurantId) {
+      Promise.resolve().then(() => {
+        if (active) {
+          setError("No restaurant associated with your account yet.")
+          setLoading(false)
+        }
+      })
+      return () => {
+        active = false
+      }
+    }
+
+    apiClient
+      .get<ApiTable[]>(`/tables?restaurantId=${encodeURIComponent(restaurantId)}`)
+      .then((data) => {
+        if (active) setTables(data)
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof ApiError ? err.message : "Failed to load tables.")
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -41,26 +78,47 @@ export function TablesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {tables.map((table) => (
-          <Card key={table.name}>
-            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
-              <div>
-                <CardTitle>{table.name}</CardTitle>
-                <CardDescription>{table.location}</CardDescription>
-              </div>
-              <Badge variant={statusStyles[table.status] ?? "outline"}>
-                {table.status}
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Capacity: <span className="text-foreground font-medium">{table.capacity}</span>
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {loading && (
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <Loader2 className="size-4 animate-spin" />
+          Loading tables&hellip;
+        </div>
+      )}
+
+      {!loading && error && (
+        <Card>
+          <CardContent className="text-muted-foreground py-6 text-sm">{error}</CardContent>
+        </Card>
+      )}
+
+      {!loading && !error && tables.length === 0 && (
+        <Card>
+          <CardContent className="text-muted-foreground py-6 text-sm">
+            No tables yet. Add tables from the Floor Plan builder to see them here.
+          </CardContent>
+        </Card>
+      )}
+
+      {!loading && !error && tables.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {tables.map((table) => (
+            <Card key={table.id}>
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                <div>
+                  <CardTitle>{table.name}</CardTitle>
+                  <CardDescription>{table.location ?? "Unassigned"}</CardDescription>
+                </div>
+                <Badge variant={statusStyles[table.status] ?? "outline"}>{table.status}</Badge>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Capacity: <span className="text-foreground font-medium">{table.capacity}</span>
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
