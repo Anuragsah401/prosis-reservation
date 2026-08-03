@@ -6,6 +6,7 @@ import {
   statusColors,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
+import { loadFloorNames, loadFloorPlanTables } from "@/features/floor-plan/floor-plan-storage"
 
 export type TimeFilter = "all" | "morning" | "lunch" | "evening"
 
@@ -68,7 +69,34 @@ export function BookingDiagramView({
       list.push(table)
       seen.set(table.floor, list)
     }
-    return Array.from(seen.entries())
+    const entries = Array.from(seen.entries())
+
+    // Prefer the floors/tables configured in the Floor Plan builder — when a
+    // floor is added there (even a brand-new one with no mock counterpart),
+    // it should show up here with its own tables, not just relabel the
+    // fixed set of mock floors/tables.
+    const floorPlanNames = loadFloorNames()
+    const floorPlanTables = loadFloorPlanTables()
+
+    if (floorPlanNames && floorPlanNames.length > 0 && floorPlanTables && floorPlanTables.length > 0) {
+      return floorPlanNames.map((floorName, index) => {
+        const tablesForFloor = floorPlanTables.filter((t) => t.floor === floorName)
+        const fallback = entries[index]?.[1] ?? []
+
+        const namedTables = tablesForFloor.length > 0
+          ? tablesForFloor.map((t, tableIndex) => ({
+              id: t.id,
+              name: t.name,
+              capacity: fallback[tableIndex]?.capacity ?? 2,
+              floor: floorName,
+            }))
+          : fallback
+
+        return [floorName, namedTables] as [string, typeof calendarTables]
+      })
+    }
+
+    return entries
   }, [])
 
   const hours = useMemo(() => {

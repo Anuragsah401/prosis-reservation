@@ -7,14 +7,20 @@ import { ReservationsPage } from '@/pages/reservations-page'
 import { CustomersPage } from '@/pages/customers-page'
 import { AnalyticsPage } from '@/pages/analytics-page'
 import { SettingsPage } from '@/pages/settings-page'
+import { NotificationsPage } from '@/pages/notifications-page'
 import { PublicBookingPage } from '@/pages/public-booking-page'
+import { LandingPage } from '@/pages/landing-page'
+import { LoginPage } from '@/pages/login-page'
+import { SignupPage } from '@/pages/signup-page'
 
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route path="/restaurant/:id/book" element={<PublicBookingPage />} />
       <Route element={<DashboardLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/tables" element={<TablesPage />} />
         <Route path="/floor-plan" element={<FloorPlanPage />} />
@@ -22,8 +28,9 @@ function App() {
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

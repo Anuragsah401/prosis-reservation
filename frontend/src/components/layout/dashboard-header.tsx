@@ -13,6 +13,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SidebarNav } from "@/components/layout/sidebar-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationBell } from "@/features/notifications/notification-bell"
 
 export function DashboardHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -40,6 +41,7 @@ export function DashboardHeader() {
 
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">

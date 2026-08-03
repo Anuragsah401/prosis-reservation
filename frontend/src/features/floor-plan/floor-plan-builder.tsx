@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ReactFlow,
   Background,
@@ -53,7 +53,7 @@ import {
   type TableShape,
   type TableStatus,
 } from "@/features/floor-plan/floor-plan-data"
-import { loadPositions, savePositions } from "@/features/floor-plan/floor-plan-storage"
+import { loadPositions, savePositions, loadFloorNames, saveFloorNames, saveFloorPlanTables } from "@/features/floor-plan/floor-plan-storage"
 import { TableNode, type TableNodeData } from "@/features/floor-plan/table-node"
 
 const nodeTypes: NodeTypes = { table: TableNode }
@@ -105,9 +105,30 @@ function buildFloorTables(): Record<string, FloorPlanTable[]> {
 export function FloorPlanBuilder() {
   const floorTables = useMemo(() => buildFloorTables(), [])
   const initialFloors = useMemo(() => Object.keys(floorTables), [floorTables])
-  const [floors, setFloors] = useState<string[]>(initialFloors)
+  const [floors, setFloors] = useState<string[]>(() => {
+    const persisted = loadFloorNames()
+    if (!persisted || persisted.length === 0) return initialFloors
+    // Merge in any floors that exist on tables but weren't in the persisted
+    // list yet (e.g. first load), keeping the persisted order first.
+    const merged = [...persisted]
+    for (const f of initialFloors) {
+      if (!merged.includes(f)) merged.push(f)
+    }
+    return merged
+  })
   const [activeFloor, setActiveFloor] = useState(initialFloors[0] ?? "Main Floor")
   const [nodesByFloor, setNodesByFloor] = useState<Record<string, Node<TableNodeData>[]>>({})
+
+  useEffect(() => {
+    saveFloorNames(floors)
+  }, [floors])
+
+  useEffect(() => {
+    const tables = Object.entries(nodesByFloor).flatMap(([floor, nodes]) =>
+      nodes.map((n) => ({ id: n.id, name: n.data.name, floor, capacity: n.data.capacity })),
+    )
+    if (tables.length > 0) saveFloorPlanTables(tables)
+  }, [nodesByFloor])
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaveResult, setLastSaveResult] = useState<"server" | "local" | null>(null)

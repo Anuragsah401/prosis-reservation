@@ -7,14 +7,12 @@ import {
   ChevronRight,
   CalendarDays,
   CalendarRange,
-  GanttChartSquare,
   LayoutGrid,
   CloudOff,
   CheckCircle2,
   CalendarClock,
-  Plus,
-  UserPlus,
   Search,
+  AlertTriangle,
 } from "lucide-react"
 import {
   initialReservations,
@@ -24,13 +22,12 @@ import {
 } from "@/features/reservations-calendar/calendar-data"
 import { loadOverrides, saveReservationChange } from "@/features/reservations-calendar/calendar-storage"
 import { CalendarGridView } from "@/features/reservations-calendar/calendar-grid-view"
-import { TimelineView } from "@/features/reservations-calendar/timeline-view"
 import { BookingDiagramView, type TimeFilter } from "@/features/reservations-calendar/booking-diagram-view"
 import { MiniMonthCalendar } from "@/features/reservations-calendar/mini-month-calendar"
 import { BookingSidebarList } from "@/features/reservations-calendar/booking-sidebar-list"
 import { ReservationDetailsDialog } from "@/features/reservations-calendar/reservation-details-dialog"
 
-type CalendarViewMode = "diagram" | "day" | "week" | "timeline"
+type CalendarViewMode = "diagram" | "day" | "week"
 
 function applyOverrides(): CalendarReservation[] {
   const overrides = loadOverrides()
@@ -59,16 +56,35 @@ export function ReservationsCalendar() {
   const [reservations, setReservations] = useState<CalendarReservation[]>(applyOverrides)
   const [selectedReservation, setSelectedReservation] = useState<CalendarReservation | null>(null)
   const [saveState, setSaveState] = useState<"idle" | "saving" | "server" | "local">("idle")
+  const [conflictMessage, setConflictMessage] = useState<string | null>(null)
 
   const persistChange = useCallback(
     async (id: string, changes: { start?: string; durationMinutes?: number; tableId?: string }) => {
+      const target = reservations.find((r) => r.id === id)
+      if (!target) return
+      const merged = { ...target, ...changes }
+
+      // Prevent two reservations from occupying the same table at overlapping
+      // times — a table can only serve one party at once.
+      const mergedStart = new Date(merged.start).getTime()
+      const mergedEnd = mergedStart + merged.durationMinutes * 60_000
+      const hasConflict = reservations.some((r) => {
+        if (r.id === id || r.tableId !== merged.tableId || r.status === "CANCELLED") return false
+        const rStart = new Date(r.start).getTime()
+        const rEnd = rStart + r.durationMinutes * 60_000
+        return mergedStart < rEnd && rStart < mergedEnd
+      })
+
+      if (hasConflict) {
+        setConflictMessage("That table already has a reservation at this time. Choose a different table or time.")
+        return
+      }
+      setConflictMessage(null)
+
       setReservations((current) =>
         current.map((r) => (r.id === id ? { ...r, ...changes } : r)),
       )
       setSaveState("saving")
-      const target = reservations.find((r) => r.id === id)
-      if (!target) return
-      const merged = { ...target, ...changes }
       const result = await saveReservationChange({
         id,
         start: merged.start,
@@ -165,14 +181,6 @@ export function ReservationsCalendar() {
               )}
             </Badge>
           )}
-          <Button size="sm" variant="secondary">
-            <UserPlus className="size-3.5" />
-            Walk in
-          </Button>
-          <Button size="sm">
-            <Plus className="size-3.5" />
-            New booking
-          </Button>
           <div className="flex items-center gap-1 rounded-md border p-0.5">
             <Button
               size="sm"
@@ -181,7 +189,7 @@ export function ReservationsCalendar() {
               onClick={() => setViewMode("diagram")}
             >
               <LayoutGrid className="size-3.5" />
-              Diagram
+              Timeline
             </Button>
             <Button
               size="sm"
@@ -201,15 +209,6 @@ export function ReservationsCalendar() {
               <CalendarRange className="size-3.5" />
               Week
             </Button>
-            <Button
-              size="sm"
-              variant={viewMode === "timeline" ? "default" : "ghost"}
-              className="h-7 px-2"
-              onClick={() => setViewMode("timeline")}
-            >
-              <GanttChartSquare className="size-3.5" />
-              Timeline
-            </Button>
           </div>
         </div>
       </div>
@@ -223,10 +222,17 @@ export function ReservationsCalendar() {
         <span className="text-muted-foreground ml-auto">
           Drag a reservation to change its time
           {viewMode === "day" || viewMode === "week" ? " or duration (resize)" : ""}
-          {viewMode === "timeline" || viewMode === "diagram" ? " or drop onto another table row" : ""}.
+          {viewMode === "diagram" ? " or drop onto another table row" : ""}.
           Click a reservation to edit details.
         </span>
       </div>
+
+      {conflictMessage && (
+        <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <AlertTriangle className="size-3.5 shrink-0" />
+          {conflictMessage}
+        </div>
+      )}
 
       {viewMode === "diagram" ? (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
@@ -275,13 +281,6 @@ export function ReservationsCalendar() {
             onReservationChange={persistChange}
           />
         </div>
-      ) : viewMode === "timeline" ? (
-        <TimelineView
-          reservations={reservations}
-          currentDate={currentDate}
-          onReservationClick={setSelectedReservation}
-          onReservationChange={persistChange}
-        />
       ) : (
         <CalendarGridView
           view={viewMode}

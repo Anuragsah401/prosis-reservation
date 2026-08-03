@@ -17,6 +17,10 @@ export interface CalendarTable {
 export interface CalendarReservation {
   id: string
   customerName: string
+  /** Customer contact phone number. */
+  customerPhone: string
+  /** Optional customer email address. */
+  customerEmail?: string
   tableId: string
   partySize: number
   /** ISO datetime string for the reservation start. */
@@ -83,20 +87,20 @@ function daysFromNowAt(days: number, hour: number, minute = 0): string {
  * context is wired into the frontend.
  */
 export const initialReservations: CalendarReservation[] = [
-  { id: "r1", customerName: "Henry Hall", tableId: "t1", partySize: 2, start: todayAt(17, 30), durationMinutes: 45, status: "CONFIRMED" },
-  { id: "r2", customerName: "Liam Martinez", tableId: "t2", partySize: 7, start: todayAt(17, 45), durationMinutes: 45, status: "PENDING" },
-  { id: "r3", customerName: "Emma Rodriguez", tableId: "t4", partySize: 4, start: todayAt(18, 0), durationMinutes: 105, status: "CHECKED_IN" },
-  { id: "r4", customerName: "James Wilson", tableId: "t5", partySize: 2, start: todayAt(18, 45), durationMinutes: 90, status: "CONFIRMED" },
-  { id: "r5", customerName: "Noah Lee", tableId: "t7", partySize: 4, start: todayAt(18, 0), durationMinutes: 90, status: "CHECKED_IN" },
-  { id: "r6", customerName: "Isabella Anderson", tableId: "t8", partySize: 8, start: todayAt(18, 30), durationMinutes: 90, status: "CONFIRMED" },
-  { id: "r7", customerName: "William Taylor", tableId: "t9", partySize: 12, start: todayAt(18, 0), durationMinutes: 60, status: "CHECKED_IN" },
-  { id: "r8", customerName: "Amelia Lewis", tableId: "t10", partySize: 3, start: todayAt(18, 15), durationMinutes: 75, status: "CONFIRMED" },
-  { id: "r9", customerName: "Alice Johnson", tableId: "t6", partySize: 12, start: todayAt(19, 0), durationMinutes: 45, status: "PENDING" },
-  { id: "r10", customerName: "Ella Young", tableId: "t9", partySize: 12, start: todayAt(19, 0), durationMinutes: 45, status: "CONFIRMED" },
-  { id: "r11", customerName: "Olivia Garcia", tableId: "t10", partySize: 12, start: todayAt(19, 0), durationMinutes: 45, status: "CHECKED_IN" },
-  { id: "r12", customerName: "Alexander White", tableId: "t8", partySize: 10, start: todayAt(19, 0), durationMinutes: 45, status: "CONFIRMED" },
-  { id: "r13", customerName: "Sara Wu", tableId: "t2", partySize: 5, start: daysFromNowAt(1, 18, 30), durationMinutes: 90, status: "CONFIRMED" },
-  { id: "r14", customerName: "Omar Faruk", tableId: "t4", partySize: 2, start: daysFromNowAt(1, 19, 45), durationMinutes: 60, status: "PENDING" },
-  { id: "r15", customerName: "Elena Petrova", tableId: "t6", partySize: 8, start: daysFromNowAt(2, 19, 0), durationMinutes: 120, status: "CONFIRMED" },
-  { id: "r16", customerName: "James Carter", tableId: "t5", partySize: 2, start: daysFromNowAt(-1, 20, 0), durationMinutes: 90, status: "COMPLETED" },
+  { id: "r1", customerName: "Henry Hall", customerPhone: "+1 555 0101", tableId: "t1", partySize: 2, start: todayAt(17, 30), durationMinutes: 45, status: "CONFIRMED" },
+  { id: "r2", customerName: "Liam Martinez", customerPhone: "+1 555 0102", tableId: "t2", partySize: 7, start: todayAt(17, 45), durationMinutes: 45, status: "PENDING" },
+  { id: "r3", customerName: "Emma Rodriguez", customerPhone: "+1 555 0103", tableId: "t4", partySize: 4, start: todayAt(18, 0), durationMinutes: 105, status: "CHECKED_IN" },
+  { id: "r4", customerName: "James Wilson", customerPhone: "+1 555 0104", tableId: "t5", partySize: 2, start: todayAt(18, 45), durationMinutes: 90, status: "CONFIRMED" },
+  { id: "r5", customerName: "Noah Lee", customerPhone: "+1 555 0105", tableId: "t7", partySize: 4, start: todayAt(18, 0), durationMinutes: 90, status: "CHECKED_IN" },
+  { id: "r6", customerName: "Isabella Anderson", customerPhone: "+1 555 0106", tableId: "t8", partySize: 8, start: todayAt(18, 30), durationMinutes: 90, status: "CONFIRMED" },
+  { id: "r7", customerName: "William Taylor", customerPhone: "+1 555 0107", tableId: "t9", partySize: 12, start: todayAt(18, 0), durationMinutes: 60, status: "CHECKED_IN" },
+  { id: "r8", customerName: "Amelia Lewis", customerPhone: "+1 555 0108", tableId: "t10", partySize: 3, start: todayAt(18, 15), durationMinutes: 75, status: "CONFIRMED" },
+  { id: "r9", customerName: "Alice Johnson", customerPhone: "+1 555 0109", tableId: "t6", partySize: 12, start: todayAt(19, 0), durationMinutes: 45, status: "PENDING" },
+  { id: "r10", customerName: "Ella Young", customerPhone: "+1 555 0110", tableId: "t9", partySize: 12, start: todayAt(19, 0), durationMinutes: 45, status: "CONFIRMED" },
+  { id: "r11", customerName: "Olivia Garcia", customerPhone: "+1 555 0111", tableId: "t10", partySize: 12, start: todayAt(19, 0), durationMinutes: 45, status: "CHECKED_IN" },
+  { id: "r12", customerName: "Alexander White", customerPhone: "+1 555 0112", tableId: "t8", partySize: 10, start: todayAt(19, 0), durationMinutes: 45, status: "CONFIRMED" },
+  { id: "r13", customerName: "Sara Wu", customerPhone: "+1 555 0113", tableId: "t2", partySize: 5, start: daysFromNowAt(1, 18, 30), durationMinutes: 90, status: "CONFIRMED" },
+  { id: "r14", customerName: "Omar Faruk", customerPhone: "+1 555 0114", tableId: "t4", partySize: 2, start: daysFromNowAt(1, 19, 45), durationMinutes: 60, status: "PENDING" },
+  { id: "r15", customerName: "Elena Petrova", customerPhone: "+1 555 0115", tableId: "t6", partySize: 8, start: daysFromNowAt(2, 19, 0), durationMinutes: 120, status: "CONFIRMED" },
+  { id: "r16", customerName: "James Carter", customerPhone: "+1 555 0116", tableId: "t5", partySize: 2, start: daysFromNowAt(-1, 20, 0), durationMinutes: 90, status: "COMPLETED" },
 ]

@@ -70,3 +70,66 @@ export function loadPositions(): Record<string, Partial<TableLayout>> {
   }
 }
 
+const FLOOR_NAMES_KEY = "prosisit:floor-plan:floors"
+
+/**
+ * Persists the ordered list of floor names configured in the Floor Plan
+ * builder (e.g. "Main Floor", "Patio", or any custom floors added via
+ * "Add floor"). Other features — like the reservations calendar's Diagram
+ * view — read this to label their floor groupings, so a floor added here
+ * shows up there too instead of a hardcoded name.
+ */
+export function saveFloorNames(floors: string[]) {
+  try {
+    localStorage.setItem(FLOOR_NAMES_KEY, JSON.stringify(floors))
+  } catch {
+    // ignore storage errors (private browsing, quota, etc.)
+  }
+}
+
+export function loadFloorNames(): string[] | null {
+  try {
+    const raw = localStorage.getItem(FLOOR_NAMES_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+const FLOOR_TABLES_KEY = "prosisit:floor-plan:tables"
+
+export interface FloorPlanTableSummary {
+  id: string
+  name: string
+  floor: string
+  capacity: number
+}
+
+/**
+ * Persists a lightweight summary (id/name/floor) of every table configured
+ * in the Floor Plan builder. The reservations calendar's Diagram/Timeline
+ * view reads this to show each floor's actual table numbers/names instead
+ * of its own hardcoded mock table names.
+ */
+export function saveFloorPlanTables(tables: FloorPlanTableSummary[]) {
+  try {
+    localStorage.setItem(FLOOR_TABLES_KEY, JSON.stringify(tables))
+  } catch {
+    // ignore storage errors (private browsing, quota, etc.)
+  }
+}
+
+export function loadFloorPlanTables(): FloorPlanTableSummary[] | null {
+  try {
+    const raw = localStorage.getItem(FLOOR_TABLES_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+
