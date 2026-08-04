@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
+import { PhoneInput } from "@/components/ui/phone-input"
 import {
   Select,
   SelectTrigger,
@@ -59,7 +60,7 @@ export function SignupPage() {
   // Step 2 — restaurant details
   const [restaurantName, setRestaurantName] = useState("")
   const [cuisine, setCuisine] = useState("")
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState<string | undefined>(undefined)
 
   // Step 3 — tables & hours
   const [tableCount, setTableCount] = useState("")
@@ -122,7 +123,7 @@ export function SignupPage() {
         email: email.trim(),
         password,
         restaurantName: restaurantName.trim(),
-        restaurantPhone: phone.trim() || undefined,
+        restaurantPhone: phone?.trim() || undefined,
       })
       .then(() => {
         navigate("/reservations")
@@ -295,13 +296,12 @@ export function SignupPage() {
 
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="phone">Phone number</Label>
-                    <Input
+                    <PhoneInput
                       id="phone"
-                      type="tel"
-                      placeholder="+1 555 0100"
-                      autoComplete="tel"
+                      defaultCountry="US"
+                      placeholder="555 0100"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={setPhone}
                     />
                   </div>
                 </>
