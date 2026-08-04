@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts"
+import { useTranslation } from "react-i18next"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import type { DailyReservations } from "@/features/analytics/analytics-data"
 
@@ -15,11 +16,12 @@ interface ReservationsTrendChartProps {
 }
 
 export function ReservationsTrendChart({ data }: ReservationsTrendChartProps) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reservations Trend</CardTitle>
-        <CardDescription>Reservations and covers over the last {data.length} days</CardDescription>
+        <CardTitle>{t("pages.analytics.reservationsTrend")}</CardTitle>
+        <CardDescription>{t("pages.analytics.reservationsTrendDesc", { count: data.length })}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>

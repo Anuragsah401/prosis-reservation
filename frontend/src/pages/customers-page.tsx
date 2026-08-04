@@ -1,5 +1,6 @@
 import { Plus, Search, Phone, Loader2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +26,7 @@ function initials(name: string) {
 }
 
 export function CustomersPage() {
+  const { t } = useTranslation()
   const [customers, setCustomers] = useState<ApiCustomer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export function CustomersPage() {
     if (!restaurantId) {
       Promise.resolve().then(() => {
         if (active) {
-          setError("No restaurant associated with your account yet.")
+          setError(t("pages.customers.noRestaurant"))
           setLoading(false)
         }
       })
@@ -51,7 +53,7 @@ export function CustomersPage() {
         if (active) setCustomers(data)
       })
       .catch((err) => {
-        if (active) setError(err instanceof ApiError ? err.message : "Failed to load customers.")
+        if (active) setError(err instanceof ApiError ? err.message : t("pages.customers.loadError"))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -60,7 +62,7 @@ export function CustomersPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [t])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -77,21 +79,21 @@ export function CustomersPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.customers.title")}</h1>
           <p className="text-muted-foreground text-sm">
-            Your restaurant&apos;s customer relationship database.
+            {t("pages.customers.subtitle")}
           </p>
         </div>
         <Button>
           <Plus className="size-4" />
-          Add Customer
+          {t("pages.customers.addCustomer")}
         </Button>
       </div>
 
       <div className="relative w-full max-w-sm">
         <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input
-          placeholder="Search customers..."
+          placeholder={t("pages.customers.searchPlaceholder")}
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -101,7 +103,7 @@ export function CustomersPage() {
       {loading && (
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
-          Loading customers&hellip;
+          {t("pages.customers.loading")}
         </div>
       )}
 
@@ -115,8 +117,8 @@ export function CustomersPage() {
         <Card>
           <CardContent className="text-muted-foreground py-6 text-sm">
             {customers.length === 0
-              ? "No customers yet. New customers will appear here once reservations come in."
-              : "No customers match your search."}
+              ? t("pages.customers.empty")
+              : t("pages.customers.noMatch")}
           </CardContent>
         </Card>
       )}

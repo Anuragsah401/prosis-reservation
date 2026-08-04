@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
+import { useTranslation } from "react-i18next"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import type { HourlyDemand } from "@/features/analytics/analytics-data"
 
@@ -7,11 +8,12 @@ interface PeakHoursChartProps {
 }
 
 export function PeakHoursChart({ data }: PeakHoursChartProps) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Peak Hours</CardTitle>
-        <CardDescription>Reservation volume by time of day</CardDescription>
+        <CardTitle>{t("pages.analytics.peakHours")}</CardTitle>
+        <CardDescription>{t("pages.analytics.peakHoursDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={260}>

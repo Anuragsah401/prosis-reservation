@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import {
   Bell,
   Check,
@@ -41,6 +42,7 @@ function formatFullTime(iso: string) {
 }
 
 export function NotificationsPage() {
+  const { t } = useTranslation()
   const { notifications, unreadCount, markRead, markAllRead, dismiss } = useNotifications()
   const [filter, setFilter] = useState<FilterOption>("all")
 
@@ -51,8 +53,8 @@ export function NotificationsPage() {
   })
 
   const filterOptions: { id: FilterOption; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "unread", label: "Unread" },
+    { id: "all", label: t("pages.notifications.filterAll") },
+    { id: "unread", label: t("pages.notifications.filterUnread") },
     ...(Object.keys(notificationTypeLabels) as NotificationType[]).map((type) => ({
       id: type,
       label: notificationTypeLabels[type],
@@ -65,22 +67,22 @@ export function NotificationsPage() {
         <Button variant="ghost" size="sm" className="w-fit gap-1.5 px-2" asChild>
           <Link to="/reservations">
             <ArrowLeft className="size-3.5" />
-            Back to reservations
+            {t("pages.notifications.backToReservations")}
           </Link>
         </Button>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("pages.notifications.title")}</h1>
             <p className="text-muted-foreground text-sm">
               {unreadCount > 0
-                ? `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}.`
-                : "You're all caught up."}
+                ? t("pages.notifications.unreadCount", { count: unreadCount })
+                : t("pages.notifications.allCaughtUp")}
             </p>
           </div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => markAllRead()}>
               <Check className="size-3.5" />
-              Mark all read
+              {t("pages.notifications.markAllRead")}
             </Button>
           )}
         </div>
@@ -108,7 +110,7 @@ export function NotificationsPage() {
         <CardContent className="divide-y p-0">
           {filtered.length === 0 ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              No notifications here.
+              {t("pages.notifications.empty")}
             </p>
           ) : (
             filtered.map((n) => {
@@ -147,7 +149,7 @@ export function NotificationsPage() {
                       e.stopPropagation()
                       dismiss(n.id)
                     }}
-                    aria-label="Dismiss notification"
+                    aria-label={t("pages.notifications.dismiss")}
                   >
                     <X className="size-4" />
                   </button>

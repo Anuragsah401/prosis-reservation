@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import type { SummaryMetric } from "@/features/analytics/analytics-data"
 import { cn } from "@/lib/utils"
@@ -8,6 +9,7 @@ interface AnalyticsSummaryCardsProps {
 }
 
 export function AnalyticsSummaryCards({ metrics }: AnalyticsSummaryCardsProps) {
+  const { t } = useTranslation()
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {metrics.map((metric) => (
@@ -30,7 +32,7 @@ export function AnalyticsSummaryCards({ metrics }: AnalyticsSummaryCardsProps) {
               ) : (
                 <TrendingDown className="size-3.5" />
               )}
-              {metric.change} vs. previous period
+              {metric.change} {t("pages.analytics.vsPreviousPeriod")}
             </p>
           </CardContent>
         </Card>

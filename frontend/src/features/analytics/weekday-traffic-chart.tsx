@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
+import { useTranslation } from "react-i18next"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import type { WeekdayTraffic } from "@/features/analytics/analytics-data"
 
@@ -7,11 +8,12 @@ interface WeekdayTrafficChartProps {
 }
 
 export function WeekdayTrafficChart({ data }: WeekdayTrafficChartProps) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Weekly Traffic Pattern</CardTitle>
-        <CardDescription>Average reservations by day of week</CardDescription>
+        <CardTitle>{t("pages.analytics.weeklyTraffic")}</CardTitle>
+        <CardDescription>{t("pages.analytics.weeklyTrafficDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={260}>

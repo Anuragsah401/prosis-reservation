@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -17,12 +18,13 @@ import { TableUtilizationChart } from "@/features/analytics/table-utilization-ch
 import { WeekdayTrafficChart } from "@/features/analytics/weekday-traffic-chart"
 
 const RANGE_OPTIONS = [
-  { label: "7 days", days: 7 },
-  { label: "14 days", days: 14 },
-  { label: "30 days", days: 30 },
+  { labelKey: "range7", days: 7 },
+  { labelKey: "range14", days: 14 },
+  { labelKey: "range30", days: 30 },
 ] as const
 
 export function AnalyticsDashboard() {
+  const { t } = useTranslation()
   const [rangeDays, setRangeDays] = useState<number>(14)
   const dailyReservations = useMemo(() => getDailyReservations(rangeDays), [rangeDays])
 
@@ -30,9 +32,9 @@ export function AnalyticsDashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Analytics &amp; Statistics</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.analytics.title")}</h1>
           <p className="text-muted-foreground text-sm">
-            Insights into reservations, table utilization, and customer traffic.
+            {t("pages.analytics.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-md border p-1">
@@ -47,7 +49,7 @@ export function AnalyticsDashboard() {
                 rangeDays === option.days && "bg-primary text-primary-foreground hover:bg-primary/90",
               )}
             >
-              {option.label}
+              {t(`pages.analytics.${option.labelKey}`)}
             </Button>
           ))}
         </div>

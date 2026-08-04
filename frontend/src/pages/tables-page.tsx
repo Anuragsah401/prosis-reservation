@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +28,7 @@ const statusStyles: Record<ApiTable["status"], "default" | "secondary" | "destru
 }
 
 export function TablesPage() {
+  const { t } = useTranslation()
   const [tables, setTables] = useState<ApiTable[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +39,7 @@ export function TablesPage() {
     if (!restaurantId) {
       Promise.resolve().then(() => {
         if (active) {
-          setError("No restaurant associated with your account yet.")
+          setError(t("pages.tables.noRestaurant"))
           setLoading(false)
         }
       })
@@ -52,7 +54,7 @@ export function TablesPage() {
         if (active) setTables(data)
       })
       .catch((err) => {
-        if (active) setError(err instanceof ApiError ? err.message : "Failed to load tables.")
+        if (active) setError(err instanceof ApiError ? err.message : t("pages.tables.loadError"))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -61,27 +63,27 @@ export function TablesPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [t])
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tables</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.tables.title")}</h1>
           <p className="text-muted-foreground text-sm">
-            Manage your restaurant&apos;s tables and their live status.
+            {t("pages.tables.subtitle")}
           </p>
         </div>
         <Button>
           <Plus className="size-4" />
-          Add Table
+          {t("pages.tables.addTable")}
         </Button>
       </div>
 
       {loading && (
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
-          Loading tables&hellip;
+          {t("pages.tables.loading")}
         </div>
       )}
 
@@ -94,7 +96,7 @@ export function TablesPage() {
       {!loading && !error && tables.length === 0 && (
         <Card>
           <CardContent className="text-muted-foreground py-6 text-sm">
-            No tables yet. Add tables from the Floor Plan builder to see them here.
+            {t("pages.tables.empty")}
           </CardContent>
         </Card>
       )}
@@ -106,13 +108,13 @@ export function TablesPage() {
               <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
                 <div>
                   <CardTitle>{table.name}</CardTitle>
-                  <CardDescription>{table.location ?? "Unassigned"}</CardDescription>
+                  <CardDescription>{table.location ?? t("pages.tables.unassigned")}</CardDescription>
                 </div>
                 <Badge variant={statusStyles[table.status] ?? "outline"}>{table.status}</Badge>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-sm">
-                  Capacity: <span className="text-foreground font-medium">{table.capacity}</span>
+                  {t("pages.tables.capacity")} <span className="text-foreground font-medium">{table.capacity}</span>
                 </p>
               </CardContent>
             </Card>

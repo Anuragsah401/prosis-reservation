@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { useTranslation } from "react-i18next"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import type { StatusBreakdown } from "@/features/analytics/analytics-data"
 
@@ -15,11 +16,12 @@ const COLORS: Record<string, string> = {
 }
 
 export function StatusBreakdownChart({ data }: StatusBreakdownChartProps) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reservation Status Breakdown</CardTitle>
-        <CardDescription>Distribution across all reservation statuses</CardDescription>
+        <CardTitle>{t("pages.analytics.statusBreakdown")}</CardTitle>
+        <CardDescription>{t("pages.analytics.statusBreakdownDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>

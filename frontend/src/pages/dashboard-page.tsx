@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { CalendarCheck, UtensilsCrossed, Users, Loader2 } from "lucide-react"
 import {
   Card,
@@ -40,6 +41,7 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const [tables, setTables] = useState<ApiTable[]>([])
   const [customers, setCustomers] = useState<ApiCustomer[]>([])
   const [reservations, setReservations] = useState<ApiReservation[]>([])
@@ -52,7 +54,7 @@ export function DashboardPage() {
     if (!restaurantId) {
       Promise.resolve().then(() => {
         if (active) {
-          setError("No restaurant associated with your account yet.")
+          setError(t("pages.dashboard.noRestaurant"))
           setLoading(false)
         }
       })
@@ -74,7 +76,7 @@ export function DashboardPage() {
         setReservations(reservationsRes)
       })
       .catch((err) => {
-        if (active) setError(err instanceof ApiError ? err.message : "Failed to load dashboard data.")
+        if (active) setError(err instanceof ApiError ? err.message : t("pages.dashboard.loadError"))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -83,7 +85,7 @@ export function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [t])
 
   const todaysReservations = useMemo(() => {
     const today = new Date()
@@ -99,24 +101,22 @@ export function DashboardPage() {
   }, [todaysReservations])
 
   const stats = [
-    { label: "Today's Reservations", value: String(todaysReservations.length), icon: CalendarCheck },
-    { label: "Tables Occupied", value: `${occupiedTables} / ${tables.length}`, icon: UtensilsCrossed },
-    { label: "Total Customers", value: String(customers.length), icon: Users },
+    { label: t("pages.dashboard.statTodaysReservations"), value: String(todaysReservations.length), icon: CalendarCheck },
+    { label: t("pages.dashboard.statTablesOccupied"), value: `${occupiedTables} / ${tables.length}`, icon: UtensilsCrossed },
+    { label: t("pages.dashboard.statTotalCustomers"), value: String(customers.length), icon: Users },
   ]
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Overview of today&apos;s activity across your restaurant.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("pages.dashboard.title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("pages.dashboard.subtitle")}</p>
       </div>
 
       {loading && (
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
-          Loading dashboard&hellip;
+          {t("pages.dashboard.loading")}
         </div>
       )}
 
@@ -146,12 +146,12 @@ export function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Upcoming Reservations</CardTitle>
-              <CardDescription>Next bookings coming in today</CardDescription>
+              <CardTitle>{t("pages.dashboard.upcomingTitle")}</CardTitle>
+              <CardDescription>{t("pages.dashboard.upcomingSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {upcoming.length === 0 && (
-                <p className="text-muted-foreground text-sm">No more reservations scheduled for today.</p>
+                <p className="text-muted-foreground text-sm">{t("pages.dashboard.noUpcoming")}</p>
               )}
               {upcoming.map((r) => (
                 <div
@@ -159,11 +159,11 @@ export function DashboardPage() {
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
                 >
                   <div>
-                    <p className="font-medium">{r.customer?.name ?? "Guest"}</p>
+                    <p className="font-medium">{r.customer?.name ?? t("pages.dashboard.guest")}</p>
                     <p className="text-muted-foreground text-xs">
                       {new Date(r.reservedFor).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                      {" \u00b7 "}Party of {r.partySize}
-                      {r.table ? ` \u00b7 Table ${r.table.name}` : ""}
+                      {" \u00b7 "}{t("pages.dashboard.partyOf")} {r.partySize}
+                      {r.table ? ` \u00b7 ${t("pages.dashboard.table")} ${r.table.name}` : ""}
                     </p>
                   </div>
                   <Badge variant={statusVariant[r.status] ?? "outline"}>{r.status}</Badge>

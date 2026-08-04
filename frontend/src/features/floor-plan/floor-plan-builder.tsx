@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   ReactFlow,
   Background,
@@ -103,6 +104,7 @@ function buildFloorTables(): Record<string, FloorPlanTable[]> {
 }
 
 export function FloorPlanBuilder() {
+  const { t } = useTranslation()
   const floorTables = useMemo(() => buildFloorTables(), [])
   const initialFloors = useMemo(() => Object.keys(floorTables), [floorTables])
   const [floors, setFloors] = useState<string[]>(() => {
@@ -313,9 +315,9 @@ export function FloorPlanBuilder() {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Floor Plan Designer</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.floorPlan.title")}</h1>
           <p className="text-muted-foreground text-sm">
-            Drag, resize, and reshape tables to design your dining floor layout.
+            {t("pages.floorPlan.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -323,22 +325,22 @@ export function FloorPlanBuilder() {
             <Badge variant="outline" className="gap-1 text-xs">
               {lastSaveResult === "server" ? (
                 <>
-                  <CheckCircle2 className="size-3" /> Saved to server
+                  <CheckCircle2 className="size-3" /> {t("pages.floorPlan.savedToServer")}
                 </>
               ) : (
                 <>
-                  <CloudOff className="size-3" /> Saved locally
+                  <CloudOff className="size-3" /> {t("pages.floorPlan.savedLocally")}
                 </>
               )}
             </Badge>
           )}
           <Button variant="outline" onClick={handleReset} disabled={isSaving}>
             <RotateCcw className="size-4" />
-            Reset
+            {t("pages.floorPlan.reset")}
           </Button>
           <Button onClick={handleSave} disabled={!isDirty || isSaving}>
             {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Save layout
+            {t("pages.floorPlan.saveLayout")}
           </Button>
         </div>
       </div>
@@ -373,14 +375,14 @@ export function FloorPlanBuilder() {
             }}
           >
             <Plus className="size-3.5" />
-            Add floor
+            {t("pages.floorPlan.addFloor")}
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={handleOpenAddDialog}>
             <Plus className="size-4" />
-            Add table
+            {t("pages.floorPlan.addTable")}
           </Button>
         </div>
       </div>
@@ -402,8 +404,7 @@ export function FloorPlanBuilder() {
           </span>
         ))}
         <span className="text-muted-foreground ml-auto">
-          Select a table to resize, change shape ({Object.values(shapeLabels).join(" / ")}), rotate, or
-          delete.
+          {t("pages.floorPlan.selectHint", { shapes: Object.values(shapeLabels).join(" / ") })}
         </span>
       </div>
 
@@ -426,25 +427,25 @@ export function FloorPlanBuilder() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add a table</DialogTitle>
+            <DialogTitle>{t("pages.floorPlan.addDialog.title")}</DialogTitle>
             <DialogDescription>
-              Configure the new table before it's placed on the {activeFloor} canvas.
+              {t("pages.floorPlan.addDialog.description", { floor: activeFloor })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label htmlFor="table-name">Table name</Label>
+                <Label htmlFor="table-name">{t("pages.floorPlan.addDialog.tableName")}</Label>
                 <Input
                   id="table-name"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
-                  placeholder="e.g. T7"
+                  placeholder={t("pages.floorPlan.addDialog.namePlaceholder")}
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="table-capacity">Seats</Label>
+                <Label htmlFor="table-capacity">{t("pages.floorPlan.addDialog.seats")}</Label>
                 <Input
                   id="table-capacity"
                   type="number"
@@ -457,37 +458,37 @@ export function FloorPlanBuilder() {
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="table-location">Location / section</Label>
+              <Label htmlFor="table-location">{t("pages.floorPlan.addDialog.location")}</Label>
               <Input
                 id="table-location"
                 value={newTableLocation}
                 onChange={(e) => setNewTableLocation(e.target.value)}
-                placeholder="e.g. Window, Patio, Bar"
+                placeholder={t("pages.floorPlan.addDialog.locationPlaceholder")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label>Shape</Label>
+                <Label>{t("pages.floorPlan.addDialog.shape")}</Label>
                 <Select value={newTableShape} onValueChange={(v) => setNewTableShape(v as TableShape)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="RECTANGLE">
-                      <RectangleHorizontal className="size-4" /> Rectangle
+                      <RectangleHorizontal className="size-4" /> {t("pages.floorPlan.addDialog.shapeRectangle")}
                     </SelectItem>
                     <SelectItem value="SQUARE">
-                      <Square className="size-4" /> Square
+                      <Square className="size-4" /> {t("pages.floorPlan.addDialog.shapeSquare")}
                     </SelectItem>
                     <SelectItem value="CIRCLE">
-                      <Circle className="size-4" /> Circle
+                      <Circle className="size-4" /> {t("pages.floorPlan.addDialog.shapeCircle")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label>Status</Label>
+                <Label>{t("pages.floorPlan.addDialog.status")}</Label>
                 <Select
                   value={newTableStatus}
                   onValueChange={(v) => setNewTableStatus(v as TableStatus)}
@@ -509,11 +510,11 @@ export function FloorPlanBuilder() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
+              {t("pages.floorPlan.addDialog.cancel")}
             </Button>
             <Button onClick={handleCreateTable} disabled={!newTableName.trim()}>
               <Plus className="size-4" />
-              Add table
+              {t("pages.floorPlan.addDialog.addTable")}
             </Button>
           </DialogFooter>
         </DialogContent>

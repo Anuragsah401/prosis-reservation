@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts"
+import { useTranslation } from "react-i18next"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import type { TableUtilization } from "@/features/analytics/analytics-data"
 
@@ -13,11 +14,12 @@ function colorForUtilization(value: number) {
 }
 
 export function TableUtilizationChart({ data }: TableUtilizationChartProps) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Table Utilization</CardTitle>
-        <CardDescription>Percentage of service hours each table was occupied</CardDescription>
+        <CardTitle>{t("pages.analytics.tableUtilization")}</CardTitle>
+        <CardDescription>{t("pages.analytics.tableUtilizationDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={260}>

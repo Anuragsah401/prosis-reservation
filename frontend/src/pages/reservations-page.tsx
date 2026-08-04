@@ -1,6 +1,7 @@
 import { Plus, Search, List, CalendarDays, ChevronDown, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -134,6 +135,7 @@ interface NewReservationDialogProps {
 }
 
 function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const tableOptions = useTableOptions()
   const [customerName, setCustomerName] = useState("")
@@ -162,12 +164,12 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
     e.preventDefault()
 
     if (!customerName.trim() || !customerPhone.trim() || !tableId || !date || !time) {
-      setError("Please fill in all required fields.")
+      setError(t("pages.reservations.newDialog.errorRequired"))
       return
     }
     const party = Number(partySize)
     if (!Number.isFinite(party) || party < 1) {
-      setError("Party size must be at least 1.")
+      setError(t("pages.reservations.newDialog.errorPartySize"))
       return
     }
 
@@ -207,18 +209,18 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
       <DialogTrigger asChild>
         <Button>
           <Plus className="size-4" />
-          New Reservation
+          {t("pages.reservations.newReservation")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New reservation</DialogTitle>
-          <DialogDescription>Add a booking to the reservations list.</DialogDescription>
+          <DialogTitle>{t("pages.reservations.newDialog.title")}</DialogTitle>
+          <DialogDescription>{t("pages.reservations.newDialog.description")}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-res-name">Customer name</Label>
+            <Label htmlFor="new-res-name">{t("pages.reservations.newDialog.customerName")}</Label>
             <Input
               id="new-res-name"
               placeholder="Alicia Ford"
@@ -228,7 +230,7 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-res-phone">Phone number</Label>
+            <Label htmlFor="new-res-phone">{t("pages.reservations.newDialog.phone")}</Label>
             <Input
               id="new-res-phone"
               placeholder="+1 555 0100"
@@ -239,7 +241,7 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="new-res-email">
-              Email <span className="text-muted-foreground font-normal">(optional)</span>
+              {t("pages.reservations.newDialog.email")} <span className="text-muted-foreground font-normal">{t("pages.reservations.newDialog.optional")}</span>
             </Label>
             <Input
               id="new-res-email"
@@ -252,7 +254,7 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-res-date">Date</Label>
+              <Label htmlFor="new-res-date">{t("pages.reservations.newDialog.date")}</Label>
               <Input
                 id="new-res-date"
                 type="date"
@@ -261,7 +263,7 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-res-time">Time</Label>
+              <Label htmlFor="new-res-time">{t("pages.reservations.newDialog.time")}</Label>
               <Input
                 id="new-res-time"
                 type="time"
@@ -273,7 +275,7 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-res-party">Party size</Label>
+              <Label htmlFor="new-res-party">{t("pages.reservations.newDialog.partySize")}</Label>
               <Input
                 id="new-res-party"
                 type="number"
@@ -283,35 +285,35 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-res-duration">Duration</Label>
+              <Label htmlFor="new-res-duration">{t("pages.reservations.newDialog.duration")}</Label>
               <Select value={durationMinutes} onValueChange={setDurationMinutes}>
                 <SelectTrigger id="new-res-duration" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unspecified">Not specified</SelectItem>
-                  <SelectItem value="30">30 min</SelectItem>
-                  <SelectItem value="45">45 min</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                  <SelectItem value="90">1.5 hours</SelectItem>
-                  <SelectItem value="120">2 hours</SelectItem>
-                  <SelectItem value="150">2.5 hours</SelectItem>
-                  <SelectItem value="180">3 hours</SelectItem>
+                  <SelectItem value="unspecified">{t("pages.reservations.newDialog.durationUnspecified")}</SelectItem>
+                  <SelectItem value="30">30 {t("pages.reservations.newDialog.durationMin")}</SelectItem>
+                  <SelectItem value="45">45 {t("pages.reservations.newDialog.durationMin")}</SelectItem>
+                  <SelectItem value="60">1 {t("pages.reservations.newDialog.durationHour")}</SelectItem>
+                  <SelectItem value="90">1.5 {t("pages.reservations.newDialog.durationHours")}</SelectItem>
+                  <SelectItem value="120">2 {t("pages.reservations.newDialog.durationHours")}</SelectItem>
+                  <SelectItem value="150">2.5 {t("pages.reservations.newDialog.durationHours")}</SelectItem>
+                  <SelectItem value="180">3 {t("pages.reservations.newDialog.durationHours")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>Table</Label>
+            <Label>{t("pages.reservations.newDialog.table")}</Label>
             <Select value={tableId} onValueChange={setTableId}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select table" />
+                <SelectValue placeholder={t("pages.reservations.newDialog.selectTable")} />
               </SelectTrigger>
               <SelectContent>
-                {tableOptions.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.floor} · Table {t.name} ({t.capacity} seats)
+                {tableOptions.map((t2) => (
+                  <SelectItem key={t2.id} value={t2.id}>
+                    {t2.floor} · {t("pages.reservations.colTable")} {t2.name} ({t2.capacity} {t("pages.reservations.newDialog.seats")})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -323,10 +325,10 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
           <DialogFooter className="mt-2">
             <DialogClose asChild>
               <Button type="button" variant="outline">
-                Cancel
+                {t("pages.reservations.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit">Create reservation</Button>
+            <Button type="submit">{t("pages.reservations.newDialog.create")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -339,6 +341,7 @@ interface WalkInDialogProps {
 }
 
 function WalkInDialog({ onCreate }: WalkInDialogProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const tableOptions = useTableOptions()
   const [customerName, setCustomerName] = useState("")
@@ -361,12 +364,12 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
     e.preventDefault()
 
     if (!customerName.trim() || !tableId) {
-      setError("Please enter a name and select a table.")
+      setError(t("pages.reservations.walkInDialog.errorRequired"))
       return
     }
     const party = Number(partySize)
     if (!Number.isFinite(party) || party < 1) {
-      setError("Party size must be at least 1.")
+      setError(t("pages.reservations.walkInDialog.errorPartySize"))
       return
     }
 
@@ -398,30 +401,30 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
       <DialogTrigger asChild>
         <Button variant="secondary">
           <UserPlus className="size-4" />
-          Walk in
+          {t("pages.reservations.walkIn")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Walk-in customer</DialogTitle>
+          <DialogTitle>{t("pages.reservations.walkInDialog.title")}</DialogTitle>
           <DialogDescription>
-            Seat a walk-in right away — they&apos;ll be marked as checked in for right now.
+            {t("pages.reservations.walkInDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="walkin-name">Customer name</Label>
+            <Label htmlFor="walkin-name">{t("pages.reservations.walkInDialog.customerName")}</Label>
             <Input
               id="walkin-name"
-              placeholder="Guest name"
+              placeholder={t("pages.reservations.walkInDialog.namePlaceholder")}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="walkin-phone">Phone number (optional)</Label>
+            <Label htmlFor="walkin-phone">{t("pages.reservations.walkInDialog.phoneOptional")}</Label>
             <Input
               id="walkin-phone"
               placeholder="+1 555 0100"
@@ -432,7 +435,7 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="walkin-email">
-              Email <span className="text-muted-foreground font-normal">(optional)</span>
+              {t("pages.reservations.newDialog.email")} <span className="text-muted-foreground font-normal">{t("pages.reservations.newDialog.optional")}</span>
             </Label>
             <Input
               id="walkin-email"
@@ -445,7 +448,7 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="walkin-party">Party size</Label>
+              <Label htmlFor="walkin-party">{t("pages.reservations.walkInDialog.partySize")}</Label>
               <Input
                 id="walkin-party"
                 type="number"
@@ -455,15 +458,15 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Table</Label>
+              <Label>{t("pages.reservations.walkInDialog.table")}</Label>
               <Select value={tableId} onValueChange={setTableId}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select table" />
+                  <SelectValue placeholder={t("pages.reservations.walkInDialog.selectTable")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {tableOptions.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.floor} · Table {t.name} ({t.capacity} seats)
+                  {tableOptions.map((t2) => (
+                    <SelectItem key={t2.id} value={t2.id}>
+                      {t2.floor} · {t("pages.reservations.colTable")} {t2.name} ({t2.capacity} {t("pages.reservations.walkInDialog.seats")})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -476,10 +479,10 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
           <DialogFooter className="mt-2">
             <DialogClose asChild>
               <Button type="button" variant="outline">
-                Cancel
+                {t("pages.reservations.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit">Seat walk-in</Button>
+            <Button type="submit">{t("pages.reservations.walkInDialog.seat")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -488,6 +491,7 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
 }
 
 export function ReservationsPage() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<"list" | "calendar">("list")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [search, setSearch] = useState("")
@@ -528,9 +532,9 @@ export function ReservationsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Reservations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.reservations.title")}</h1>
           <p className="text-muted-foreground text-sm">
-            View and manage upcoming and past reservations.
+            {t("pages.reservations.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -542,7 +546,7 @@ export function ReservationsPage() {
               onClick={() => setTab("list")}
             >
               <List className="size-3.5" />
-              List
+              {t("pages.reservations.listView")}
             </Button>
             <Button
               size="sm"
@@ -551,7 +555,7 @@ export function ReservationsPage() {
               onClick={() => setTab("calendar")}
             >
               <CalendarDays className="size-3.5" />
-              Calendar
+              {t("pages.reservations.calendarView")}
             </Button>
           </div>
           <WalkInDialog onCreate={handleCreateReservation} />
@@ -576,7 +580,7 @@ export function ReservationsPage() {
               <div className="relative w-full max-w-sm">
                 <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <Input
-                  placeholder="Search reservations..."
+                  placeholder={t("pages.reservations.searchPlaceholder")}
                   className="pl-9"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -590,7 +594,7 @@ export function ReservationsPage() {
                   year: "numeric",
                 })}
                 {" · "}
-                {filteredReservations.length} reservation{filteredReservations.length === 1 ? "" : "s"}
+                {t("pages.reservations.resultCount", { count: filteredReservations.length })}
               </p>
             </div>
 
@@ -599,19 +603,19 @@ export function ReservationsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Party</TableHead>
-                      <TableHead>Table</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("pages.reservations.colCustomer")}</TableHead>
+                      <TableHead>{t("pages.reservations.colPhone")}</TableHead>
+                      <TableHead>{t("pages.reservations.colTime")}</TableHead>
+                      <TableHead>{t("pages.reservations.colParty")}</TableHead>
+                      <TableHead>{t("pages.reservations.colTable")}</TableHead>
+                      <TableHead>{t("pages.reservations.colStatus")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredReservations.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
-                          No reservations for this date.
+                          {t("pages.reservations.empty")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -644,7 +648,7 @@ export function ReservationsPage() {
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Set status</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t("pages.reservations.setStatus")}</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {statusOptions.map((status) => (
                                   <DropdownMenuItem
