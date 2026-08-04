@@ -117,12 +117,15 @@ export function LandingPage() {
     <div className="bg-background text-foreground min-h-screen">
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md text-sm font-bold">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold">
               PT
             </span>
-            <span className="text-lg font-semibold tracking-tight">Prosisit Table</span>
+            <span className="truncate text-base font-semibold tracking-tight sm:text-lg">
+              <span className="hidden xs:inline">Prosisit Table</span>
+              <span className="xs:hidden">Prosisit</span>
+            </span>
           </div>
           <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -138,15 +141,16 @@ export function LandingPage() {
               Reviews
             </a>
           </nav>
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" asChild className="px-2 sm:px-3">
+            <Button variant="ghost" size="sm" asChild className="px-2 text-xs sm:px-3 sm:text-sm">
               <Link to="/login">Sign in</Link>
             </Button>
-            <Button size="sm" asChild className="px-2 sm:px-3">
+            <Button size="sm" asChild className="px-2 text-xs sm:px-3 sm:text-sm">
               <Link to="/signup">
-                Get started
-                <ArrowRight className="size-4" />
+                <span className="hidden xs:inline">Get started</span>
+                <span className="xs:hidden">Sign up</span>
+                <ArrowRight className="hidden size-4 xs:inline" />
               </Link>
             </Button>
           </div>
