@@ -26,6 +26,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 import { authClient, AuthError } from "@/features/auth/auth-client"
+import { usePersistedFormState } from "@/hooks/use-form-persistence"
 
 const steps = [
   { title: "Your account", icon: User },
@@ -47,25 +48,41 @@ const tableCountOptions = ["1-5", "6-10", "11-20", "21-40", "40+"]
 
 export function SignupPage() {
   const navigate = useNavigate()
-  const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Step 1 — account
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [draft, setDraft, clearDraft] = usePersistedFormState("signup-form", {
+    step: 0,
+    name: "",
+    email: "",
+    password: "",
+    restaurantName: "",
+    cuisine: "",
+    phone: undefined as string | undefined,
+    tableCount: "",
+    openTime: "17:00",
+    closeTime: "23:00",
+  })
+
+  const step = draft.step
+  const setStep = (updater: number | ((s: number) => number)) =>
+    setDraft((d) => ({
+      ...d,
+      step: typeof updater === "function" ? (updater as (s: number) => number)(d.step) : updater,
+    }))
+
+  const { name, email, password, restaurantName, cuisine, phone, tableCount, openTime, closeTime } = draft
+  const setName = (v: string) => setDraft((d) => ({ ...d, name: v }))
+  const setEmail = (v: string) => setDraft((d) => ({ ...d, email: v }))
+  const setPassword = (v: string) => setDraft((d) => ({ ...d, password: v }))
+  const setRestaurantName = (v: string) => setDraft((d) => ({ ...d, restaurantName: v }))
+  const setCuisine = (v: string) => setDraft((d) => ({ ...d, cuisine: v }))
+  const setPhone = (v: string | undefined) => setDraft((d) => ({ ...d, phone: v }))
+  const setTableCount = (v: string) => setDraft((d) => ({ ...d, tableCount: v }))
+  const setOpenTime = (v: string) => setDraft((d) => ({ ...d, openTime: v }))
+  const setCloseTime = (v: string) => setDraft((d) => ({ ...d, closeTime: v }))
+
   const [showPassword, setShowPassword] = useState(false)
-
-  // Step 2 — restaurant details
-  const [restaurantName, setRestaurantName] = useState("")
-  const [cuisine, setCuisine] = useState("")
-  const [phone, setPhone] = useState<string | undefined>(undefined)
-
-  // Step 3 — tables & hours
-  const [tableCount, setTableCount] = useState("")
-  const [openTime, setOpenTime] = useState("17:00")
-  const [closeTime, setCloseTime] = useState("23:00")
 
   function validateStep(current: number) {
     if (current === 0) {
@@ -126,6 +143,7 @@ export function SignupPage() {
         restaurantPhone: phone?.trim() || undefined,
       })
       .then(() => {
+        clearDraft()
         navigate("/reservations")
       })
       .catch((err: unknown) => {
@@ -298,7 +316,6 @@ export function SignupPage() {
                     <Label htmlFor="phone">Phone number</Label>
                     <PhoneInput
                       id="phone"
-                      defaultCountry="US"
                       placeholder="555 0100"
                       value={phone}
                       onChange={setPhone}

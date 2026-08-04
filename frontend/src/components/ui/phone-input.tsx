@@ -110,18 +110,67 @@ export interface PhoneInputProps {
   disabled?: boolean
 }
 
+/** Best-effort guess at the user's country, used to preselect the dial code. */
+function guessCountryFromLocale(): Country | undefined {
+  try {
+    const locale = new Intl.Locale(navigator.language)
+    const region = "region" in locale ? locale.region : undefined
+    return region as Country | undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Detects the user's country so the dial-code dropdown can be preselected
+ * automatically, instead of always defaulting to the US. Tries a quick IP
+ * geolocation lookup first (works regardless of browser language settings),
+ * then falls back to the browser locale, then finally "US".
+ */
+function useAutoDetectedCountry(fallback?: Country) {
+  const [country, setCountry] = React.useState<Country | undefined>(
+    fallback ?? guessCountryFromLocale(),
+  )
+
+  React.useEffect(() => {
+    if (fallback) return // caller explicitly requested a country, skip detection
+    let cancelled = false
+
+    fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return
+        const detected = data?.country_code || data?.country
+        if (detected) setCountry(detected as Country)
+      })
+      .catch(() => {
+        // Network/geolocation lookup failed — keep the locale-based guess (or "US").
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return country ?? "US"
+}
+
 export function PhoneInput({
   value,
   onChange,
-  defaultCountry = "US",
+  defaultCountry,
   placeholder = "555 123 4567",
   id,
   className,
   disabled,
 }: PhoneInputProps) {
+  const autoCountry = useAutoDetectedCountry(defaultCountry)
+
   return (
     <PhoneInputPrimitive
-      defaultCountry={defaultCountry}
+      key={autoCountry}
+      defaultCountry={autoCountry}
       value={value}
       onChange={onChange}
       disabled={disabled}

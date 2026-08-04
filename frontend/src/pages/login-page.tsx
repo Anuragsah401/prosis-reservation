@@ -9,11 +9,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { authClient, AuthError } from "@/features/auth/auth-client"
+import { usePersistedState } from "@/hooks/use-form-persistence"
 
 export function LoginPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
+  const [email, setEmail, clearEmailDraft] = usePersistedState("login-form-email", "")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -32,6 +33,7 @@ export function LoginPage() {
     authClient
       .login({ email: email.trim(), password })
       .then(() => {
+        clearEmailDraft()
         navigate("/reservations")
       })
       .catch((err: unknown) => {

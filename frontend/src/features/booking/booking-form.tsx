@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
+import { usePersistedFormState } from "@/hooks/use-form-persistence"
 
 export interface BookingContactDetails {
   name: string
@@ -19,10 +20,17 @@ interface BookingFormProps {
 }
 
 export function BookingForm({ isSubmitting, onSubmit }: BookingFormProps) {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [notes, setNotes] = useState("")
+  const [draft, setDraft, clearDraft] = usePersistedFormState("booking-form", {
+    name: "",
+    email: "",
+    phone: "",
+    notes: "",
+  })
+  const { name, email, phone, notes } = draft
+  const setName = (v: string) => setDraft((d) => ({ ...d, name: v }))
+  const setEmail = (v: string) => setDraft((d) => ({ ...d, email: v }))
+  const setPhone = (v: string) => setDraft((d) => ({ ...d, phone: v }))
+  const setNotes = (v: string) => setDraft((d) => ({ ...d, notes: v }))
   const [errors, setErrors] = useState<Partial<Record<keyof BookingContactDetails, string>>>({})
 
   function validate(): boolean {
@@ -41,6 +49,7 @@ export function BookingForm({ isSubmitting, onSubmit }: BookingFormProps) {
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!validate()) return
+    clearDraft()
     onSubmit({ name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim() || undefined })
   }
 

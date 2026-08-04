@@ -2,6 +2,8 @@ import { Plus, Search, List, CalendarDays, ChevronDown, UserPlus } from "lucide-
 import { cn } from "@/lib/utils"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { usePersistedFormState } from "@/hooks/use-form-persistence"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -138,25 +140,39 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const tableOptions = useTableOptions()
-  const [customerName, setCustomerName] = useState("")
-  const [customerPhone, setCustomerPhone] = useState("")
-  const [customerEmail, setCustomerEmail] = useState("")
-  const [tableId, setTableId] = useState(tableOptions[0]?.id ?? "")
-  const [date, setDate] = useState(() => toDateInputValue(defaultDate))
-  const [time, setTime] = useState("19:00")
-  const [partySize, setPartySize] = useState("2")
-  const [durationMinutes, setDurationMinutes] = useState("unspecified")
+  const [draft, setDraft, clearDraft] = usePersistedFormState("new-reservation-form", {
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+    tableId: tableOptions[0]?.id ?? "",
+    date: toDateInputValue(defaultDate),
+    time: "19:00",
+    partySize: "2",
+    durationMinutes: "unspecified",
+  })
+  const { customerName, customerPhone, customerEmail, tableId, date, time, partySize, durationMinutes } = draft
+  const setCustomerName = (v: string) => setDraft((d) => ({ ...d, customerName: v }))
+  const setCustomerPhone = (v: string) => setDraft((d) => ({ ...d, customerPhone: v }))
+  const setCustomerEmail = (v: string) => setDraft((d) => ({ ...d, customerEmail: v }))
+  const setTableId = (v: string) => setDraft((d) => ({ ...d, tableId: v }))
+  const setDate = (v: string) => setDraft((d) => ({ ...d, date: v }))
+  const setTime = (v: string) => setDraft((d) => ({ ...d, time: v }))
+  const setPartySize = (v: string) => setDraft((d) => ({ ...d, partySize: v }))
+  const setDurationMinutes = (v: string) => setDraft((d) => ({ ...d, durationMinutes: v }))
   const [error, setError] = useState<string | null>(null)
 
   function resetForm() {
-    setCustomerName("")
-    setCustomerPhone("")
-    setCustomerEmail("")
-    setTableId(tableOptions[0]?.id ?? "")
-    setDate(toDateInputValue(defaultDate))
-    setTime("19:00")
-    setPartySize("2")
-    setDurationMinutes("unspecified")
+    setDraft({
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      tableId: tableOptions[0]?.id ?? "",
+      date: toDateInputValue(defaultDate),
+      time: "19:00",
+      partySize: "2",
+      durationMinutes: "unspecified",
+    })
+    clearDraft()
     setError(null)
   }
 
@@ -203,7 +219,6 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next) resetForm()
       }}
     >
       <DialogTrigger asChild>
@@ -231,11 +246,11 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="new-res-phone">{t("pages.reservations.newDialog.phone")}</Label>
-            <Input
+            <PhoneInput
               id="new-res-phone"
-              placeholder="+1 555 0100"
+              placeholder="555 123 4567"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(value) => setCustomerPhone(value ?? "")}
             />
           </div>
 
@@ -324,7 +339,7 @@ function NewReservationDialog({ defaultDate, onCreate }: NewReservationDialogPro
 
           <DialogFooter className="mt-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" onClick={resetForm}>
                 {t("pages.reservations.cancel")}
               </Button>
             </DialogClose>
@@ -344,19 +359,30 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const tableOptions = useTableOptions()
-  const [customerName, setCustomerName] = useState("")
-  const [customerPhone, setCustomerPhone] = useState("")
-  const [customerEmail, setCustomerEmail] = useState("")
-  const [tableId, setTableId] = useState(tableOptions[0]?.id ?? "")
-  const [partySize, setPartySize] = useState("2")
+  const [draft, setDraft, clearDraft] = usePersistedFormState("walkin-form", {
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+    tableId: tableOptions[0]?.id ?? "",
+    partySize: "2",
+  })
+  const { customerName, customerPhone, customerEmail, tableId, partySize } = draft
+  const setCustomerName = (v: string) => setDraft((d) => ({ ...d, customerName: v }))
+  const setCustomerPhone = (v: string) => setDraft((d) => ({ ...d, customerPhone: v }))
+  const setCustomerEmail = (v: string) => setDraft((d) => ({ ...d, customerEmail: v }))
+  const setTableId = (v: string) => setDraft((d) => ({ ...d, tableId: v }))
+  const setPartySize = (v: string) => setDraft((d) => ({ ...d, partySize: v }))
   const [error, setError] = useState<string | null>(null)
 
   function resetForm() {
-    setCustomerName("")
-    setCustomerPhone("")
-    setCustomerEmail("")
-    setTableId(tableOptions[0]?.id ?? "")
-    setPartySize("2")
+    setDraft({
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      tableId: tableOptions[0]?.id ?? "",
+      partySize: "2",
+    })
+    clearDraft()
     setError(null)
   }
 
@@ -395,7 +421,6 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next) resetForm()
       }}
     >
       <DialogTrigger asChild>
@@ -425,11 +450,11 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="walkin-phone">{t("pages.reservations.walkInDialog.phoneOptional")}</Label>
-            <Input
+            <PhoneInput
               id="walkin-phone"
-              placeholder="+1 555 0100"
+              placeholder="555 123 4567"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(value) => setCustomerPhone(value ?? "")}
             />
           </div>
 
@@ -478,7 +503,7 @@ function WalkInDialog({ onCreate }: WalkInDialogProps) {
 
           <DialogFooter className="mt-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" onClick={resetForm}>
                 {t("pages.reservations.cancel")}
               </Button>
             </DialogClose>
