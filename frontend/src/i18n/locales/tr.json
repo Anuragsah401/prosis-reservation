@@ -1,0 +1,157 @@
+{
+  "common": {
+    "appName": "Prosisit Table",
+    "appNameShort": "Prosisit"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "tables": "Masalar",
+    "floorPlan": "Kat Planı",
+    "reservations": "Rezervasyonlar",
+    "customers": "Müşteriler",
+    "analytics": "Analitik",
+    "settings": "Ayarlar"
+  },
+  "header": {
+    "signIn": "Giriş yap",
+    "getStarted": "Hemen başla",
+    "signUp": "Kaydol"
+  },
+  "dashboardHeader": {
+    "myAccount": "Hesabım",
+    "profile": "Profil",
+    "settings": "Ayarlar",
+    "logout": "Çıkış yap"
+  },
+  "landing": {
+    "landingNav": {
+      "features": "Özellikler",
+      "howItWorks": "Nasıl çalışır",
+      "pricing": "Fiyatlandırma",
+      "reviews": "Yorumlar"
+    },
+    "badge": "Hepsi bir arada rezervasyon platformu",
+    "heroTitle": "Rezervasyondan son masanın kapanışına kadar daha akıcı bir hizmet sunun.",
+    "heroSubtitle": "Prosisit Table, restoranlara şık bir kat planı, gerçek zamanlı rezervasyon takvimi ve müşteri CRM'i sunar — böylece ekibiniz kimin geldiğini ve nerede oturduğunu her zaman bilir.",
+    "heroCtaPrimary": "Ücretsiz başla",
+    "heroCtaSecondary": "Nasıl çalıştığını gör",
+    "demo": {
+      "url": "app.prosisittable.com/reservations",
+      "tonightsCovers": "Bu akşamki kişi sayısı",
+      "reservations": "Rezervasyonlar",
+      "tablesOccupied": "Dolu masalar"
+    },
+    "trust": {
+      "title": "Bağımsız restoranlar ve büyüyen zincirler tarafından tercih ediliyor"
+    },
+    "featuresSection": {
+      "title": "Ön büro ekibinizin ihtiyacı olan her şey",
+      "subtitle": "Kat planınızı tasarlamak, rezervasyonları yönetmek ve müşterilerinizi anlamak için tek platform.",
+      "items": [
+        {
+          "title": "Görsel kat planı oluşturucu",
+          "description": "Masaları, şekilleri ve birden fazla katı sürükleyip bırakarak gerçek restoran düzeninizi dakikalar içinde yansıtın."
+        },
+        {
+          "title": "Akıllı rezervasyon takvimi",
+          "description": "Diyagram, Gün, Hafta ve Zaman Çizelgesi görünümleri tüm rezervasyonları, masaları ve grup büyüklüklerini mükemmel şekilde senkronize eder."
+        },
+        {
+          "title": "Müşteri ilişkileri merkezi",
+          "description": "Her misafir için ziyaret geçmişini, etiketleri ve durumu takip edin, ekibiniz kişisel bir dokunuş sunabilsin."
+        },
+        {
+          "title": "Uygulanabilir analitik",
+          "description": "Yoğun saatleri, gelmeme eğilimlerini ve masa kullanım oranlarını yerleşik raporlamayla bir bakışta görün."
+        }
+      ]
+    },
+    "howItWorks": {
+      "title": "Üç adımda hazır ve çalışır durumda",
+      "subtitle": "Uzun bir kurulum yok — çoğu restoran aynı gün rezervasyon almaya başlıyor.",
+      "steps": [
+        { "title": "Restoranınızı kurun", "description": "Masalarınızı, katlarınızı ve çalışma saatlerinizi rehberli bir kurulum akışında ekleyin." },
+        { "title": "Rezervasyon sayfanızı paylaşın", "description": "Misafirlere markalı bir genel bağlantı gönderin, böylece saniyeler içinde masa ayırtabilsinler." },
+        { "title": "Her hizmeti yönetin", "description": "Rezervasyonları tek bir ortak panelden onaylayın, oturtun ve takip edin." }
+      ]
+    },
+    "testimonials": {
+      "title": "Restoran ekipleri tarafından seviliyor",
+      "items": [
+        { "quote": "Prosisit Table, gelmeme oranımızı yarıya indirdi ve kat planı görünümü sayesinde görevliler her zaman hangi masanın boş olduğunu biliyor.", "name": "Maria Chen", "role": "Genel Müdür, Lumen Bistro" },
+        { "quote": "Excel tablolarından Prosisit Table'a geçmek, ön büro ekibimize her hafta saatler kazandırdı.", "name": "Daniel Ortiz", "role": "Sahibi, The Copper Fork" },
+        { "quote": "Analitik paneli sonunda bize masa devir hızları ve yoğun geceler hakkında gerçek rakamlar veriyor.", "name": "Priya Nair", "role": "Operasyon Lideri, Nair & Co." }
+      ]
+    },
+    "pricing": {
+      "title": "Basit, şeffaf fiyatlandırma",
+      "subtitle": "Ücretsiz başlayın. Restoranınız büyümeye hazır olduğunda yükseltin.",
+      "mostPopular": "En popüler",
+      "plans": [
+        {
+          "name": "Başlangıç",
+          "price": "0 ₺",
+          "period": "/ay",
+          "description": "Online rezervasyonlara yeni başlayan restoranlar için.",
+          "features": ["1 restoran", "10 masaya kadar", "Genel rezervasyon sayfası", "E-posta desteği"],
+          "cta": "Ücretsiz başla"
+        },
+        {
+          "name": "Büyüme",
+          "price": "999 ₺",
+          "period": "/ay",
+          "description": "Tam ön büro araç setine ihtiyaç duyan yoğun restoranlar için.",
+          "features": ["Sınırsız masa ve kat", "Rezervasyon takvimi ve analitik", "Müşteri CRM'i ve etiketler", "Öncelikli destek"],
+          "cta": "Hemen başla"
+        },
+        {
+          "name": "Çoklu şube",
+          "price": "Özel",
+          "period": "",
+          "description": "Birden fazla şubeyi aynı anda yöneten restoran gruplarına yönelik.",
+          "features": ["Büyüme paketindeki her şey", "Çoklu restoran yönetimi", "Role dayalı erişim", "Özel katılım desteği"],
+          "cta": "Satışla iletişime geç"
+        }
+      ]
+    },
+    "ctaBanner": {
+      "title": "Hizmetinizi kolaylaştırmaya hazır mısınız?",
+      "subtitle": "Masaları, rezervasyonları ve misafirleri tek bir yerden yönetmek için Prosisit Table kullanan restoranlara katılın.",
+      "button": "Ücretsiz başla"
+    },
+    "footer": {
+      "rights": "Tüm hakları saklıdır."
+    }
+  },
+  "auth": {
+    "login": {
+      "welcomeBack": "Tekrar hoş geldiniz",
+      "subtitle": "Restoranınızın rezervasyonlarını yönetmek için giriş yapın.",
+      "email": "E-posta",
+      "password": "Şifre",
+      "forgotPassword": "Şifrenizi mi unuttunuz?",
+      "signIn": "Giriş yap",
+      "noAccount": "Hesabınız yok mu?",
+      "signUp": "Kaydol",
+      "backHome": "← Ana sayfaya dön",
+      "errorRequired": "Lütfen e-posta ve şifrenizi girin.",
+      "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+    },
+    "signup": {
+      "title": "Hesabınızı oluşturun",
+      "subtitle": "Restoranınızı Prosisit Table üzerinde kurun.",
+      "haveAccount": "Zaten bir hesabınız var mı?",
+      "signIn": "Giriş yap",
+      "backHome": "← Ana sayfaya dön",
+      "back": "Geri",
+      "continue": "Devam et",
+      "createAccount": "Hesap oluştur"
+    }
+  },
+  "settings": {
+    "language": {
+      "label": "Dil",
+      "description": "Uygulama genelinde kullanılacak dili seçin."
+    }
+  }
+}

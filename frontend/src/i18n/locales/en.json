@@ -1,0 +1,157 @@
+{
+  "common": {
+    "appName": "Prosisit Table",
+    "appNameShort": "Prosisit"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "tables": "Tables",
+    "floorPlan": "Floor Plan",
+    "reservations": "Reservations",
+    "customers": "Customers",
+    "analytics": "Analytics",
+    "settings": "Settings"
+  },
+  "header": {
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "signUp": "Sign up"
+  },
+  "dashboardHeader": {
+    "myAccount": "My Account",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "landing": {
+    "landingNav": {
+      "features": "Features",
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "reviews": "Reviews"
+    },
+    "badge": "The all-in-one reservations platform",
+    "heroTitle": "Run a smoother service, from booking to the last table turned.",
+    "heroSubtitle": "Prosisit Table gives restaurants a beautiful floor plan, a real-time reservations calendar, and a customer CRM — so your team always knows who's coming and where they're sitting.",
+    "heroCtaPrimary": "Get started free",
+    "heroCtaSecondary": "See how it works",
+    "demo": {
+      "url": "app.prosisittable.com/reservations",
+      "tonightsCovers": "Tonight's covers",
+      "reservations": "Reservations",
+      "tablesOccupied": "Tables occupied"
+    },
+    "trust": {
+      "title": "Trusted by independent restaurants and growing groups"
+    },
+    "featuresSection": {
+      "title": "Everything your front-of-house team needs",
+      "subtitle": "One platform to design your floor plan, manage bookings, and understand your guests.",
+      "items": [
+        {
+          "title": "Visual floor plan builder",
+          "description": "Drag-and-drop tables, shapes, and multiple floors to mirror your real dining room layout in minutes."
+        },
+        {
+          "title": "Smart reservations calendar",
+          "description": "Diagram, Day, Week, and Timeline views keep every booking, table, and party size in perfect sync."
+        },
+        {
+          "title": "Customer relationship hub",
+          "description": "Track visit history, tags, and status for every guest so your team can deliver a personal touch."
+        },
+        {
+          "title": "Actionable analytics",
+          "description": "Spot peak hours, no-show trends, and table utilization at a glance with built-in reporting."
+        }
+      ]
+    },
+    "howItWorks": {
+      "title": "Up and running in three steps",
+      "subtitle": "No lengthy onboarding — most restaurants are taking bookings the same day.",
+      "steps": [
+        { "title": "Set up your restaurant", "description": "Add your tables, floors, and opening hours in a guided setup flow." },
+        { "title": "Share your booking page", "description": "Send guests a branded public link so they can reserve a table in seconds." },
+        { "title": "Manage every service", "description": "Confirm, seat, and follow up on reservations from one collaborative dashboard." }
+      ]
+    },
+    "testimonials": {
+      "title": "Loved by restaurant teams",
+      "items": [
+        { "quote": "Prosisit Table cut our no-show rate in half and the floor plan view means hosts always know what's free.", "name": "Maria Chen", "role": "GM, Lumen Bistro" },
+        { "quote": "Switching from spreadsheets to Prosisit Table saved our front-of-house team hours every single week.", "name": "Daniel Ortiz", "role": "Owner, The Copper Fork" },
+        { "quote": "The analytics dashboard finally gives us real numbers on turn times and busy nights.", "name": "Priya Nair", "role": "Operations Lead, Nair & Co." }
+      ]
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Start free. Upgrade when your restaurant is ready to grow.",
+      "mostPopular": "Most popular",
+      "plans": [
+        {
+          "name": "Starter",
+          "price": "$0",
+          "period": "/mo",
+          "description": "For new restaurants getting started with online bookings.",
+          "features": ["1 restaurant", "Up to 10 tables", "Public booking page", "Email support"],
+          "cta": "Start for free"
+        },
+        {
+          "name": "Growth",
+          "price": "$49",
+          "period": "/mo",
+          "description": "For busy restaurants that need the full front-of-house toolkit.",
+          "features": ["Unlimited tables & floors", "Reservations calendar & analytics", "Customer CRM & tags", "Priority support"],
+          "cta": "Get started"
+        },
+        {
+          "name": "Multi-location",
+          "price": "Custom",
+          "period": "",
+          "description": "For restaurant groups managing several locations at once.",
+          "features": ["Everything in Growth", "Multi-restaurant management", "Role-based access", "Dedicated onboarding"],
+          "cta": "Contact sales"
+        }
+      ]
+    },
+    "ctaBanner": {
+      "title": "Ready to streamline your service?",
+      "subtitle": "Join restaurants using Prosisit Table to manage tables, reservations, and guests — all in one place.",
+      "button": "Get started free"
+    },
+    "footer": {
+      "rights": "All rights reserved."
+    }
+  },
+  "auth": {
+    "login": {
+      "welcomeBack": "Welcome back",
+      "subtitle": "Sign in to manage your restaurant's reservations.",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "backHome": "← Back to home",
+      "errorRequired": "Please enter your email and password.",
+      "errorGeneric": "Something went wrong. Please try again."
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Set up your restaurant on Prosisit Table.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "backHome": "← Back to home",
+      "back": "Back",
+      "continue": "Continue",
+      "createAccount": "Create account"
+    }
+  },
+  "settings": {
+    "language": {
+      "label": "Language",
+      "description": "Choose the language used across the app."
+    }
+  }
+}

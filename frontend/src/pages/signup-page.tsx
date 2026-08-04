@@ -22,6 +22,7 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 import { authClient, AuthError } from "@/features/auth/auth-client"
 
@@ -140,7 +141,8 @@ export function SignupPage() {
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
       <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
 
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-1">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 

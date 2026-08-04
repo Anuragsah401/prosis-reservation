@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,6 +22,7 @@ import {
   CardFooter,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { supportedLanguages } from "@/i18n"
 import {
   Store,
   CalendarClock,
@@ -51,6 +53,8 @@ const sections: { id: SettingsSection; label: string; icon: typeof Store }[] = [
 ]
 
 function RestaurantProfileSection() {
+  const { t, i18n } = useTranslation()
+
   return (
     <Card>
       <CardHeader>
@@ -87,9 +91,27 @@ function RestaurantProfileSection() {
 
         <Separator />
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="timezone">Timezone</Label>
-          <Input id="timezone" placeholder="UTC" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="timezone">Timezone</Label>
+            <Input id="timezone" placeholder="UTC" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="language">{t("settings.language.label")}</Label>
+            <Select value={i18n.language} onValueChange={(value) => i18n.changeLanguage(value)}>
+              <SelectTrigger id="language" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {supportedLanguages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.nativeLabel}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">{t("settings.language.description")}</p>
+          </div>
         </div>
       </CardContent>
       <CardFooter className="justify-end gap-2">

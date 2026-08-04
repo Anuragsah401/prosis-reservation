@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -14,6 +15,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SidebarNav } from "@/components/layout/sidebar-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { NotificationBell } from "@/features/notifications/notification-bell"
 import { authClient } from "@/features/auth/auth-client"
 
@@ -25,6 +27,7 @@ function getInitials(name?: string | null) {
 }
 
 export function DashboardHeader() {
+  const { t } = useTranslation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
   const user = authClient.getUser()
@@ -45,7 +48,7 @@ export function DashboardHeader() {
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
           <SheetHeader className="border-b">
-            <SheetTitle>Prosisit Table</SheetTitle>
+            <SheetTitle>{t("common.appName")}</SheetTitle>
           </SheetHeader>
           <div className="py-2">
             <SidebarNav onNavigate={() => setMobileOpen(false)} />
@@ -53,9 +56,10 @@ export function DashboardHeader() {
         </SheetContent>
       </Sheet>
 
-      <span className="font-semibold md:hidden">Prosisit Table</span>
+      <span className="font-semibold md:hidden">{t("common.appName")}</span>
 
       <div className="ml-auto flex items-center gap-2">
+        <LanguageSwitcher />
         <ThemeToggle />
         <NotificationBell />
         <DropdownMenu>
@@ -67,13 +71,13 @@ export function DashboardHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{user?.name ?? "My Account"}</DropdownMenuLabel>
+            <DropdownMenuLabel>{user?.name ?? t("dashboardHeader.myAccount")}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>{t("dashboardHeader.profile")}</DropdownMenuItem>
+            <DropdownMenuItem>{t("dashboardHeader.settings")}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-              Log out
+              {t("dashboardHeader.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

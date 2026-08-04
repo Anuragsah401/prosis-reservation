@@ -1,0 +1,157 @@
+{
+  "common": {
+    "appName": "Prosisit Table",
+    "appNameShort": "Prosisit"
+  },
+  "nav": {
+    "dashboard": "Oversigt",
+    "tables": "Borde",
+    "floorPlan": "Pladstegning",
+    "reservations": "Reservationer",
+    "customers": "Kunder",
+    "analytics": "Analyse",
+    "settings": "Indstillinger"
+  },
+  "header": {
+    "signIn": "Log ind",
+    "getStarted": "Kom i gang",
+    "signUp": "Opret konto"
+  },
+  "dashboardHeader": {
+    "myAccount": "Min konto",
+    "profile": "Profil",
+    "settings": "Indstillinger",
+    "logout": "Log ud"
+  },
+  "landing": {
+    "landingNav": {
+      "features": "Funktioner",
+      "howItWorks": "Sådan fungerer det",
+      "pricing": "Priser",
+      "reviews": "Anmeldelser"
+    },
+    "badge": "Den samlede platform til reservationer",
+    "heroTitle": "Kør en mere gnidningsfri service, fra booking til sidste bord er tømt.",
+    "heroSubtitle": "Prosisit Table giver restauranter en overskuelig pladstegning, en reservationskalender i realtid og et kunde-CRM — så dit team altid ved, hvem der kommer, og hvor de sidder.",
+    "heroCtaPrimary": "Kom gratis i gang",
+    "heroCtaSecondary": "Se hvordan det fungerer",
+    "demo": {
+      "url": "app.prosisittable.com/reservations",
+      "tonightsCovers": "Aftenens gæster",
+      "reservations": "Reservationer",
+      "tablesOccupied": "Optagne borde"
+    },
+    "trust": {
+      "title": "Betroet af uafhængige restauranter og voksende kæder"
+    },
+    "featuresSection": {
+      "title": "Alt dit personale har brug for",
+      "subtitle": "Én platform til at designe din pladstegning, administrere bookinger og forstå dine gæster.",
+      "items": [
+        {
+          "title": "Visuel pladstegning",
+          "description": "Træk og slip borde, former og flere etager, så det afspejler dit rigtige restaurantlokale på få minutter."
+        },
+        {
+          "title": "Smart reservationskalender",
+          "description": "Diagram-, dag-, uge- og tidslinjevisninger holder alle bookinger, borde og selskabsstørrelser perfekt synkroniseret."
+        },
+        {
+          "title": "Kunderelationscenter",
+          "description": "Følg besøgshistorik, tags og status for hver gæst, så dit team altid kan yde en personlig service."
+        },
+        {
+          "title": "Handlingsorienteret analyse",
+          "description": "Se travle timer, udeblivelser og bordudnyttelse på et øjeblik med indbygget rapportering."
+        }
+      ]
+    },
+    "howItWorks": {
+      "title": "Klar til brug på tre trin",
+      "subtitle": "Ingen lang onboarding — de fleste restauranter tager imod bookinger samme dag.",
+      "steps": [
+        { "title": "Opsæt din restaurant", "description": "Tilføj dine borde, etager og åbningstider i en guidet opsætning." },
+        { "title": "Del din bookingside", "description": "Send gæster et brandet offentligt link, så de kan reservere et bord på få sekunder." },
+        { "title": "Håndter hver service", "description": "Bekræft, sæt gæster og følg op på reservationer fra ét fælles dashboard." }
+      ]
+    },
+    "testimonials": {
+      "title": "Elsket af restaurantteams",
+      "items": [
+        { "quote": "Prosisit Table halverede vores udeblivelsesrate, og pladstegningen betyder, at værterne altid ved, hvad der er ledigt.", "name": "Maria Chen", "role": "Direktør, Lumen Bistro" },
+        { "quote": "Skiftet fra regneark til Prosisit Table sparede vores personale mange timer hver uge.", "name": "Daniel Ortiz", "role": "Ejer, The Copper Fork" },
+        { "quote": "Analyse-dashboardet giver os endelig rigtige tal på bordvendinger og travle aftener.", "name": "Priya Nair", "role": "Driftschef, Nair & Co." }
+      ]
+    },
+    "pricing": {
+      "title": "Enkle, gennemsigtige priser",
+      "subtitle": "Start gratis. Opgrader, når din restaurant er klar til at vokse.",
+      "mostPopular": "Mest populær",
+      "plans": [
+        {
+          "name": "Starter",
+          "price": "0 kr",
+          "period": "/md",
+          "description": "For nye restauranter, der begynder med online booking.",
+          "features": ["1 restaurant", "Op til 10 borde", "Offentlig bookingside", "E-mail support"],
+          "cta": "Start gratis"
+        },
+        {
+          "name": "Growth",
+          "price": "349 kr",
+          "period": "/md",
+          "description": "For travle restauranter, der har brug for hele værktøjskassen.",
+          "features": ["Ubegrænsede borde & etager", "Reservationskalender & analyse", "Kunde-CRM & tags", "Prioriteret support"],
+          "cta": "Kom i gang"
+        },
+        {
+          "name": "Flere lokationer",
+          "price": "Individuel",
+          "period": "",
+          "description": "For restaurantkæder, der administrerer flere lokationer samtidig.",
+          "features": ["Alt i Growth", "Administration af flere restauranter", "Rollebaseret adgang", "Dedikeret onboarding"],
+          "cta": "Kontakt salg"
+        }
+      ]
+    },
+    "ctaBanner": {
+      "title": "Klar til at strømline din service?",
+      "subtitle": "Deltag sammen med restauranter, der bruger Prosisit Table til at administrere borde, reservationer og gæster — alt sammen ét sted.",
+      "button": "Kom gratis i gang"
+    },
+    "footer": {
+      "rights": "Alle rettigheder forbeholdes."
+    }
+  },
+  "auth": {
+    "login": {
+      "welcomeBack": "Velkommen tilbage",
+      "subtitle": "Log ind for at administrere din restaurants reservationer.",
+      "email": "E-mail",
+      "password": "Adgangskode",
+      "forgotPassword": "Glemt adgangskode?",
+      "signIn": "Log ind",
+      "noAccount": "Har du ikke en konto?",
+      "signUp": "Opret konto",
+      "backHome": "← Tilbage til forsiden",
+      "errorRequired": "Indtast venligst din e-mail og adgangskode.",
+      "errorGeneric": "Der gik noget galt. Prøv venligst igen."
+    },
+    "signup": {
+      "title": "Opret din konto",
+      "subtitle": "Opsæt din restaurant på Prosisit Table.",
+      "haveAccount": "Har du allerede en konto?",
+      "signIn": "Log ind",
+      "backHome": "← Tilbage til forsiden",
+      "back": "Tilbage",
+      "continue": "Fortsæt",
+      "createAccount": "Opret konto"
+    }
+  },
+  "settings": {
+    "language": {
+      "label": "Sprog",
+      "description": "Vælg det sprog, der bruges i hele appen."
+    }
+  }
+}

@@ -1,14 +1,17 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { authClient, AuthError } from "@/features/auth/auth-client"
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -21,7 +24,7 @@ export function LoginPage() {
     setError(null)
 
     if (!email.trim() || !password) {
-      setError("Please enter your email and password.")
+      setError(t("auth.login.errorRequired"))
       return
     }
 
@@ -32,7 +35,7 @@ export function LoginPage() {
         navigate("/reservations")
       })
       .catch((err: unknown) => {
-        setError(err instanceof AuthError ? err.message : "Something went wrong. Please try again.")
+        setError(err instanceof AuthError ? err.message : t("auth.login.errorGeneric"))
       })
       .finally(() => {
         setLoading(false)
@@ -43,7 +46,8 @@ export function LoginPage() {
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
       <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
 
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-1">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 
@@ -53,22 +57,20 @@ export function LoginPage() {
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
               PT
             </span>
-            <span className="text-lg font-semibold tracking-tight">Prosisit Table</span>
+            <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>
         </div>
 
         <Card>
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-col gap-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight">Welcome back</h1>
-              <p className="text-muted-foreground text-sm">
-                Sign in to manage your restaurant&apos;s reservations.
-              </p>
+              <h1 className="text-xl font-semibold tracking-tight">{t("auth.login.welcomeBack")}</h1>
+              <p className="text-muted-foreground text-sm">{t("auth.login.subtitle")}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.login.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -81,9 +83,9 @@ export function LoginPage() {
 
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("auth.login.password")}</Label>
                   <a href="#" className="text-muted-foreground text-xs hover:underline">
-                    Forgot password?
+                    {t("auth.login.forgotPassword")}
                   </a>
                 </div>
                 <div className="relative">
@@ -111,14 +113,14 @@ export function LoginPage() {
 
               <Button type="submit" className="mt-1 w-full" disabled={loading}>
                 {loading && <Loader2 className="size-4 animate-spin" />}
-                Sign in
+                {t("auth.login.signIn")}
               </Button>
             </form>
 
             <p className="text-muted-foreground text-center text-sm">
-              Don&apos;t have an account?{" "}
+              {t("auth.login.noAccount")}{" "}
               <Link to="/signup" className="text-foreground font-medium hover:underline">
-                Sign up
+                {t("auth.login.signUp")}
               </Link>
             </p>
           </CardContent>
@@ -126,7 +128,7 @@ export function LoginPage() {
 
         <p className="text-muted-foreground mt-6 text-center text-xs">
           <Link to="/" className="hover:underline">
-            ← Back to home
+            {t("auth.login.backHome")}
           </Link>
         </p>
       </div>

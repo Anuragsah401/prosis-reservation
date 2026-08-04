@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { navItems } from "@/components/layout/nav-items"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -9,9 +10,11 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
+  const { t } = useTranslation()
   return (
     <nav className="flex flex-col gap-1 px-2">
       {navItems.map((item) => {
+        const label = t(item.titleKey)
         const link = (
           <NavLink
             key={item.to}
@@ -28,7 +31,7 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
             }
           >
             <item.icon className="size-4 shrink-0" />
-            {!collapsed && item.title}
+            {!collapsed && label}
           </NavLink>
         )
 
@@ -37,7 +40,7 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
         return (
           <Tooltip key={item.to} delayDuration={200}>
             <TooltipTrigger asChild>{link}</TooltipTrigger>
-            <TooltipContent side="right">{item.title}</TooltipContent>
+            <TooltipContent side="right">{label}</TooltipContent>
           </Tooltip>
         )
       })}
