@@ -138,12 +138,12 @@ export function LandingPage() {
               Reviews
             </a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+            <Button variant="ghost" size="sm" asChild className="px-2 sm:px-3">
               <Link to="/login">Sign in</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="px-2 sm:px-3">
               <Link to="/signup">
                 Get started
                 <ArrowRight className="size-4" />
