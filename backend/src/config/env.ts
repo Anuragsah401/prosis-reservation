@@ -15,6 +15,16 @@ const envSchema = z.object({
     .default("http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_EXPIRES_IN: z.string().default("7d"),
+  // Base URL of the frontend app, used to build links embedded in emails
+  // (e.g. password reset links).
+  APP_URL: z.string().default("http://localhost:5173"),
+  // Resend (https://resend.com) is used to send transactional emails
+  // (password reset, etc.). RESEND_API_KEY is optional in development —
+  // when it's missing, emails are logged to the console instead of sent,
+  // so local dev works without a real account.
+  RESEND_API_KEY: z.string().optional(),
+  // Must be a verified sender on your Resend domain/account in production.
+  EMAIL_FROM: z.string().default("Prosisit Table <onboarding@resend.dev>"),
 })
 
 const parsed = envSchema.safeParse(process.env)

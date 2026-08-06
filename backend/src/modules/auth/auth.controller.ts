@@ -42,4 +42,25 @@ export const authController = {
       next(err)
     }
   },
+
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.requestPasswordReset(req.body)
+      res.status(200).json(result)
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.resetPassword(req.body)
+      res.status(200).json(result)
+    } catch (err) {
+      if (err instanceof Error && err.message === "Invalid or expired reset token") {
+        return res.status(400).json({ error: err.message })
+      }
+      next(err)
+    }
+  },
 }

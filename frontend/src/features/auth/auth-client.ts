@@ -74,6 +74,27 @@ export interface LoginPayload {
   password: string
 }
 
+export interface ForgotPasswordPayload {
+  email: string
+}
+
+export interface ResetPasswordPayload {
+  token: string
+  password: string
+}
+
+interface MessageResult {
+  message: string
+}
+
+async function handleMessageResponse(res: Response): Promise<MessageResult> {
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new AuthError(data.error ?? "Something went wrong. Please try again.", res.status, data.details)
+  }
+  return data as MessageResult
+}
+
 /**
  * Thin client for the backend auth module (`/api/auth/*`). Persists the
  * issued JWT + user profile to localStorage so the session survives a
@@ -93,6 +114,16 @@ export const authClient = {
     const result = await handleAuthResponse(res)
     persistSession(result)
     return result
+  },
+
+  async forgotPassword(payload: ForgotPasswordPayload): Promise<MessageResult> {
+    const res = await postJson("/auth/forgot-password", payload)
+    return handleMessageResponse(res)
+  },
+
+  async resetPassword(payload: ResetPasswordPayload): Promise<MessageResult> {
+    const res = await postJson("/auth/reset-password", payload)
+    return handleMessageResponse(res)
   },
 
   logout() {

@@ -86,9 +86,9 @@ export function LoginPage() {
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">{t("auth.login.password")}</Label>
-                  <a href="#" className="text-muted-foreground text-xs hover:underline">
+                  <Link to="/forgot-password" className="text-muted-foreground text-xs hover:underline">
                     {t("auth.login.forgotPassword")}
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Input

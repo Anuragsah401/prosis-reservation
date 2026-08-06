@@ -1,11 +1,18 @@
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 import jwt from "jsonwebtoken"
 import { prisma } from "@/db/client"
 import { env } from "@/config/env"
 import { slugify } from "@/utils/slugify"
-import type { RegisterInput, LoginInput } from "@/modules/auth/auth.validation"
+import { mailer } from "@/utils/mailer"
+import type { RegisterInput, LoginInput, ForgotPasswordInput, ResetPasswordInput } from "@/modules/auth/auth.validation"
 
 const SALT_ROUNDS = 12
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000 // 1 hour
+
+function hashResetToken(token: string) {
+  return crypto.createHash("sha256").update(token).digest("hex")
+}
 
 export type JwtPayload = {
   sub: string
@@ -140,5 +147,50 @@ export const authService = {
   async me(userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } })
     return user ? toSafeUser(user) : null
+  },
+
+  /**
+   * Issues a password reset token for the given email, if a matching active
+   * user exists, and emails the reset link via the configured mail provider
+   * (Resend). Always resolves successfully (no error thrown) regardless of
+   * whether the email is registered, so the API response never leaks
+   * account existence — the caller should show a generic "check your email"
+   * message either way.
+   */
+  async requestPasswordReset(data: ForgotPasswordInput) {
+    const user = await prisma.user.findUnique({ where: { email: data.email } })
+
+    if (user && user.isActive) {
+      const rawToken = crypto.randomBytes(32).toString("hex")
+      const tokenHash = hashResetToken(rawToken)
+      const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS)
+
+      await prisma.passwordResetToken.create({
+        data: { userId: user.id, tokenHash, expiresAt },
+      })
+
+      const resetUrl = `${env.APP_URL}/reset-password?token=${rawToken}`
+      await mailer.sendPasswordResetEmail(user.email, resetUrl)
+    }
+
+    return { message: "If an account exists for that email, a reset link has been sent." }
+  },
+
+  async resetPassword(data: ResetPasswordInput) {
+    const tokenHash = hashResetToken(data.token)
+    const resetToken = await prisma.passwordResetToken.findUnique({ where: { tokenHash } })
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      throw new Error("Invalid or expired reset token")
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS)
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: resetToken.userId }, data: { passwordHash } }),
+      prisma.passwordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
+    ])
+
+    return { message: "Password has been reset successfully." }
   },
 }

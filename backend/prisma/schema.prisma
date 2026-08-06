@@ -61,12 +61,27 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  restaurant          Restaurant?   @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
-  role                Role?         @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  createdReservations Reservation[] @relation("ReservationCreatedBy")
+  restaurant           Restaurant?          @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  role                 Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  createdReservations  Reservation[]        @relation("ReservationCreatedBy")
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([restaurantId])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Table {

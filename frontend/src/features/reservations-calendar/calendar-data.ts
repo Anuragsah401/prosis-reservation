@@ -29,6 +29,8 @@ export interface CalendarReservation {
   durationMinutes: number
   status: ReservationStatus
   notes?: string
+  /** Preferred food categories/cuisines requested by the customer, if any. */
+  foodCategories?: string[]
 }
 
 /**

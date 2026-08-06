@@ -13,6 +13,8 @@ import { PublicBookingPage } from '@/pages/public-booking-page'
 import { LandingPage } from '@/pages/landing-page'
 import { LoginPage } from '@/pages/login-page'
 import { SignupPage } from '@/pages/signup-page'
+import { ForgotPasswordPage } from '@/pages/forgot-password-page'
+import { ResetPasswordPage } from '@/pages/reset-password-page'
 
 function App() {
   return (
@@ -31,6 +33,22 @@ function App() {
         element={
           <RedirectIfAuthenticated>
             <SignupPage />
+          </RedirectIfAuthenticated>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <RedirectIfAuthenticated>
+            <ForgotPasswordPage />
+          </RedirectIfAuthenticated>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <RedirectIfAuthenticated>
+            <ResetPasswordPage />
           </RedirectIfAuthenticated>
         }
       />
