@@ -171,6 +171,26 @@
       "errorGeneric": "Der gik noget galt. Prøv venligst igen."
     }
   },
+  "reservationConfirm": {
+    "loading": "Indlæser din reservation…",
+    "title": "Hej {{name}}, bekræft din reservation",
+    "subtitle": "{{restaurant}} har reserveret en plads til dig.",
+    "dateTime": "Dato & tid",
+    "partySize": "Antal gæster",
+    "chooseTable": "Vælg dit bord (valgfrit)",
+    "chooseTableHint": "Vælg et foretrukket bord fra restaurantens plantegning, eller spring over og lad restauranten vælge.",
+    "seats": "pladser",
+    "noTableSelected": "Intet bord valgt — restauranten vælger et til dig",
+    "legendAvailable": "Ledig",
+    "legendUnavailable": "Optaget",
+    "legendSelected": "Dit valg",
+    "confirm": "Bekræft reservation",
+    "confirmedTitle": "Reservation bekræftet!",
+    "confirmedSubtitle": "Vi ses hos {{restaurant}}. Vi glæder os til at byde dig velkommen.",
+    "errorTitle": "Kunne ikke indlæse reservationen",
+    "errorMissingToken": "Dette bekræftelseslink er ugyldigt eller mangler et token.",
+    "errorGeneric": "Der gik noget galt. Prøv venligst igen."
+  },
   "settings": {
     "language": {
       "label": "Sprog",
@@ -238,6 +258,9 @@
       "walkIn": "Walk-in",
       "walkInShort": "Walk-in",
       "searchPlaceholder": "Søg efter reservationer...",
+      "loading": "Indlæser reservationer...",
+      "loadError": "Kunne ikke indlæse reservationer. Prøv igen.",
+      "retry": "Prøv igen",
       "resultCount_one": "{{count}} reservation",
       "resultCount_other": "{{count}} reservationer",
       "scrollForMore": "Rul ned for at se flere reservationer",

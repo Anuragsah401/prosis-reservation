@@ -5,7 +5,18 @@ import {
   updateReservationSchema,
   updateReservationStatusSchema,
   checkAvailabilitySchema,
+  confirmReservationSchema,
 } from "@/modules/reservation/reservation.validation"
+
+// Errors from the public confirmation flow that are safe to expose to guests.
+const CONFIRMATION_ERRORS = new Set([
+  "Invalid confirmation link",
+  "This reservation has been cancelled",
+  "This reservation is already confirmed",
+  "Selected table not found",
+  "Selected table is too small for your party",
+  "Table is not available at the requested time",
+])
 
 export const reservationController = {
   async list(req: Request, res: Response, next: NextFunction) {
@@ -116,6 +127,40 @@ export const reservationController = {
     } catch (err) {
       if (err instanceof Error && err.message === "Reservation not found") {
         return res.status(404).json({ error: err.message })
+      }
+      next(err)
+    }
+  },
+
+  /** Public: fetch confirmation details for a guest-facing confirm page. */
+  async getConfirmationDetails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const token = String(req.query.token ?? "")
+      if (!token) {
+        return res.status(400).json({ error: "token is required" })
+      }
+      const result = await reservationService.getByConfirmationToken(token)
+      res.status(200).json(result)
+    } catch (err) {
+      if (err instanceof Error && CONFIRMATION_ERRORS.has(err.message)) {
+        return res.status(400).json({ error: err.message })
+      }
+      next(err)
+    }
+  },
+
+  /** Public: confirm a reservation (optionally choosing a table). */
+  async confirm(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = confirmReservationSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
+      }
+      const result = await reservationService.confirmByToken(parsed.data.token, parsed.data.tableId)
+      res.status(200).json(result)
+    } catch (err) {
+      if (err instanceof Error && CONFIRMATION_ERRORS.has(err.message)) {
+        return res.status(400).json({ error: err.message })
       }
       next(err)
     }

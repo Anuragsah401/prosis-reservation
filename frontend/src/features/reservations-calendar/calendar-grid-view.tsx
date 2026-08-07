@@ -7,7 +7,7 @@ import type { EventDropArg, EventClickArg } from "@fullcalendar/core"
 import type { EventResizeDoneArg } from "@fullcalendar/interaction"
 
 import {
-  calendarTables,
+  getCalendarTables,
   statusColors,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
@@ -21,8 +21,6 @@ export interface CalendarGridViewProps {
   onReservationChange: (id: string, changes: { start?: string; durationMinutes?: number }) => void
 }
 
-const tableNameById = new Map(calendarTables.map((t) => [t.id, t.name]))
-
 export function CalendarGridView({
   view,
   reservations,
@@ -31,6 +29,11 @@ export function CalendarGridView({
   onReservationClick,
   onReservationChange,
 }: CalendarGridViewProps) {
+  const tableNameById = useMemo(
+    () => new Map(getCalendarTables().map((t) => [t.id, t.name])),
+    [],
+  )
+
   const events = useMemo(
     () =>
       reservations.map((r) => {
@@ -47,7 +50,7 @@ export function CalendarGridView({
           textColor: colors.text,
         }
       }),
-    [reservations],
+    [reservations, tableNameById],
   )
 
   const handleEventDrop = useCallback(

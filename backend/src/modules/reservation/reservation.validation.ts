@@ -39,3 +39,8 @@ export const checkAvailabilitySchema = z.object({
   reservedFor: z.coerce.date({ error: "reservedFor must be a valid date" }),
   partySize: z.coerce.number().int().positive().optional(),
 })
+
+export const confirmReservationSchema = z.object({
+  token: z.string().trim().min(1, "token is required"),
+  tableId: z.string().min(1).optional(),
+})

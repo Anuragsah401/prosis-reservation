@@ -1,5 +1,6 @@
 import type { FloorPlanTable } from "@/features/floor-plan/floor-plan-data"
 import { API_URL } from "@/lib/config"
+import { apiClient, getCurrentRestaurantId } from "@/lib/api-client"
 
 const STORAGE_KEY = "prosisit:floor-plan:layout"
 
@@ -7,6 +8,40 @@ export type TableLayout = Pick<
   FloorPlanTable,
   "id" | "positionX" | "positionY" | "width" | "height" | "shape" | "rotation" | "floor"
 >
+
+export interface FloorPlanSyncTable {
+  name: string
+  capacity: number
+  location?: string | null
+  floor: string
+  shape: FloorPlanTable["shape"]
+  positionX: number
+  positionY: number
+  width: number
+  height: number
+  rotation: number
+}
+
+/**
+ * Syncs the complete floor plan to the backend (`PUT /api/tables/floor-plan`),
+ * upserting tables by name and pruning removed ones. This is what makes the
+ * plan visible to guests on the public reservation-confirmation page, which
+ * reads tables from the database. Requires an authenticated session with a
+ * restaurantId; resolves to false when unavailable (plan stays local-only).
+ */
+export async function syncFloorPlanToServer(tables: FloorPlanSyncTable[]): Promise<boolean> {
+  const restaurantId = getCurrentRestaurantId()
+  // An empty array is still a valid plan (all tables removed), so it is
+  // synced too — otherwise deletions would never reach the database.
+  if (!restaurantId) return false
+  try {
+    await apiClient.put(`/tables/floor-plan`, { restaurantId, tables })
+    return true
+  } catch (err) {
+    console.error("[floor-plan] Failed to sync floor plan to backend:", err)
+    return false
+  }
+}
 
 /**
  * Persists table layout (position, size, shape, rotation, floor).

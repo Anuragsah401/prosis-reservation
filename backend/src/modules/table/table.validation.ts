@@ -48,3 +48,23 @@ export const saveLayoutSchema = z.object({
   tables: z.array(layoutTableSchema).min(1, "tables must contain at least one entry"),
 })
 
+export const syncFloorPlanSchema = z.object({
+  restaurantId: z.string().min(1, "restaurantId is required"),
+  // An empty array is allowed: it represents a floor plan where every table
+  // was removed, and must be able to prune the remaining rows server-side.
+  tables: z.array(
+    z.object({
+      name: z.string().min(1),
+      capacity: z.coerce.number().int().positive(),
+      location: z.string().nullish(),
+      floor: z.string().min(1),
+      shape: tableShapeEnum,
+      positionX: z.coerce.number(),
+      positionY: z.coerce.number(),
+      width: z.coerce.number().positive(),
+      height: z.coerce.number().positive(),
+      rotation: z.coerce.number(),
+    }),
+  ),
+})
+

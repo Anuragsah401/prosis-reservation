@@ -171,6 +171,26 @@
       "errorGeneric": "Something went wrong. Please try again."
     }
   },
+  "reservationConfirm": {
+    "loading": "Loading your reservation…",
+    "title": "Hi {{name}}, confirm your reservation",
+    "subtitle": "{{restaurant}} has reserved a spot for you.",
+    "dateTime": "Date & time",
+    "partySize": "Party size",
+    "chooseTable": "Choose your table (optional)",
+    "chooseTableHint": "Pick a preferred table from the restaurant's floor plan, or skip and let the restaurant decide.",
+    "seats": "seats",
+    "noTableSelected": "No table selected — the restaurant will choose one for you",
+    "legendAvailable": "Available",
+    "legendUnavailable": "Unavailable",
+    "legendSelected": "Your selection",
+    "confirm": "Confirm reservation",
+    "confirmedTitle": "Reservation confirmed!",
+    "confirmedSubtitle": "See you at {{restaurant}}. We look forward to hosting you.",
+    "errorTitle": "Unable to load reservation",
+    "errorMissingToken": "This confirmation link is invalid or missing a token.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
   "settings": {
     "language": {
       "label": "Language",
@@ -238,6 +258,9 @@
       "walkIn": "Walk in",
       "walkInShort": "Walk in",
       "searchPlaceholder": "Search reservations...",
+      "loading": "Loading reservations...",
+      "loadError": "Could not load reservations. Please try again.",
+      "retry": "Retry",
       "resultCount_one": "{{count}} reservation",
       "resultCount_other": "{{count}} reservations",
       "scrollForMore": "Scroll down to view more reservations",

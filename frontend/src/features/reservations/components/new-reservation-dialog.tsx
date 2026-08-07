@@ -22,6 +22,7 @@ import { usePersistedFormState } from "@/hooks/use-form-persistence"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
 import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
 import { capitalize, toDateInputValue, useTableOptions } from "../reservations-utils"
+import { createReservationOnServer } from "../reservations-api"
 
 interface NewReservationDialogProps {
   defaultDate: Date
@@ -87,7 +88,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     setError(null)
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     if (!customerName.trim() || !customerPhone.trim() || !tableId || !date || !time) {
@@ -109,7 +110,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     // duration to render — the customer simply wasn't asked for an exact one.
     const duration = durationMinutes === "unspecified" ? 90 : Number(durationMinutes)
 
-    onCreate({
+    const localReservation: CalendarReservation = {
       id: `r-${Date.now()}`,
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
@@ -120,7 +121,33 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : 90,
       status: "PENDING",
       foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
+    }
+
+    // Persist to the backend so the customer gets a confirmation email with
+    // a link to confirm (and optionally pick a table from the floor plan).
+    // Best-effort: if the request fails we still add the local row so the
+    // staff member isn't blocked (offline dev, etc.).
+    const saved = await createReservationOnServer({
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      customerEmail: customerEmail.trim() || undefined,
+      partySize: party,
+      reservedFor: start.toISOString(),
+      notes: foodCategories.length > 0 ? `Food preferences: ${foodCategories.join(", ")}` : undefined,
     })
+
+    onCreate(
+      saved
+        ? {
+            ...saved,
+            // The dialog's table pick and food tags aren't sent to the API yet,
+            // so keep the locally captured values.
+            tableId: saved.tableId ?? tableId,
+            durationMinutes: localReservation.durationMinutes,
+            foodCategories: localReservation.foodCategories,
+          }
+        : localReservation,
+    )
 
     resetForm()
     setOpen(false)
@@ -146,7 +173,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
           <DialogDescription>{t("pages.reservations.newDialog.description")}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="new-res-name">{t("pages.reservations.newDialog.customerName")}</Label>
             <Input

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import {
-  calendarTables,
+  getCalendarTables,
   statusColors,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
@@ -45,6 +45,8 @@ export function TimelineView({
       )
     })
   }, [reservations, currentDate])
+
+  const calendarTables = useMemo(() => getCalendarTables(), [])
 
   const hours = useMemo(() => {
     const arr: number[] = []

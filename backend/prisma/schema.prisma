@@ -128,17 +128,20 @@ model Customer {
 }
 
 model Reservation {
-  id           String            @id @default(cuid())
-  restaurantId String
-  tableId      String?
-  customerId   String
-  partySize    Int
-  reservedFor  DateTime
-  status       ReservationStatus @default(PENDING)
-  notes        String?
-  createdById  String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id                 String            @id @default(cuid())
+  restaurantId       String
+  tableId            String?
+  customerId         String
+  partySize          Int
+  reservedFor        DateTime
+  status             ReservationStatus @default(PENDING)
+  notes              String?
+  createdById        String?
+  confirmationTokenHash String?        @unique
+  confirmationSentAt DateTime?
+  confirmedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   table      Table?     @relation(fields: [tableId], references: [id], onDelete: SetNull)

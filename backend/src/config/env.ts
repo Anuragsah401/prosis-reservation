@@ -25,6 +25,18 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   // Must be a verified sender on your Resend domain/account in production.
   EMAIL_FROM: z.string().default("Prosisit Table <onboarding@resend.dev>"),
+  // Twilio (https://twilio.com) is used to send transactional SMS — currently
+  // the reservation confirmation for customers who have no email on file.
+  // All three are optional in development: when any is missing, messages are
+  // logged to the console instead of sent, matching the mailer's behaviour.
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  // Sending number in E.164 format (e.g. "+15005550006"), or a Messaging
+  // Service SID — both are accepted by Twilio's `from` field.
+  TWILIO_PHONE_NUMBER: z.string().optional(),
+  // Default country calling code (e.g. "+45") used to normalise customer
+  // phone numbers that were stored without an international prefix.
+  SMS_DEFAULT_COUNTRY_CODE: z.string().optional(),
 })
 
 const parsed = envSchema.safeParse(process.env)

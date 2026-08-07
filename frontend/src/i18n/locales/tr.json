@@ -171,6 +171,26 @@
       "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
     }
   },
+  "reservationConfirm": {
+    "loading": "Rezervasyonunuz yükleniyor…",
+    "title": "Merhaba {{name}}, rezervasyonunuzu onaylayın",
+    "subtitle": "{{restaurant}} sizin için bir yer ayırdı.",
+    "dateTime": "Tarih & saat",
+    "partySize": "Kişi sayısı",
+    "chooseTable": "Masanızı seçin (isteğe bağlı)",
+    "chooseTableHint": "Restoranın kat planından tercih ettiğiniz masayı seçin veya atlayıp seçimi restorana bırakın.",
+    "seats": "kişilik",
+    "noTableSelected": "Masa seçilmedi — restoran sizin için bir masa seçecek",
+    "legendAvailable": "Müsait",
+    "legendUnavailable": "Dolu",
+    "legendSelected": "Seçiminiz",
+    "confirm": "Rezervasyonu onayla",
+    "confirmedTitle": "Rezervasyon onaylandı!",
+    "confirmedSubtitle": "{{restaurant}} restoranında görüşmek üzere. Sizi ağırlamayı dört gözle bekliyoruz.",
+    "errorTitle": "Rezervasyon yüklenemedi",
+    "errorMissingToken": "Bu onay bağlantısı geçersiz veya bir jeton eksik.",
+    "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+  },
   "settings": {
     "language": {
       "label": "Dil",
@@ -238,6 +258,9 @@
       "walkIn": "Yürüyerek gelen",
       "walkInShort": "Yürüyerek",
       "searchPlaceholder": "Rezervasyon ara...",
+      "loading": "Rezervasyonlar yükleniyor...",
+      "loadError": "Rezervasyonlar yüklenemedi. Lütfen tekrar deneyin.",
+      "retry": "Tekrar dene",
       "resultCount_one": "{{count}} rezervasyon",
       "resultCount_other": "{{count}} rezervasyon",
       "scrollForMore": "Daha fazla rezervasyon görmek için aşağı kaydırın",

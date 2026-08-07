@@ -15,6 +15,7 @@ import { LoginPage } from '@/pages/login-page'
 import { SignupPage } from '@/pages/signup-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { ResetPasswordPage } from '@/pages/reset-password-page'
+import { ReservationConfirmPage } from '@/pages/reservation-confirm-page'
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
         }
       />
       <Route path="/restaurant/:id/book" element={<PublicBookingPage />} />
+      <Route path="/reservation/confirm" element={<ReservationConfirmPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />

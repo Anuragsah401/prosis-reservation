@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -8,17 +8,54 @@ import type { CalendarReservation, ReservationStatus } from "@/features/reservat
 import { ReservationsToolbar } from "@/features/reservations/components/reservations-toolbar"
 import { ReservationsTable } from "@/features/reservations/components/reservations-table"
 import { statusSortOrder } from "@/features/reservations/reservations-constants"
-import { isSameDay, withOverrides } from "@/features/reservations/reservations-utils"
+import { isSameDay } from "@/features/reservations/reservations-utils"
+import { fetchReservations, updateReservationStatusOnServer } from "@/features/reservations/reservations-api"
 
 export function ReservationsPage() {
   const { t } = useTranslation()
   const [tab, setTab] = useState<"list" | "calendar">("list")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [search, setSearch] = useState("")
-  const [allReservations, setAllReservations] = useState(() => withOverrides())
+  const [allReservations, setAllReservations] = useState<CalendarReservation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  function handleStatusChange(id: string, status: ReservationStatus) {
+  const loadReservations = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      setAllReservations(await fetchReservations())
+    } catch (err) {
+      console.error("[reservations] Failed to load reservations:", err)
+      setLoadError(t("pages.reservations.loadError"))
+    } finally {
+      setIsLoading(false)
+    }
+  }, [t])
+
+  useEffect(() => {
+    // Kicked off in a microtask so the initial fetch isn't dispatched
+    // synchronously during the effect body.
+    let cancelled = false
+    void Promise.resolve().then(() => {
+      if (!cancelled) void loadReservations()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loadReservations])
+
+  async function handleStatusChange(id: string, status: ReservationStatus) {
+    const previous = allReservations
+    // Applied optimistically so the table responds immediately, then rolled
+    // back if the server rejects the transition.
     setAllReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+    try {
+      await updateReservationStatusOnServer(id, status)
+    } catch (err) {
+      console.error("[reservations] Failed to update status:", err)
+      setAllReservations(previous)
+    }
   }
 
   function handleCreateReservation(reservation: CalendarReservation) {
@@ -96,7 +133,24 @@ export function ReservationsPage() {
               </p>
             </div>
 
-            <ReservationsTable reservations={filteredReservations} onStatusChange={handleStatusChange} />
+            {loadError ? (
+              <div className="border-destructive/50 bg-destructive/5 text-destructive flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
+                <span>{loadError}</span>
+                <button
+                  type="button"
+                  onClick={() => void loadReservations()}
+                  className="font-medium underline underline-offset-4"
+                >
+                  {t("pages.reservations.retry")}
+                </button>
+              </div>
+            ) : isLoading ? (
+              <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
+                {t("pages.reservations.loading")}
+              </div>
+            ) : (
+              <ReservationsTable reservations={filteredReservations} onStatusChange={handleStatusChange} />
+            )}
           </div>
         </div>
       )}

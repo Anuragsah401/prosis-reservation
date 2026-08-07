@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -15,12 +15,12 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import {
-  initialReservations,
   statusLabels,
   type CalendarReservation,
   type ReservationStatus,
 } from "@/features/reservations-calendar/calendar-data"
 import { loadOverrides, saveReservationChange } from "@/features/reservations-calendar/calendar-storage"
+import { fetchReservations } from "@/features/reservations/reservations-api"
 import { CalendarGridView } from "@/features/reservations-calendar/calendar-grid-view"
 import { BookingDiagramView, type TimeFilter } from "@/features/reservations-calendar/booking-diagram-view"
 import { MiniMonthCalendar } from "@/features/reservations-calendar/mini-month-calendar"
@@ -29,9 +29,13 @@ import { ReservationDetailsDialog } from "@/features/reservations-calendar/reser
 
 type CalendarViewMode = "diagram" | "day" | "week"
 
-function applyOverrides(): CalendarReservation[] {
+/**
+ * Re-applies locally persisted drag/resize edits on top of the server rows so
+ * an unsaved reschedule survives a refresh.
+ */
+function applyOverrides(reservations: CalendarReservation[]): CalendarReservation[] {
   const overrides = loadOverrides()
-  return initialReservations.map((r) => {
+  return reservations.map((r) => {
     const o = overrides[r.id]
     if (!o) return r
     return { ...r, start: o.start, durationMinutes: o.durationMinutes, tableId: o.tableId }
@@ -53,10 +57,27 @@ export function ReservationsCalendar() {
   const [viewMode, setViewMode] = useState<CalendarViewMode>("diagram")
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all")
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [reservations, setReservations] = useState<CalendarReservation[]>(applyOverrides)
+  const [reservations, setReservations] = useState<CalendarReservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<CalendarReservation | null>(null)
   const [saveState, setSaveState] = useState<"idle" | "saving" | "server" | "local">("idle")
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Deferred to a microtask so the fetch isn't dispatched synchronously
+    // from the effect body.
+    let cancelled = false
+    void Promise.resolve().then(async () => {
+      try {
+        const rows = await fetchReservations()
+        if (!cancelled) setReservations(applyOverrides(rows))
+      } catch (err) {
+        console.error("[calendar] Failed to load reservations:", err)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const persistChange = useCallback(
     async (id: string, changes: { start?: string; durationMinutes?: number; tableId?: string }) => {

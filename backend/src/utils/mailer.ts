@@ -30,10 +30,30 @@ async function sendEmail({ to, subject, html }: SendEmailInput) {
   })
 
   if (error) {
+    // Resend sandbox (unverified domain) can only deliver to the account
+    // owner's own email. In development, degrade gracefully: log the email
+    // content (which includes any action links) instead of failing, so the
+    // flow stays testable with arbitrary recipient addresses.
+    const isSandboxRestriction = error.name === "validation_error" && /verify a domain/i.test(error.message)
+    if (isSandboxRestriction && env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[mailer] ⚠️ Resend sandbox: can't deliver to ${to} (only your own Resend account email works until you verify a domain at resend.com/domains).\n` +
+          `[mailer] Logging the email content instead so you can grab the link:\nSubject: ${subject}\n${extractLinks(html)}`,
+      )
+      return
+    }
+
     // eslint-disable-next-line no-console
     console.error("[mailer] Failed to send email via Resend:", error)
     throw new Error("Failed to send email")
   }
+}
+
+/** Pulls href links out of an HTML email so dev logs stay readable. */
+function extractLinks(html: string): string {
+  const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1])
+  return links.length > 0 ? `Links:\n${[...new Set(links)].join("\n")}` : html
 }
 
 export const mailer = {
@@ -61,6 +81,74 @@ export const mailer = {
           <p style="color: #888; font-size: 13px; line-height: 1.5;">
             Or copy and paste this link into your browser:<br />
             <a href="${resetUrl}" style="color: #555; word-break: break-all;">${resetUrl}</a>
+          </p>
+        </div>
+      `,
+    })
+  },
+
+  async sendReservationConfirmationEmail(input: {
+    to: string
+    customerName: string
+    restaurantName: string
+    reservedFor: Date
+    partySize: number
+    tableName?: string | null
+    confirmUrl: string
+  }) {
+    const { to, customerName, restaurantName, reservedFor, partySize, tableName, confirmUrl } = input
+    const when = reservedFor.toLocaleString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+
+    await sendEmail({
+      to,
+      subject: `Confirm your reservation at ${restaurantName}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+          <h2 style="margin-bottom: 8px;">You're almost booked, ${customerName}!</h2>
+          <p style="color: #555; line-height: 1.5;">
+            ${restaurantName} has created a reservation for you. Please confirm it below —
+            you can also pick your preferred table from the restaurant's floor plan.
+          </p>
+          <table style="border-collapse: collapse; margin: 16px 0; width: 100%;">
+            <tr>
+              <td style="padding: 6px 0; color: #888; font-size: 14px;">Date &amp; time</td>
+              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${when}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #888; font-size: 14px;">Party size</td>
+              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${partySize} ${partySize === 1 ? "guest" : "guests"}</td>
+            </tr>
+            ${
+              tableName
+                ? `<tr>
+              <td style="padding: 6px 0; color: #888; font-size: 14px;">Table</td>
+              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${tableName}</td>
+            </tr>`
+                : ""
+            }
+          </table>
+          <p style="margin: 24px 0;">
+            <a href="${confirmUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
+              Confirm reservation
+            </a>
+          </p>
+          <p style="color: #888; font-size: 13px; line-height: 1.5;">
+            On the confirmation page you can optionally choose a different table from the
+            restaurant's floor plan before confirming.
+          </p>
+          <p style="color: #888; font-size: 13px; line-height: 1.5;">
+            Or copy and paste this link into your browser:<br />
+            <a href="${confirmUrl}" style="color: #555; word-break: break-all;">${confirmUrl}</a>
+          </p>
+          <p style="color: #888; font-size: 13px; line-height: 1.5;">
+            If you didn't expect this reservation, you can ignore this email.
           </p>
         </div>
       `,

@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from "express"
 import { tableService } from "@/modules/table/table.service"
-import { createTableSchema, updateTableSchema, saveLayoutSchema } from "@/modules/table/table.validation"
+import {
+  createTableSchema,
+  updateTableSchema,
+  saveLayoutSchema,
+  syncFloorPlanSchema,
+} from "@/modules/table/table.validation"
 
 export const tableController = {
   async list(req: Request, res: Response, next: NextFunction) {
@@ -35,6 +40,20 @@ export const tableController = {
       if (err instanceof Error && err.message.startsWith("Tables not found")) {
         return res.status(404).json({ error: err.message })
       }
+      next(err)
+    }
+  },
+
+  /** Full floor-plan sync (upsert by name + prune) from the designer. */
+  async syncFloorPlan(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = syncFloorPlanSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
+      }
+      const result = await tableService.syncFloorPlan(parsed.data.restaurantId, parsed.data.tables)
+      res.status(200).json(result)
+    } catch (err) {
       next(err)
     }
   },

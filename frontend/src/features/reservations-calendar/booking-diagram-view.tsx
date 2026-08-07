@@ -2,11 +2,11 @@ import { useCallback, useMemo, useState } from "react"
 import { Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
-  calendarTables,
+  getCalendarTables,
+  type CalendarTable,
   statusColors,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
-import { loadFloorNames, loadFloorPlanTables } from "@/features/floor-plan/floor-plan-storage"
 
 export type TimeFilter = "all" | "morning" | "lunch" | "evening"
 
@@ -62,42 +62,17 @@ export function BookingDiagramView({
     })
   }, [reservations, currentDate])
 
+  const calendarTables = useMemo(() => getCalendarTables(), [])
+
   const floors = useMemo(() => {
-    const seen = new Map<string, typeof calendarTables>()
+    const seen = new Map<string, CalendarTable[]>()
     for (const table of calendarTables) {
       const list = seen.get(table.floor) ?? []
       list.push(table)
       seen.set(table.floor, list)
     }
-    const entries = Array.from(seen.entries())
-
-    // Prefer the floors/tables configured in the Floor Plan builder — when a
-    // floor is added there (even a brand-new one with no mock counterpart),
-    // it should show up here with its own tables, not just relabel the
-    // fixed set of mock floors/tables.
-    const floorPlanNames = loadFloorNames()
-    const floorPlanTables = loadFloorPlanTables()
-
-    if (floorPlanNames && floorPlanNames.length > 0 && floorPlanTables && floorPlanTables.length > 0) {
-      return floorPlanNames.map((floorName, index) => {
-        const tablesForFloor = floorPlanTables.filter((t) => t.floor === floorName)
-        const fallback = entries[index]?.[1] ?? []
-
-        const namedTables = tablesForFloor.length > 0
-          ? tablesForFloor.map((t, tableIndex) => ({
-              id: t.id,
-              name: t.name,
-              capacity: fallback[tableIndex]?.capacity ?? 2,
-              floor: floorName,
-            }))
-          : fallback
-
-        return [floorName, namedTables] as [string, typeof calendarTables]
-      })
-    }
-
-    return entries
-  }, [])
+    return Array.from(seen.entries())
+  }, [calendarTables])
 
   const hours = useMemo(() => {
     const arr: number[] = []

@@ -45,7 +45,6 @@ import {
   Circle,
 } from "lucide-react"
 import {
-  initialTables,
   shapeLabels,
   statusLabels,
   DEFAULT_TABLE_WIDTH,
@@ -54,10 +53,19 @@ import {
   type TableShape,
   type TableStatus,
 } from "@/features/floor-plan/floor-plan-data"
-import { loadPositions, savePositions, loadFloorNames, saveFloorNames, saveFloorPlanTables } from "@/features/floor-plan/floor-plan-storage"
+import {
+  loadPositions,
+  savePositions,
+  loadFloorNames,
+  saveFloorNames,
+  saveFloorPlanTables,
+  loadFloorPlanTables,
+  syncFloorPlanToServer,
+} from "@/features/floor-plan/floor-plan-storage"
 import { TableNode, type TableNodeData } from "@/features/floor-plan/table-node"
 
 const nodeTypes: NodeTypes = { table: TableNode }
+const DEFAULT_FLOOR_NAME = "Main Floor"
 
 const shapeCycle: TableShape[] = ["RECTANGLE", "SQUARE", "CIRCLE"]
 
@@ -90,15 +98,28 @@ function nodeFromTable(
 }
 
 function buildFloorTables(): Record<string, FloorPlanTable[]> {
+  const tableSummaries = loadFloorPlanTables() ?? []
+  const savedPositions = loadPositions()
   const byFloor: Record<string, FloorPlanTable[]> = {}
-  for (const table of initialTables) {
-    const saved = loadPositions()[table.id]
+  for (const table of tableSummaries) {
+    const saved = savedPositions[table.id]
+    const floorName = saved?.floor ?? table.floor ?? DEFAULT_FLOOR_NAME
     const merged: FloorPlanTable = {
-      ...table,
-      floor: saved?.floor ?? table.floor,
+      id: table.id,
+      name: table.name,
+      capacity: table.capacity,
+      location: floorName,
+      status: "AVAILABLE",
+      floor: floorName,
+      shape: saved?.shape ?? "RECTANGLE",
+      positionX: saved?.positionX ?? 40,
+      positionY: saved?.positionY ?? 40,
+      width: saved?.width ?? DEFAULT_TABLE_WIDTH,
+      height: saved?.height ?? DEFAULT_TABLE_HEIGHT,
+      rotation: saved?.rotation ?? 0,
     }
-    byFloor[merged.floor] ??= []
-    byFloor[merged.floor].push(merged)
+    byFloor[floorName] ??= []
+    byFloor[floorName].push(merged)
   }
   return byFloor
 }
@@ -106,7 +127,10 @@ function buildFloorTables(): Record<string, FloorPlanTable[]> {
 export function FloorPlanBuilder() {
   const { t } = useTranslation()
   const floorTables = useMemo(() => buildFloorTables(), [])
-  const initialFloors = useMemo(() => Object.keys(floorTables), [floorTables])
+  const initialFloors = useMemo(() => {
+    const loadedFloors = Object.keys(floorTables)
+    return loadedFloors.length > 0 ? loadedFloors : [DEFAULT_FLOOR_NAME]
+  }, [floorTables])
   const [floors, setFloors] = useState<string[]>(() => {
     const persisted = loadFloorNames()
     if (!persisted || persisted.length === 0) return initialFloors
@@ -118,23 +142,17 @@ export function FloorPlanBuilder() {
     }
     return merged
   })
-  const [activeFloor, setActiveFloor] = useState(initialFloors[0] ?? "Main Floor")
+  const [activeFloor, setActiveFloor] = useState(initialFloors[0] ?? DEFAULT_FLOOR_NAME)
   const [nodesByFloor, setNodesByFloor] = useState<Record<string, Node<TableNodeData>[]>>({})
 
   useEffect(() => {
     saveFloorNames(floors)
   }, [floors])
 
-  useEffect(() => {
-    const tables = Object.entries(nodesByFloor).flatMap(([floor, nodes]) =>
-      nodes.map((n) => ({ id: n.id, name: n.data.name, floor, capacity: n.data.capacity })),
-    )
-    if (tables.length > 0) saveFloorPlanTables(tables)
-  }, [nodesByFloor])
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaveResult, setLastSaveResult] = useState<"server" | "local" | null>(null)
-  const [tableCounter, setTableCounter] = useState(initialTables.length + 1)
+  const [tableCounter, setTableCounter] = useState(1)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [newTableName, setNewTableName] = useState("")
   const [newTableCapacity, setNewTableCapacity] = useState("4")
@@ -289,6 +307,32 @@ export function FloorPlanBuilder() {
           shape: node.data.shape,
           rotation: node.data.rotation,
           floor,
+        })),
+      )
+      saveFloorPlanTables(
+        allNodes.map(({ floor, node }) => ({
+          id: node.id,
+          name: node.data.name,
+          floor,
+          capacity: node.data.capacity,
+        })),
+      )
+      // Also sync the complete plan (names, capacities, layout) to the
+      // backend so guest-facing pages (reservation confirmation) can render
+      // the real floor diagram. Best-effort: local save above already
+      // succeeded, so a failed server sync just logs.
+      await syncFloorPlanToServer(
+        allNodes.map(({ floor, node }) => ({
+          name: node.data.name,
+          capacity: node.data.capacity,
+          location: node.data.location ?? null,
+          floor,
+          shape: node.data.shape,
+          positionX: Math.round(node.position.x),
+          positionY: Math.round(node.position.y),
+          width: node.width ?? DEFAULT_TABLE_WIDTH,
+          height: node.height ?? DEFAULT_TABLE_HEIGHT,
+          rotation: node.data.rotation,
         })),
       )
       setIsDirty(false)

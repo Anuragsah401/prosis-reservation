@@ -166,5 +166,79 @@ export const tableService = {
     )
     return updated.map(toApiShape)
   },
+
+  /**
+   * Full floor-plan sync from the designer: upserts every table by its name
+   * (unique per restaurant) with layout + capacity, and removes tables that
+   * no longer exist in the plan. This lets the frontend designer — whose
+   * table ids are local-only — persist the complete plan so guest-facing
+   * pages (e.g. reservation confirmation) can render the real layout.
+   */
+  async syncFloorPlan(
+    restaurantId: string,
+    tables: Array<{
+      name: string
+      capacity: number
+      location?: string | null
+      floor: string
+      shape: Prisma.TableCreateInput["shape"]
+      positionX: number
+      positionY: number
+      width: number
+      height: number
+      rotation: number
+    }>,
+  ) {
+    const names = tables.map((t) => t.name)
+
+    const synced = await prisma.$transaction(async (tx) => {
+      // Remove tables deleted from the plan (skip any with reservations
+      // attached to avoid orphaning bookings — they keep their table).
+      const stale = await tx.table.findMany({
+        where: { restaurantId, number: { notIn: names } },
+        select: { id: true, _count: { select: { reservations: true } } },
+      })
+      const deletable = stale.filter((s) => s._count.reservations === 0).map((s) => s.id)
+      if (deletable.length > 0) {
+        await tx.table.deleteMany({ where: { id: { in: deletable } } })
+      }
+
+      const results = []
+      for (const t of tables) {
+        results.push(
+          await tx.table.upsert({
+            where: { restaurantId_number: { restaurantId, number: t.name } },
+            create: {
+              restaurantId,
+              number: t.name,
+              capacity: t.capacity,
+              section: t.location,
+              floor: t.floor,
+              shape: t.shape,
+              positionX: t.positionX,
+              positionY: t.positionY,
+              width: t.width,
+              height: t.height,
+              rotation: t.rotation,
+            },
+            update: {
+              capacity: t.capacity,
+              section: t.location,
+              floor: t.floor,
+              shape: t.shape,
+              positionX: t.positionX,
+              positionY: t.positionY,
+              width: t.width,
+              height: t.height,
+              rotation: t.rotation,
+            },
+          }),
+        )
+      }
+      return results
+    })
+
+    return synced.map(toApiShape)
+  },
 }
 

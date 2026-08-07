@@ -5,6 +5,9 @@ import { requireAuth } from "@/modules/auth/auth.middleware"
 export const reservationRouter = Router()
 
 reservationRouter.get("/availability", reservationController.checkAvailability)
+// Public guest-facing confirmation endpoints (token-authenticated, no JWT).
+reservationRouter.get("/confirmation", reservationController.getConfirmationDetails)
+reservationRouter.post("/confirm", reservationController.confirm)
 reservationRouter.get("/", reservationController.list)
 reservationRouter.get("/:id", reservationController.getById)
 reservationRouter.post("/", requireAuth, reservationController.create)

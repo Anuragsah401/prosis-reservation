@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  calendarTables,
+  getCalendarTables,
   statusLabels,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
@@ -67,6 +67,7 @@ function ReservationDetailsForm({
   const [tableId, setTableId] = useState(reservation.tableId)
   const [start, setStart] = useState(toLocalInputValue(reservation.start))
   const [durationMinutes, setDurationMinutes] = useState(String(reservation.durationMinutes))
+  const calendarTables = useMemo(() => getCalendarTables(), [])
 
   const handleSave = () => {
     onSave(reservation.id, {
