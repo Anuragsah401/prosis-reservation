@@ -51,7 +51,11 @@ export function FloorPlanViewer({
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
+  const [pinching, setPinching] = useState(false)
   const dragStart = useRef({ x: 0, y: 0 })
+  // Active pointers, so two fingers can be distinguished from one for pinch.
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const pinchStart = useRef<{ distance: number; zoom: number } | null>(null)
 
   const displayedFloor = floors.includes(activeFloor)
     ? activeFloor
@@ -97,6 +101,9 @@ export function FloorPlanViewer({
                 setZoom(1)
                 setPan({ x: 0, y: 0 })
                 setDragging(false)
+                setPinching(false)
+                pointers.current.clear()
+                pinchStart.current = null
               }}
               className={cn(
                 "rounded-sm px-2.5 py-1 text-xs font-medium transition-colors",
@@ -150,6 +157,20 @@ export function FloorPlanViewer({
             zoomBy(delta)
           }}
           onPointerDown={(e) => {
+            pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+            // A second finger starts a pinch, which supersedes any pan.
+            if (pointers.current.size === 2) {
+              const [a, b] = [...pointers.current.values()]
+              pinchStart.current = {
+                distance: Math.hypot(a.x - b.x, a.y - b.y),
+                zoom,
+              }
+              setPinching(true)
+              setDragging(false)
+              return
+            }
+
             // Only start panning from the background, not from a table.
             if ((e.target as HTMLElement).closest("[data-table]")) return
             setDragging(true)
@@ -157,16 +178,38 @@ export function FloorPlanViewer({
             ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
           }}
           onPointerMove={(e) => {
+            if (pointers.current.has(e.pointerId)) {
+              pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+            }
+
+            if (pinchStart.current && pointers.current.size === 2) {
+              const [a, b] = [...pointers.current.values()]
+              const distance = Math.hypot(a.x - b.x, a.y - b.y)
+              const ratio = distance / pinchStart.current.distance
+              setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStart.current.zoom * ratio)))
+              return
+            }
+
             if (!dragging) return
             setPan({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y })
           }}
           onPointerUp={(e) => {
+            pointers.current.delete(e.pointerId)
+            if (pointers.current.size < 2) {
+              pinchStart.current = null
+              setPinching(false)
+            }
             if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
               ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
             }
             setDragging(false)
           }}
           onPointerCancel={(e) => {
+            pointers.current.delete(e.pointerId)
+            if (pointers.current.size < 2) {
+              pinchStart.current = null
+              setPinching(false)
+            }
             if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
               ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
             }
@@ -174,7 +217,14 @@ export function FloorPlanViewer({
           }}
         >
           <div
-            className="relative origin-top-left transition-transform duration-75"
+            className={cn(
+              "relative origin-top-left",
+              // Only animate discrete zoom-button/reset changes. Animating
+              // during a drag/pinch keeps the element permanently mid-transition,
+              // which pins it to a cached GPU layer that never re-rasterises
+              // at the current scale — that's what looks blurry on mobile.
+              !dragging && !pinching && "transition-transform duration-75",
+            )}
             style={{
               width: bounds.width,
               height: bounds.height,
