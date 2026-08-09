@@ -330,6 +330,8 @@
       "savedLocally": "Saved locally",
       "reset": "Reset",
       "saveLayout": "Save layout",
+      "enterFullscreen": "Expand to full screen",
+      "exitFullscreen": "Exit full screen",
       "addFloor": "Add floor",
       "addTable": "Add table",
       "selectHint": "Select a table to resize, change shape ({{shapes}}), rotate, or delete.",

@@ -330,6 +330,8 @@
       "savedLocally": "Gemt lokalt",
       "reset": "Nulstil",
       "saveLayout": "Gem layout",
+      "enterFullscreen": "Vis i fuld skærm",
+      "exitFullscreen": "Afslut fuld skærm",
       "addFloor": "Tilføj etage",
       "addTable": "Tilføj bord",
       "selectHint": "Vælg et bord for at ændre størrelse, form ({{shapes}}), rotere eller slette.",

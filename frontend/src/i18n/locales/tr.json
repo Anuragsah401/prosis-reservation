@@ -330,6 +330,8 @@
       "savedLocally": "Yerel olarak kaydedildi",
       "reset": "Sıfırla",
       "saveLayout": "Düzeni kaydet",
+      "enterFullscreen": "Tam ekrana genişlet",
+      "exitFullscreen": "Tam ekrandan çık",
       "addFloor": "Kat ekle",
       "addTable": "Masa ekle",
       "selectHint": "Yeniden boyutlandırmak, şekil değiştirmek ({{shapes}}), döndürmek veya silmek için bir masa seçin.",

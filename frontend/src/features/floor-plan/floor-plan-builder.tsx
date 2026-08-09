@@ -43,7 +43,10 @@ import {
   Square,
   RectangleHorizontal,
   Circle,
+  Maximize,
+  Minimize,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
   shapeLabels,
   statusLabels,
@@ -159,6 +162,7 @@ export function FloorPlanBuilder() {
   const [newTableLocation, setNewTableLocation] = useState("")
   const [newTableShape, setNewTableShape] = useState<TableShape>("RECTANGLE")
   const [newTableStatus, setNewTableStatus] = useState<TableStatus>("AVAILABLE")
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const handleCycleShape = useCallback((id: string) => {
     setNodesByFloor((current) => {
@@ -349,6 +353,25 @@ export function FloorPlanBuilder() {
 
   const edges = useMemo(() => [], [])
 
+  // Escape exits the expanded canvas, and the page behind it is locked so it
+  // can't scroll under the overlay on touch devices.
+  useEffect(() => {
+    if (!isFullscreen) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false)
+    }
+    document.addEventListener("keydown", onKeyDown)
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isFullscreen])
+
   const statusCounts = useMemo(() => {
     const counts: Record<TableStatus, number> = { AVAILABLE: 0, OCCUPIED: 0, RESERVED: 0, MAINTENANCE: 0 }
     for (const n of nodes) counts[n.data.status]++
@@ -356,7 +379,16 @@ export function FloorPlanBuilder() {
   }, [nodes])
 
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      className={cn(
+        "flex flex-col gap-3",
+        // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't
+        // support requestFullscreen() on non-video elements. Wrapping the
+        // whole builder keeps the floor tabs and save/reset controls usable
+        // while expanded.
+        isFullscreen && "bg-background fixed inset-0 z-50 overflow-auto p-4",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t("pages.floorPlan.title")}</h1>
@@ -381,6 +413,19 @@ export function FloorPlanBuilder() {
           <Button variant="outline" onClick={handleReset} disabled={isSaving}>
             <RotateCcw className="size-4" />
             {t("pages.floorPlan.reset")}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsFullscreen((f) => !f)}
+            aria-label={
+              isFullscreen ? t("pages.floorPlan.exitFullscreen") : t("pages.floorPlan.enterFullscreen")
+            }
+            title={
+              isFullscreen ? t("pages.floorPlan.exitFullscreen") : t("pages.floorPlan.enterFullscreen")
+            }
+          >
+            {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
           </Button>
           <Button onClick={handleSave} disabled={!isDirty || isSaving}>
             {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
@@ -452,9 +497,19 @@ export function FloorPlanBuilder() {
         </span>
       </div>
 
-      <div className="bg-muted/30 h-150 w-full overflow-hidden rounded-xl border">
+      <div
+        className={cn(
+          "bg-muted/30 w-full overflow-hidden border",
+          // Fills the remaining overlay height instead of staying at the
+          // fixed h-150 used in the normal page flow.
+          isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-150 rounded-xl",
+        )}
+      >
         <ReactFlow
-          key={activeFloor}
+          // Remounting on resize re-runs `fitView`, so the layout is framed to
+          // the new canvas size instead of keeping the old viewport. Node
+          // positions live in `nodesByFloor`, so nothing unsaved is lost.
+          key={`${activeFloor}-${isFullscreen}`}
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
