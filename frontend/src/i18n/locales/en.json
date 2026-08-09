@@ -330,6 +330,7 @@
       "savedLocally": "Saved locally",
       "reset": "Reset",
       "saveLayout": "Save layout",
+      "loadingPlan": "Loading floor plan...",
       "enterFullscreen": "Expand to full screen",
       "exitFullscreen": "Exit full screen",
       "addFloor": "Add floor",

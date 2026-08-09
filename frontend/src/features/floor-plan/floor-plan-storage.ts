@@ -1,4 +1,5 @@
 import type { FloorPlanTable } from "@/features/floor-plan/floor-plan-data"
+import { DEFAULT_TABLE_WIDTH, DEFAULT_TABLE_HEIGHT } from "@/features/floor-plan/floor-plan-data"
 import { API_URL } from "@/lib/config"
 import { apiClient, getCurrentRestaurantId } from "@/lib/api-client"
 
@@ -40,6 +41,56 @@ export async function syncFloorPlanToServer(tables: FloorPlanSyncTable[]): Promi
   } catch (err) {
     console.error("[floor-plan] Failed to sync floor plan to backend:", err)
     return false
+  }
+}
+
+/** A table as returned by `GET /api/tables?restaurantId=...`. */
+interface ApiTable {
+  id: string
+  name: string
+  capacity: number
+  location: string | null
+  floor: string
+  shape: FloorPlanTable["shape"]
+  positionX: number | null
+  positionY: number | null
+  width: number | null
+  height: number | null
+  rotation: number | null
+  status: FloorPlanTable["status"]
+}
+
+/**
+ * Loads the saved floor plan from the backend, which is the only shared
+ * source of truth across devices — localStorage is per-browser, so a layout
+ * arranged on a desktop is invisible on a phone until it's read from here.
+ *
+ * Returns null when there's no restaurant context or the request fails, so
+ * callers can fall back to whatever is cached locally rather than showing an
+ * empty canvas.
+ */
+export async function fetchFloorPlanFromServer(): Promise<FloorPlanTable[] | null> {
+  const restaurantId = getCurrentRestaurantId()
+  if (!restaurantId) return null
+  try {
+    const tables = await apiClient.get<ApiTable[]>(`/tables?restaurantId=${restaurantId}`)
+    return tables.map((t) => ({
+      id: t.id,
+      name: t.name,
+      capacity: t.capacity,
+      location: t.location ?? undefined,
+      status: t.status ?? "AVAILABLE",
+      floor: t.floor || "Main Floor",
+      shape: t.shape ?? "RECTANGLE",
+      positionX: t.positionX ?? 40,
+      positionY: t.positionY ?? 40,
+      width: t.width || DEFAULT_TABLE_WIDTH,
+      height: t.height || DEFAULT_TABLE_HEIGHT,
+      rotation: t.rotation ?? 0,
+    }))
+  } catch (err) {
+    console.error("[floor-plan] Failed to load floor plan from backend:", err)
+    return null
   }
 }
 

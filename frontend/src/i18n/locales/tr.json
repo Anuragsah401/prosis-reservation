@@ -330,6 +330,7 @@
       "savedLocally": "Yerel olarak kaydedildi",
       "reset": "Sıfırla",
       "saveLayout": "Düzeni kaydet",
+      "loadingPlan": "Kat planı yükleniyor...",
       "enterFullscreen": "Tam ekrana genişlet",
       "exitFullscreen": "Tam ekrandan çık",
       "addFloor": "Kat ekle",

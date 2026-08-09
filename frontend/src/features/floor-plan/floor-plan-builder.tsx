@@ -64,6 +64,7 @@ import {
   saveFloorPlanTables,
   loadFloorPlanTables,
   syncFloorPlanToServer,
+  fetchFloorPlanFromServer,
 } from "@/features/floor-plan/floor-plan-storage"
 import { TableNode, type TableNodeData } from "@/features/floor-plan/table-node"
 
@@ -80,21 +81,23 @@ function nodeFromTable(
     onDelete: (id: string) => void
   },
 ): Node<TableNodeData> {
-  const savedPositions = loadPositions()
-  const saved = savedPositions[table.id]
+  // No localStorage overlay here: `table` already carries the authoritative
+  // values (from the server when available, otherwise the local cache via
+  // `buildFloorTables`). Re-applying saved positions on top would let a stale
+  // per-browser layout override the plan just fetched from the database.
   return {
     id: table.id,
     type: "table",
-    position: { x: saved?.positionX ?? table.positionX, y: saved?.positionY ?? table.positionY },
-    width: saved?.width ?? table.width,
-    height: saved?.height ?? table.height,
+    position: { x: table.positionX, y: table.positionY },
+    width: table.width,
+    height: table.height,
     data: {
       name: table.name,
       capacity: table.capacity,
       location: table.location,
       status: table.status,
-      shape: saved?.shape ?? table.shape,
-      rotation: saved?.rotation ?? table.rotation,
+      shape: table.shape,
+      rotation: table.rotation,
       ...handlers,
     },
   }
@@ -129,7 +132,13 @@ function buildFloorTables(): Record<string, FloorPlanTable[]> {
 
 export function FloorPlanBuilder() {
   const { t } = useTranslation()
-  const floorTables = useMemo(() => buildFloorTables(), [])
+  // Seeded from localStorage so the canvas paints instantly, then replaced by
+  // the server copy below. localStorage is per-browser, so it can only ever be
+  // a cache — the database is the source of truth across devices.
+  const [floorTables, setFloorTables] = useState<Record<string, FloorPlanTable[]>>(() =>
+    buildFloorTables(),
+  )
+  const [isLoadingPlan, setIsLoadingPlan] = useState(true)
   const initialFloors = useMemo(() => {
     const loadedFloors = Object.keys(floorTables)
     return loadedFloors.length > 0 ? loadedFloors : [DEFAULT_FLOOR_NAME]
@@ -151,6 +160,46 @@ export function FloorPlanBuilder() {
   useEffect(() => {
     saveFloorNames(floors)
   }, [floors])
+
+  // Pull the authoritative plan from the database. Without this the builder
+  // only ever showed this browser's localStorage, so a layout arranged on
+  // desktop looked empty/unsynced when signing in from a phone.
+  useEffect(() => {
+    let cancelled = false
+    void Promise.resolve().then(async () => {
+      const tables = await fetchFloorPlanFromServer()
+      if (cancelled) {
+        return
+      }
+      if (tables) {
+        const byFloor: Record<string, FloorPlanTable[]> = {}
+        for (const table of tables) {
+          const floorName = table.floor || DEFAULT_FLOOR_NAME
+          byFloor[floorName] ??= []
+          byFloor[floorName].push({ ...table, floor: floorName })
+        }
+        setFloorTables(byFloor)
+        // Drop any stale per-browser overrides; the server copy wins.
+        setNodesByFloor({})
+        setFloors((current) => {
+          const merged = [...current]
+          for (const f of Object.keys(byFloor)) {
+            if (!merged.includes(f)) merged.push(f)
+          }
+          return merged
+        })
+        // Keep the local cache in step so other views (and an offline reload)
+        // see the same tables.
+        saveFloorPlanTables(
+          tables.map((tb) => ({ id: tb.id, name: tb.name, floor: tb.floor, capacity: tb.capacity })),
+        )
+      }
+      setIsLoadingPlan(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -505,22 +554,29 @@ export function FloorPlanBuilder() {
           isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-150 rounded-xl",
         )}
       >
-        <ReactFlow
-          // Remounting on resize re-runs `fitView`, so the layout is framed to
-          // the new canvas size instead of keeping the old viewport. Node
-          // positions live in `nodesByFloor`, so nothing unsaved is lost.
-          key={`${activeFloor}-${isFullscreen}`}
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background variant={BackgroundVariant.Dots} gap={16} />
-          <Controls />
-          <MiniMap pannable zoomable className="bg-card!" />
-        </ReactFlow>
+        {isLoadingPlan ? (
+          <div className="text-muted-foreground flex h-full items-center justify-center gap-2 text-sm">
+            <Loader2 className="size-4 animate-spin" />
+            {t("pages.floorPlan.loadingPlan")}
+          </div>
+        ) : (
+          <ReactFlow
+            // Remounting on resize re-runs `fitView`, so the layout is framed to
+            // the new canvas size instead of keeping the old viewport. Node
+            // positions live in `nodesByFloor`, so nothing unsaved is lost.
+            key={`${activeFloor}-${isFullscreen}`}
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            nodeTypes={nodeTypes}
+            fitView
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={16} />
+            <Controls />
+            <MiniMap pannable zoomable className="bg-card!" />
+          </ReactFlow>
+        )}
       </div>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
