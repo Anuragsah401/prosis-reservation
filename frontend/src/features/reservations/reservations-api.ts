@@ -1,4 +1,4 @@
-import { apiClient, getCurrentRestaurantId } from "@/lib/api-client"
+import { apiClient, getCurrentRestaurantId, ApiError } from "@/lib/api-client"
 import type {
   CalendarReservation,
   ReservationStatus,
@@ -86,71 +86,68 @@ export async function updateReservationStatusOnServer(id: string, status: Reserv
  * Reuses an existing customer — matched by email first, then by phone — or
  * creates a new one, since the reservations API requires a customerId.
  *
- * Returns the created reservation (mapped to the UI shape) so callers can
- * render it with the real server id, or null if the sync failed — the
- * reservations page keeps working from its own state either way, so backend
- * hiccups don't block staff.
+ * Throws on failure. This used to swallow errors and return null, which made
+ * a failed save look identical to a successful one: the row was added to
+ * local state, the dialog closed, and the booking silently vanished on the
+ * next refresh. A reservation that isn't persisted is a lost booking, so the
+ * caller must surface the problem rather than hide it.
  */
 export async function createReservationOnServer(
   input: CreateReservationOnServerInput,
-): Promise<CalendarReservation | null> {
-  try {
-    const restaurantId = getCurrentRestaurantId()
-    if (!restaurantId) return null
+): Promise<CalendarReservation> {
+  const restaurantId = getCurrentRestaurantId()
+  if (!restaurantId) {
+    throw new ApiError("Your session has expired. Please sign in again.", 401)
+  }
 
-    const customers = await apiClient.get<ApiCustomer[]>(`/customers?restaurantId=${restaurantId}`)
-    const email = input.customerEmail?.toLowerCase()
+  const customers = await apiClient.get<ApiCustomer[]>(`/customers?restaurantId=${restaurantId}`)
+  const email = input.customerEmail?.toLowerCase()
 
-    // Email is the stronger identifier, so it's matched first. Checking both
-    // in a single `find` let whichever record came first in the list win,
-    // which meant a shared or stale phone number could hijack the match and
-    // route the confirmation to a different guest's email address.
-    let customer =
-      (email ? customers.find((c) => c.email?.toLowerCase() === email) : undefined) ??
-      (input.customerPhone
-        ? customers.find((c) => c.phone === input.customerPhone)
-        : undefined)
+  // Email is the stronger identifier, so it's matched first. Checking both
+  // in a single `find` let whichever record came first in the list win,
+  // which meant a shared or stale phone number could hijack the match and
+  // route the confirmation to a different guest's email address.
+  let customer =
+    (email ? customers.find((c) => c.email?.toLowerCase() === email) : undefined) ??
+    (input.customerPhone ? customers.find((c) => c.phone === input.customerPhone) : undefined)
 
-    if (!customer) {
-      customer = await apiClient.post<ApiCustomer>("/customers", {
-        restaurantId,
-        name: input.customerName,
-        email: input.customerEmail,
-        phone: input.customerPhone,
-      })
-    } else if (email && !customer.email) {
-      // Matched on phone alone: record the email now so this guest gets the
-      // richer email confirmation instead of falling back to SMS next time.
-      // An existing, different email is left alone — overwriting it could
-      // silently redirect another guest's confirmations.
-      try {
-        customer = await apiClient.patch<ApiCustomer>(`/customers/${customer.id}`, {
-          email: input.customerEmail,
-        })
-      } catch (err) {
-        console.error("[reservations] Failed to backfill customer email:", err)
-      }
-    }
-
-    const created = await apiClient.post<ApiReservation>("/reservations", {
+  if (!customer) {
+    customer = await apiClient.post<ApiCustomer>("/customers", {
       restaurantId,
-      customerId: customer.id,
-      partySize: input.partySize,
-      reservedFor: input.reservedFor,
-      notes: input.notes,
+      name: input.customerName,
+      email: input.customerEmail,
+      phone: input.customerPhone,
     })
-
-    // The create response omits the customer relation, so it's filled in from
-    // the record resolved above — otherwise the new row would render as
-    // "Guest" until the next refetch.
-    return {
-      ...toCalendarReservation(created),
-      customerName: customer.name,
-      customerPhone: customer.phone ?? "",
-      customerEmail: customer.email ?? undefined,
+  } else if (email && !customer.email) {
+    // Matched on phone alone: record the email now so this guest gets the
+    // richer email confirmation instead of falling back to SMS next time.
+    // An existing, different email is left alone — overwriting it could
+    // silently redirect another guest's confirmations.
+    // Non-fatal: the reservation itself still saves without this.
+    try {
+      customer = await apiClient.patch<ApiCustomer>(`/customers/${customer.id}`, {
+        email: input.customerEmail,
+      })
+    } catch (err) {
+      console.error("[reservations] Failed to backfill customer email:", err)
     }
-  } catch (err) {
-    console.error("[reservations] Failed to sync reservation to backend:", err)
-    return null
+  }
+
+  const created = await apiClient.post<ApiReservation>("/reservations", {
+    restaurantId,
+    customerId: customer.id,
+    partySize: input.partySize,
+    reservedFor: input.reservedFor,
+    notes: input.notes,
+  })
+
+  // The create response omits the customer relation, so it's filled in from
+  // the record resolved above — otherwise the new row would render as
+  // "Guest" until the next refetch.
+  return {
+    ...toCalendarReservation(created),
+    customerName: customer.name,
+    customerPhone: customer.phone ?? "",
+    customerEmail: customer.email ?? undefined,
   }
 }

@@ -303,8 +303,10 @@
         "foodCategoryGlutenFree": "Glutenfri",
         "foodCategoryDessert": "Dessert",
         "create": "Opret reservation",
+        "saving": "Gemmer...",
         "errorRequired": "Udfyld venligst alle påkrævede felter.",
-        "errorPartySize": "Selskabsstørrelsen skal være mindst 1."
+        "errorPartySize": "Selskabsstørrelsen skal være mindst 1.",
+        "errorSave": "Reservationen kunne ikke gemmes. Prøv igen."
       },
       "walkInDialog": {
         "title": "Walk-in kunde",

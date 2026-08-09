@@ -71,6 +71,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
         : [...d.foodCategories, value],
     }))
   const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   function resetForm() {
     setDraft({
@@ -110,44 +111,36 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     // duration to render — the customer simply wasn't asked for an exact one.
     const duration = durationMinutes === "unspecified" ? 90 : Number(durationMinutes)
 
-    const localReservation: CalendarReservation = {
-      id: `r-${Date.now()}`,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      customerEmail: customerEmail.trim() || undefined,
-      tableId,
-      partySize: party,
-      start: start.toISOString(),
-      durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : 90,
-      status: "PENDING",
-      foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
+    // Persist to the backend first. Only once the row is safely stored do we
+    // add it to the list and close the dialog — otherwise a failed save would
+    // look successful and the booking would disappear on the next refresh.
+    setIsSaving(true)
+    let saved: CalendarReservation
+    try {
+      saved = await createReservationOnServer({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim() || undefined,
+        partySize: party,
+        reservedFor: start.toISOString(),
+        notes: foodCategories.length > 0 ? `Food preferences: ${foodCategories.join(", ")}` : undefined,
+      })
+    } catch (err) {
+      console.error("[reservations] Failed to save reservation:", err)
+      setError(err instanceof Error ? err.message : t("pages.reservations.newDialog.errorSave"))
+      return
+    } finally {
+      setIsSaving(false)
     }
 
-    // Persist to the backend so the customer gets a confirmation email with
-    // a link to confirm (and optionally pick a table from the floor plan).
-    // Best-effort: if the request fails we still add the local row so the
-    // staff member isn't blocked (offline dev, etc.).
-    const saved = await createReservationOnServer({
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      customerEmail: customerEmail.trim() || undefined,
-      partySize: party,
-      reservedFor: start.toISOString(),
-      notes: foodCategories.length > 0 ? `Food preferences: ${foodCategories.join(", ")}` : undefined,
+    onCreate({
+      ...saved,
+      // The dialog's table pick and food tags aren't sent to the API yet,
+      // so keep the locally captured values.
+      tableId: saved.tableId || tableId,
+      durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : 90,
+      foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
     })
-
-    onCreate(
-      saved
-        ? {
-            ...saved,
-            // The dialog's table pick and food tags aren't sent to the API yet,
-            // so keep the locally captured values.
-            tableId: saved.tableId ?? tableId,
-            durationMinutes: localReservation.durationMinutes,
-            foodCategories: localReservation.foodCategories,
-          }
-        : localReservation,
-    )
 
     resetForm()
     setOpen(false)
@@ -321,7 +314,9 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
                 {t("pages.reservations.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit">{t("pages.reservations.newDialog.create")}</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? t("pages.reservations.newDialog.saving") : t("pages.reservations.newDialog.create")}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

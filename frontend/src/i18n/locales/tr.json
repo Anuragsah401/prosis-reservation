@@ -303,8 +303,10 @@
         "foodCategoryGlutenFree": "Glutensiz",
         "foodCategoryDessert": "Tatlı",
         "create": "Rezervasyon oluştur",
+        "saving": "Kaydediliyor...",
         "errorRequired": "Lütfen tüm gerekli alanları doldurun.",
-        "errorPartySize": "Kişi sayısı en az 1 olmalıdır."
+        "errorPartySize": "Kişi sayısı en az 1 olmalıdır.",
+        "errorSave": "Rezervasyon kaydedilemedi. Lütfen tekrar deneyin."
       },
       "walkInDialog": {
         "title": "Yürüyerek gelen müşteri",

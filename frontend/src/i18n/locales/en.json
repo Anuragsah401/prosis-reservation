@@ -303,8 +303,10 @@
         "foodCategoryGlutenFree": "Gluten-free",
         "foodCategoryDessert": "Dessert",
         "create": "Create reservation",
+        "saving": "Saving...",
         "errorRequired": "Please fill in all required fields.",
-        "errorPartySize": "Party size must be at least 1."
+        "errorPartySize": "Party size must be at least 1.",
+        "errorSave": "Could not save the reservation. Please try again."
       },
       "walkInDialog": {
         "title": "Walk-in customer",

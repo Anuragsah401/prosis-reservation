@@ -35,8 +35,22 @@ const DB_TO_API_STATUS: Record<ReservationStatus, string> = {
 // Statuses that still occupy a table (used for availability + overlap checks).
 const ACTIVE_STATUSES: ReservationStatus[] = ["PENDING", "CONFIRMED", "SEATED"]
 
-function toApiShape<T extends { status: ReservationStatus }>(reservation: T) {
-  return { ...reservation, status: DB_TO_API_STATUS[reservation.status] }
+/**
+ * Normalises a DB row into the API shape. Also drops `confirmationTokenHash`,
+ * which backs the guest confirmation link and must never leave the server —
+ * every public return path goes through here, so stripping it once covers all
+ * of them.
+ */
+function toApiShape<T extends { status: ReservationStatus }>(
+  reservation: T,
+): Omit<T, "status" | "confirmationTokenHash"> & { status: ReservationStatus } {
+  const { confirmationTokenHash: _hash, ...rest } = reservation as T & {
+    confirmationTokenHash?: string
+  }
+  return { ...rest, status: DB_TO_API_STATUS[reservation.status] } as Omit<
+    T,
+    "status" | "confirmationTokenHash"
+  > & { status: ReservationStatus }
 }
 
 // Valid forward transitions for reservation status updates.
