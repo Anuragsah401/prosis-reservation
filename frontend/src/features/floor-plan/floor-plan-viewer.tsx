@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react"
-import { Check, Maximize, ZoomIn, ZoomOut } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Check, Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface FloorPlanViewerTable {
@@ -52,6 +52,7 @@ export function FloorPlanViewer({
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [pinching, setPinching] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const dragStart = useRef({ x: 0, y: 0 })
   // Active pointers, so two fingers can be distinguished from one for pinch.
   const pointers = useRef(new Map<number, { x: number; y: number }>())
@@ -88,8 +89,36 @@ export function FloorPlanViewer({
     setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)))
   }
 
+  // Escape closes the overlay, and the page behind it is locked so it can't
+  // scroll under the fullscreen map on touch devices.
+  useEffect(() => {
+    if (!fullscreen) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false)
+    }
+    document.addEventListener("keydown", onKeyDown)
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [fullscreen])
+
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't
+        // support requestFullscreen() on non-video elements, which is exactly
+        // the mobile case this matters most for. Wrapping the whole component
+        // (not just the canvas) keeps the floor tabs reachable while expanded.
+        fullscreen && "bg-background fixed inset-0 z-50 p-3",
+      )}
+    >
       {floors.length > 1 && (
         <div className="flex flex-wrap items-center gap-1 rounded-md border p-0.5 self-start">
           {floors.map((floor) => (
@@ -118,7 +147,14 @@ export function FloorPlanViewer({
         </div>
       )}
 
-      <div className="bg-muted/30 relative overflow-hidden rounded-lg border">
+      <div
+        className={cn(
+          "bg-muted/30 relative overflow-hidden border",
+          // Fills the remaining overlay height so the canvas grows with the
+          // screen instead of staying at its fixed inline height.
+          fullscreen ? "min-h-0 flex-1 rounded-md" : "rounded-lg",
+        )}
+      >
         <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
           <button
             type="button"
@@ -145,12 +181,28 @@ export function FloorPlanViewer({
             className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
             aria-label="Reset view"
           >
-            <Maximize className="size-3.5" />
+            <RotateCcw className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFullscreen((f) => !f)
+              setZoom(1)
+              setPan({ x: 0, y: 0 })
+            }}
+            className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
+            aria-label={fullscreen ? "Exit full screen" : "View full screen"}
+          >
+            {fullscreen ? <Minimize className="size-3.5" /> : <Maximize className="size-3.5" />}
           </button>
         </div>
 
         <div
-          className={cn("h-85 w-full touch-none select-none sm:h-100", dragging ? "cursor-grabbing" : "cursor-grab")}
+          className={cn(
+            "w-full touch-none select-none",
+            fullscreen ? "h-full" : "h-85 sm:h-100",
+            dragging ? "cursor-grabbing" : "cursor-grab",
+          )}
           onWheel={(e) => {
             e.preventDefault()
             const delta = -e.deltaY * 0.0015
