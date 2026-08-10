@@ -10,6 +10,8 @@ interface CreateReservationOnServerInput {
   customerEmail?: string
   partySize: number
   reservedFor: string
+  /** Omitted when the guest will choose their own table on the confirm page. */
+  tableId?: string
   notes?: string
 }
 
@@ -138,6 +140,7 @@ export async function createReservationOnServer(
     customerId: customer.id,
     partySize: input.partySize,
     reservedFor: input.reservedFor,
+    tableId: input.tableId,
     notes: input.notes,
   })
 

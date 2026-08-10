@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { CalendarCheck, Loader2, Users } from "lucide-react"
+import { CalendarCheck, CalendarX, Loader2, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -42,6 +42,17 @@ async function confirmReservation(token: string, tableId?: string) {
   return data
 }
 
+async function cancelReservation(token: string) {
+  const res = await fetch(`${API_URL}/reservations/cancel-by-token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error ?? "Something went wrong")
+  return data
+}
+
 export function ReservationConfirmPage() {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
@@ -56,6 +67,8 @@ export function ReservationConfirmPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
+  const [cancelled, setCancelled] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -83,7 +96,25 @@ export function ReservationConfirmPage() {
       .finally(() => setSubmitting(false))
   }
 
+  function handleCancel() {
+    setSubmitError(null)
+    setSubmitting(true)
+    cancelReservation(token)
+      .then(() => {
+        setCancelled(true)
+        setConfirmingCancel(false)
+      })
+      .catch((err: unknown) => {
+        setSubmitError(err instanceof Error ? err.message : t("reservationConfirm.errorGeneric"))
+      })
+      .finally(() => setSubmitting(false))
+  }
+
   const reservation = details?.reservation
+  // Staff either assigned a table up front, or left it for the guest to pick.
+  // The floor plan is only offered in the latter case so a guest can't move
+  // themselves off a table the restaurant deliberately set aside for them.
+  const canChooseTable = Boolean(details && details.tables.length > 0 && !reservation?.table)
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
@@ -117,6 +148,22 @@ export function ReservationConfirmPage() {
                   {t("reservationConfirm.errorTitle")}
                 </h1>
                 <p className="text-destructive text-sm">{loadError}</p>
+              </div>
+            ) : cancelled ? (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <span className="bg-destructive/15 text-destructive flex size-12 items-center justify-center rounded-full">
+                  <CalendarX className="size-6" />
+                </span>
+                <div className="flex flex-col gap-1">
+                  <h1 className="text-xl font-semibold tracking-tight">
+                    {t("reservationConfirm.cancelledTitle")}
+                  </h1>
+                  <p className="text-muted-foreground text-sm">
+                    {t("reservationConfirm.cancelledSubtitle", {
+                      restaurant: reservation?.restaurantName,
+                    })}
+                  </p>
+                </div>
               </div>
             ) : confirmed ? (
               <div className="flex flex-col items-center gap-3 py-6 text-center">
@@ -165,9 +212,17 @@ export function ReservationConfirmPage() {
                       {reservation.partySize}
                     </span>
                   </div>
+                  {reservation.table && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t("reservationConfirm.table")}</span>
+                      <span className="font-medium">
+                        {reservation.table.floor} · {reservation.table.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {details && details.tables.length > 0 && (
+                {canChooseTable && details && (
                   <div className="flex flex-col gap-3">
                     <div>
                       <h2 className="text-sm font-medium">{t("reservationConfirm.chooseTable")}</h2>
@@ -206,10 +261,51 @@ export function ReservationConfirmPage() {
 
                 {submitError && <p className="text-destructive text-sm">{submitError}</p>}
 
-                <Button className="w-full" onClick={handleConfirm} disabled={submitting}>
-                  {submitting && <Loader2 className="size-4 animate-spin" />}
-                  {t("reservationConfirm.confirm")}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button className="w-full" onClick={handleConfirm} disabled={submitting}>
+                    {submitting && <Loader2 className="size-4 animate-spin" />}
+                    {t("reservationConfirm.confirm")}
+                  </Button>
+
+                  {confirmingCancel ? (
+                    <div className="border-destructive/40 bg-destructive/5 flex flex-col gap-2 rounded-lg border p-3">
+                      <p className="text-sm font-medium">{t("reservationConfirm.cancelConfirmTitle")}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {t("reservationConfirm.cancelConfirmHint")}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleCancel}
+                          disabled={submitting}
+                        >
+                          {submitting && <Loader2 className="size-4 animate-spin" />}
+                          {t("reservationConfirm.cancelYes")}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => setConfirmingCancel(false)}
+                          disabled={submitting}
+                        >
+                          {t("reservationConfirm.cancelNo")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      className="text-muted-foreground hover:text-destructive w-full"
+                      onClick={() => setConfirmingCancel(true)}
+                      disabled={submitting}
+                    >
+                      {t("reservationConfirm.cancelReservation")}
+                    </Button>
+                  )}
+                </div>
               </>
             ) : null}
           </CardContent>

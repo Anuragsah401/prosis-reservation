@@ -574,7 +574,16 @@ export function FloorPlanBuilder() {
           >
             <Background variant={BackgroundVariant.Dots} gap={16} />
             <Controls />
-            <MiniMap pannable zoomable className="bg-card!" />
+            {/*
+              React Flow's minimap defaults to 200x150, which eats a large
+              corner of a phone screen. Scaled down on small viewports (same
+              4:3 ratio) and restored at `sm` and up.
+            */}
+            <MiniMap
+              pannable
+              zoomable
+              className="bg-card! h-22.5! w-30! sm:h-37.5! sm:w-50!"
+            />
           </ReactFlow>
         )}
       </div>

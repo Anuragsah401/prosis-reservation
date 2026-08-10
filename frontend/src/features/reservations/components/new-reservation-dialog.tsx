@@ -24,6 +24,14 @@ import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
 import { capitalize, toDateInputValue, useTableOptions } from "../reservations-utils"
 import { createReservationOnServer } from "../reservations-api"
 
+/**
+ * Sentinel `tableId` meaning "don't assign a table now — let the guest pick
+ * one from the floor plan on the confirmation page". Kept distinct from an
+ * empty string so it survives the persisted form draft and is never confused
+ * with "nothing selected yet".
+ */
+export const LET_CUSTOMER_CHOOSE = "__customer_choice__"
+
 interface NewReservationDialogProps {
   defaultDate: Date
   onCreate: (reservation: CalendarReservation) => void
@@ -37,7 +45,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     customerName: "",
     customerPhone: "",
     customerEmail: "",
-    tableId: tableOptions[0]?.id ?? "",
+    tableId: LET_CUSTOMER_CHOOSE,
     date: toDateInputValue(defaultDate),
     time: "19:00",
     partySize: "2",
@@ -78,7 +86,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       customerName: "",
       customerPhone: "",
       customerEmail: "",
-      tableId: tableOptions[0]?.id ?? "",
+      tableId: LET_CUSTOMER_CHOOSE,
       date: toDateInputValue(defaultDate),
       time: "19:00",
       partySize: "2",
@@ -123,6 +131,10 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
         customerEmail: customerEmail.trim() || undefined,
         partySize: party,
         reservedFor: start.toISOString(),
+        // Omitted when the guest will pick their own table, which is what
+        // leaves the reservation unassigned and unlocks the floor-plan
+        // picker on the confirmation page.
+        tableId: tableId === LET_CUSTOMER_CHOOSE ? undefined : tableId,
         notes: foodCategories.length > 0 ? `Food preferences: ${foodCategories.join(", ")}` : undefined,
       })
     } catch (err) {
@@ -135,9 +147,6 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
 
     onCreate({
       ...saved,
-      // The dialog's table pick and food tags aren't sent to the API yet,
-      // so keep the locally captured values.
-      tableId: saved.tableId || tableId,
       durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : 90,
       foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
     })
@@ -250,6 +259,9 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
                 <SelectValue placeholder={t("pages.reservations.newDialog.selectTable")} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={LET_CUSTOMER_CHOOSE}>
+                  {t("pages.reservations.newDialog.letCustomerChoose")}
+                </SelectItem>
                 {tableOptions.map((t2) => (
                   <SelectItem key={t2.id} value={t2.id}>
                     {t2.floor} · {t("pages.reservations.colTable")} {t2.name} ({t2.capacity}{" "}

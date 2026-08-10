@@ -334,6 +334,37 @@ export const reservationService = {
     return toApiShape(updated)
   },
 
+  /**
+   * Public: cancels a reservation via its confirmation token, so a guest can
+   * back out from the same link they were emailed without needing an account.
+   *
+   * Cancelling an already-cancelled reservation is treated as success rather
+   * than an error — the guest's intent is already satisfied, and a second tap
+   * (or a double-submit) shouldn't show them a scary failure.
+   */
+  async cancelByToken(rawToken: string) {
+    const tokenHash = hashConfirmationToken(rawToken)
+    const reservation = await prisma.reservation.findUnique({
+      where: { confirmationTokenHash: tokenHash },
+    })
+
+    if (!reservation) {
+      throw new Error("Invalid confirmation link")
+    }
+    if (reservation.status === "CANCELLED") {
+      return toApiShape(reservation)
+    }
+    if (reservation.status === "COMPLETED" || reservation.status === "NO_SHOW") {
+      throw new Error("This reservation can no longer be cancelled")
+    }
+
+    const updated = await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { status: "CANCELLED" },
+    })
+    return toApiShape(updated)
+  },
+
   async update(
     id: string,
     data: Partial<{

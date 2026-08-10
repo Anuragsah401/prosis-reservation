@@ -44,3 +44,7 @@ export const confirmReservationSchema = z.object({
   token: z.string().trim().min(1, "token is required"),
   tableId: z.string().min(1).optional(),
 })
+
+export const cancelReservationByTokenSchema = z.object({
+  token: z.string().trim().min(1, "token is required"),
+})
