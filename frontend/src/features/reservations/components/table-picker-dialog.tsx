@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,8 +11,9 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog"
+import type { FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 import { FloorPlanViewer } from "@/features/floor-plan/floor-plan-viewer"
-import { buildViewerTables } from "../reservations-utils"
+import { buildViewerTables, loadViewerTables } from "../reservations-utils"
 
 interface TablePickerDialogProps {
   open: boolean
@@ -42,8 +44,25 @@ export function TablePickerDialog({
   onConfirm,
 }: TablePickerDialogProps) {
   const { t } = useTranslation()
-  const tables = useMemo(() => buildViewerTables(partySize), [partySize])
+  // Render this browser's last snapshot instantly, then swap in the backend's
+  // authoritative plan once it arrives. The parent remounts this dialog per
+  // open (key tied to `open`), so a fresh fetch happens every time it opens.
+  const [tables, setTables] = useState<FloorPlanViewerTable[]>(() => buildViewerTables(partySize))
+  const [loading, setLoading] = useState(true)
   const [selection, setSelection] = useState<string | null>(selectedTableId)
+
+  useEffect(() => {
+    let cancelled = false
+    void Promise.resolve().then(async () => {
+      const next = await loadViewerTables(partySize)
+      if (cancelled) return
+      setTables(next)
+      setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [partySize])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -53,7 +72,11 @@ export function TablePickerDialog({
           <DialogDescription>{t("pages.reservations.tablePicker.description")}</DialogDescription>
         </DialogHeader>
 
-        {tables.length === 0 ? (
+        {loading && tables.length === 0 ? (
+          <div className="flex h-48 items-center justify-center">
+            <Loader2 className="text-muted-foreground size-5 animate-spin" />
+          </div>
+        ) : tables.length === 0 ? (
           <div className="bg-muted/30 text-muted-foreground flex h-48 items-center justify-center rounded-lg border text-center text-sm px-6">
             {t("pages.reservations.tablePicker.empty")}
           </div>

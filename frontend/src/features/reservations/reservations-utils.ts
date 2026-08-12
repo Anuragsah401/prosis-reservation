@@ -2,11 +2,13 @@ import { useMemo } from "react"
 import {
   loadFloorPlanTables,
   loadPositions,
+  fetchFloorPlanFromServer,
 } from "@/features/floor-plan/floor-plan-storage"
 import {
   DEFAULT_TABLE_WIDTH,
   DEFAULT_TABLE_HEIGHT,
 } from "@/features/floor-plan/floor-plan-data"
+import type { FloorPlanTable } from "@/features/floor-plan/floor-plan-data"
 import type { FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 
 export interface TableOption {
@@ -54,6 +56,36 @@ export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
       available: t.capacity >= partySize,
     }
   })
+}
+
+/**
+ * Tables for the Floor Plan picker, loaded from the backend the same way the
+ * Floor Plan builder does. The backend is the shared source of truth — a plan
+ * saved on one browser must show up here on another, so reading only this
+ * browser's localStorage was why the picker could drift out of sync. When the
+ * backend can't be reached (e.g. not logged in) we fall back to the local
+ * snapshot, which is also what makes the picker render instantly.
+ */
+export async function loadViewerTables(partySize: number): Promise<FloorPlanViewerTable[]> {
+  const serverTables = await fetchFloorPlanFromServer()
+  if (serverTables !== null) return serverTables.map((t) => toViewerTable(t, partySize))
+  return buildViewerTables(partySize)
+}
+
+function toViewerTable(t: FloorPlanTable, partySize: number): FloorPlanViewerTable {
+  return {
+    id: t.id,
+    name: t.name,
+    capacity: t.capacity,
+    floor: t.floor || "Main Floor",
+    shape: t.shape ?? "RECTANGLE",
+    positionX: t.positionX ?? null,
+    positionY: t.positionY ?? null,
+    width: t.width ?? DEFAULT_TABLE_WIDTH,
+    height: t.height ?? DEFAULT_TABLE_HEIGHT,
+    rotation: t.rotation ?? 0,
+    available: t.capacity >= partySize,
+  }
 }
 
 export function isSameDay(a: Date, b: Date) {

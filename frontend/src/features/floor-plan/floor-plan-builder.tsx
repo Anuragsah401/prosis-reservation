@@ -189,9 +189,23 @@ export function FloorPlanBuilder() {
           return merged
         })
         // Keep the local cache in step so other views (and an offline reload)
-        // see the same tables.
+        // see the same tables AND their geometry — previously only the
+        // summaries were cached, so the new-reservation picker showed the
+        // grid fallback instead of the arranged layout when reading locally.
         saveFloorPlanTables(
           tables.map((tb) => ({ id: tb.id, name: tb.name, floor: tb.floor, capacity: tb.capacity })),
+        )
+        void savePositions(
+          tables.map((tb) => ({
+            id: tb.id,
+            positionX: tb.positionX,
+            positionY: tb.positionY,
+            width: tb.width,
+            height: tb.height,
+            shape: tb.shape,
+            rotation: tb.rotation,
+            floor: tb.floor,
+          })),
         )
       }
       setIsLoadingPlan(false)
