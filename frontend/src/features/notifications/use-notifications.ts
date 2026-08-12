@@ -33,7 +33,9 @@ export interface UseNotificationsResult {
  * immediately when a reservation mutation emits a refresh event.
  */
 export function useNotifications(restaurantId?: string): UseNotificationsResult {
-  const effectiveRestaurantId = restaurantId ?? getCurrentRestaurantId()
+  // `getCurrentRestaurantId()` can return null (no signed-in restaurant); the
+  // service functions take `string | undefined`, so collapse null to undefined.
+  const effectiveRestaurantId = restaurantId ?? getCurrentRestaurantId() ?? undefined
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [isLoading, setIsLoading] = useState(true)
   // Guard against overlapping fetches (an in-flight action refresh racing a poll).
