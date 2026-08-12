@@ -1,36 +1,30 @@
-import { API_URL } from "@/lib/config"
-import { initialNotifications, type AppNotification } from "@/features/notifications/notification-data"
+import { apiClient, getCurrentRestaurantId } from "@/lib/api-client"
+import type { AppNotification } from "@/features/notifications/notification-data"
 
 const STORAGE_KEY = "prosisit:notifications"
 
 /**
- * Notification service layer — designed as a drop-in point for the real
- * backend API. Each function first attempts the corresponding REST call
- * (commented endpoint paths below match the pattern used elsewhere in this
- * app, e.g. `floor-plan-storage.ts` / `calendar-storage.ts`) and falls back
- * to a localStorage-backed mock so the UI is fully functional before auth
- * and the backend endpoints exist.
+ * Notification service layer against the real backend (`/api/notifications`).
+ * The backend is the source of truth — notifications are created server-side
+ * as reservation events happen, so they survive a refresh and show up across
+ * devices. localStorage is only a fallback so the feed still renders (empty)
+ * when there's no signed-in restaurant context or the backend is unreachable.
  *
- * Expected backend endpoints (once implemented):
- *   GET    /api/notifications                 -> AppNotification[]
- *   PATCH  /api/notifications/:id/read         -> { read: true }
- *   PATCH  /api/notifications/read-all         -> { read: true }
- *   DELETE /api/notifications/:id              -> 204
- *
- * To connect to the real backend, replace the body of each function below
- * with the corresponding `fetch(`${API_URL}/notifications...`)` call — the
- * public function signatures are already shaped to match, so no caller
- * changes should be needed.
+ * Endpoints:
+ *   GET    /api/notifications               -> AppNotification[]
+ *   PATCH  /api/notifications/:id/read      -> { read: true }
+ *   PATCH  /api/notifications/read-all      -> { read: true }
+ *   DELETE /api/notifications/:id           -> 204
  */
 
 function loadLocal(): AppNotification[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return initialNotifications
+    if (!raw) return []
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : initialNotifications
+    return Array.isArray(parsed) ? parsed : []
   } catch {
-    return initialNotifications
+    return []
   }
 }
 
@@ -43,32 +37,26 @@ function saveLocal(notifications: AppNotification[]) {
 }
 
 export async function fetchNotifications(restaurantId?: string): Promise<AppNotification[]> {
-  if (restaurantId) {
+  const id = restaurantId ?? getCurrentRestaurantId()
+  if (id) {
     try {
-      const res = await fetch(`${API_URL}/notifications?restaurantId=${restaurantId}`)
-      if (res.ok) {
-        const data = (await res.json()) as AppNotification[]
-        saveLocal(data)
-        return data
-      }
-    } catch {
-      // fall through to local mock
+      // The restaurant is derived from the JWT, not sent as a query param.
+      const data = await apiClient.get<AppNotification[]>("/notifications")
+      saveLocal(data)
+      return data
+    } catch (err) {
+      console.error("[notifications] Failed to load from backend:", err)
     }
   }
   return loadLocal()
 }
 
 export async function markNotificationRead(id: string, restaurantId?: string): Promise<void> {
-  if (restaurantId) {
+  if (restaurantId ?? getCurrentRestaurantId()) {
     try {
-      const res = await fetch(`${API_URL}/notifications/${id}/read`, { method: "PATCH" })
-      if (res.ok) {
-        const current = loadLocal()
-        saveLocal(current.map((n) => (n.id === id ? { ...n, read: true } : n)))
-        return
-      }
-    } catch {
-      // fall through to local mock
+      await apiClient.patch(`/notifications/${id}/read`)
+    } catch (err) {
+      console.error("[notifications] Failed to mark read on backend:", err)
     }
   }
   const current = loadLocal()
@@ -76,16 +64,11 @@ export async function markNotificationRead(id: string, restaurantId?: string): P
 }
 
 export async function markAllNotificationsRead(restaurantId?: string): Promise<void> {
-  if (restaurantId) {
+  if (restaurantId ?? getCurrentRestaurantId()) {
     try {
-      const res = await fetch(`${API_URL}/notifications/read-all`, { method: "PATCH" })
-      if (res.ok) {
-        const current = loadLocal()
-        saveLocal(current.map((n) => ({ ...n, read: true })))
-        return
-      }
-    } catch {
-      // fall through to local mock
+      await apiClient.patch("/notifications/read-all")
+    } catch (err) {
+      console.error("[notifications] Failed to mark all read on backend:", err)
     }
   }
   const current = loadLocal()
@@ -93,16 +76,11 @@ export async function markAllNotificationsRead(restaurantId?: string): Promise<v
 }
 
 export async function dismissNotification(id: string, restaurantId?: string): Promise<void> {
-  if (restaurantId) {
+  if (restaurantId ?? getCurrentRestaurantId()) {
     try {
-      const res = await fetch(`${API_URL}/notifications/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        const current = loadLocal()
-        saveLocal(current.filter((n) => n.id !== id))
-        return
-      }
-    } catch {
-      // fall through to local mock
+      await apiClient.delete(`/notifications/${id}`)
+    } catch (err) {
+      console.error("[notifications] Failed to dismiss on backend:", err)
     }
   }
   const current = loadLocal()

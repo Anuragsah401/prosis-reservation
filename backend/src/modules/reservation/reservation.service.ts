@@ -3,6 +3,8 @@ import { prisma } from "@/db/client"
 import { env } from "@/config/env"
 import { mailer } from "@/utils/mailer"
 import { sms } from "@/utils/sms"
+import { notificationService } from "@/modules/notification/notification.service"
+import type { CreateNotificationInput } from "@/modules/notification/notification.service"
 import type { Prisma, ReservationStatus, TableStatus } from "@prisma/client"
 
 // Default duration a table is considered occupied by a single reservation,
@@ -67,6 +69,104 @@ async function syncTableStatus(tableId: string | null) {
   if (table.status !== nextStatus) {
     await prisma.table.update({ where: { id: tableId }, data: { status: nextStatus } })
   }
+}
+
+// ---------------------------------------------------------------------------
+// Staff notification feed
+// ---------------------------------------------------------------------------
+
+interface NotificationContext {
+  customer: { name: string }
+  table: { number: string } | null
+  reservedFor: Date
+  partySize: number
+}
+
+/** Fetches just the fields needed to build a human-readable notification
+ * message for a reservation. Returns null if the reservation no longer
+ * exists (e.g. it was deleted). */
+async function getNotificationContext(reservationId: string): Promise<NotificationContext | null> {
+  return prisma.reservation.findUnique({
+    where: { id: reservationId },
+    select: {
+      customer: { select: { name: true } },
+      table: { select: { number: true } },
+      reservedFor: true,
+      partySize: true,
+    },
+  })
+}
+
+function formatTime(date: Date) {
+  return date.toLocaleString(undefined, { hour: "numeric", minute: "2-digit" })
+}
+
+/** Best-effort: a notification failure must never roll back the reservation
+ * operation that produced it — staff can always see the change in the list. */
+async function notify(restaurantId: string, data: CreateNotificationInput) {
+  try {
+    await notificationService.create(restaurantId, data)
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[notifications] Failed to record notification:", err)
+  }
+}
+
+/** Notification for a reservation reaching a new status (seated, completed,
+ * no-show, cancelled, confirmed). Returns null for statuses that don't map
+ * to a staff notification. */
+function statusNotification(
+  status: ReservationStatus,
+  ctx: NotificationContext,
+): CreateNotificationInput | null {
+  const when = formatTime(ctx.reservedFor)
+  const tableName = ctx.table ? `Table ${ctx.table.number}` : null
+  switch (status) {
+    case "SEATED":
+      return {
+        type: "reservation_updated",
+        title: "Guest seated",
+        message: `${ctx.customer.name} was seated at ${tableName ?? "a table"}.`,
+        href: "/reservations",
+      }
+    case "COMPLETED":
+      return {
+        type: "reservation_updated",
+        title: "Reservation completed",
+        message: `${ctx.customer.name}'s ${when} booking was completed.`,
+        href: "/reservations",
+      }
+    case "NO_SHOW":
+      return {
+        type: "reservation_updated",
+        title: "No-show",
+        message: `${ctx.customer.name} did not show up for their ${when} booking.`,
+        href: "/reservations",
+      }
+    case "CANCELLED":
+      return {
+        type: "reservation_cancelled",
+        title: "Reservation cancelled",
+        message: `${ctx.customer.name} cancelled their ${when} booking.`,
+        href: "/reservations",
+      }
+    case "CONFIRMED":
+      return {
+        type: "reservation_confirmed",
+        title: "Reservation confirmed",
+        message: `${ctx.customer.name} confirmed their ${when} booking.`,
+        href: "/reservations",
+      }
+    default:
+      return null
+  }
+}
+
+async function notifyStatusChange(reservationId: string, restaurantId: string, status: ReservationStatus) {
+  const ctx = await getNotificationContext(reservationId)
+  if (!ctx) return
+  const notification = statusNotification(status, ctx)
+  if (notification) await notify(restaurantId, notification)
 }
 
 /**
@@ -248,6 +348,26 @@ export const reservationService = {
       )
     }
 
+    // Record the event in the staff notification feed — a new reservation for
+    // the bell, or a "walk-in seated" when the guest was seated immediately.
+    if (isWalkIn) {
+      await notify(reservation.restaurantId, {
+        type: "reservation_new",
+        title: "Walk-in seated",
+        message: `${reservation.customer.name} walked in and was seated${
+          reservation.table ? ` at Table ${reservation.table.number}` : ""
+        } for ${reservation.partySize}.`,
+        href: "/reservations",
+      })
+    } else {
+      await notify(reservation.restaurantId, {
+        type: "reservation_new",
+        title: "New reservation",
+        message: `${reservation.customer.name} booked a table for ${reservation.partySize} at ${formatTime(reservation.reservedFor)}.`,
+        href: "/reservations",
+      })
+    }
+
     const { customer: _c, restaurant: _r, table, ...rest } = reservation
     return toApiShape({
       ...rest,
@@ -388,6 +508,7 @@ export const reservationService = {
     // mark the newly chosen one as Reserved.
     await syncTableStatus(reservation.tableId)
     await syncTableStatus(updated.tableId)
+    await notifyStatusChange(updated.id, updated.restaurantId, "CONFIRMED")
     return toApiShape(updated)
   },
 
@@ -420,6 +541,7 @@ export const reservationService = {
       data: { status: "CANCELLED" },
     })
     await syncTableStatus(reservation.tableId)
+    await notifyStatusChange(updated.id, updated.restaurantId, "CANCELLED")
     return toApiShape(updated)
   },
 
@@ -444,6 +566,15 @@ export const reservationService = {
     // Reassigning to another table releases the old one and books the new one.
     await syncTableStatus(existing.tableId)
     await syncTableStatus(reservation.tableId)
+    const ctx = await getNotificationContext(reservation.id)
+    if (ctx) {
+      await notify(reservation.restaurantId, {
+        type: "reservation_updated",
+        title: "Reservation updated",
+        message: `${ctx.customer.name}'s ${formatTime(ctx.reservedFor)} booking was updated.`,
+        href: "/reservations",
+      })
+    }
     return toApiShape(reservation)
   },
 
@@ -475,6 +606,7 @@ export const reservationService = {
     })
     // Seating occupies the table; cancelling/completing/no-showing frees it.
     await syncTableStatus(reservation.tableId)
+    await notifyStatusChange(reservation.id, reservation.restaurantId, nextStatus)
     return toApiShape(reservation)
   },
 
@@ -487,8 +619,18 @@ export const reservationService = {
     if (!existing) {
       throw new Error("Reservation not found")
     }
+    // Grab the message context before the row is gone.
+    const ctx = await getNotificationContext(id)
     const deleted = await prisma.reservation.delete({ where: { id } })
     await syncTableStatus(existing.tableId)
+    if (ctx) {
+      await notify(existing.restaurantId, {
+        type: "reservation_updated",
+        title: "Reservation deleted",
+        message: `${ctx.customer.name}'s ${formatTime(ctx.reservedFor)} booking was deleted.`,
+        href: "/reservations",
+      })
+    }
     return deleted
   },
 }

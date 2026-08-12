@@ -5,6 +5,7 @@ import {
   Bell,
   Check,
   CalendarPlus,
+  CalendarCheck,
   CalendarX,
   CalendarClock,
   Users2,
@@ -23,6 +24,7 @@ import {
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
   reservation_new: CalendarPlus,
+  reservation_confirmed: CalendarCheck,
   reservation_cancelled: CalendarX,
   reservation_updated: CalendarClock,
   waitlist: Users2,
@@ -136,7 +138,17 @@ export function NotificationsPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className={cn("font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                      {n.href ? (
+                        <Link
+                          to={n.href}
+                          onClick={(e) => e.stopPropagation()}
+                          className={cn("font-medium", !n.read && "font-semibold")}
+                        >
+                          {n.title}
+                        </Link>
+                      ) : (
+                        <p className={cn("font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                      )}
                       {!n.read && <span className="bg-primary size-1.5 shrink-0 rounded-full" />}
                     </div>
                     <p className="text-muted-foreground mt-0.5">{n.message}</p>

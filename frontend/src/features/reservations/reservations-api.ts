@@ -1,4 +1,5 @@
 import { apiClient, getCurrentRestaurantId, ApiError } from "@/lib/api-client"
+import { emitNotificationRefresh } from "@/features/notifications/notification-events"
 import type {
   CalendarReservation,
   ReservationStatus,
@@ -82,6 +83,9 @@ export async function fetchReservations(): Promise<CalendarReservation[]> {
  */
 export async function updateReservationStatusOnServer(id: string, status: ReservationStatus) {
   await apiClient.patch(`/reservations/${id}/status`, { status })
+  // The backend records this status change as a notification (seated,
+  // cancelled, completed, ...), so ask the bell to refetch right away.
+  emitNotificationRefresh()
 }
 
 /** Editable reservation fields. `tableName` is client-side only (used to
@@ -110,11 +114,13 @@ export async function updateReservationOnServer(id: string, changes: UpdateReser
   if (changes.tableId !== undefined) body.tableId = changes.tableId
   if (changes.notes !== undefined) body.notes = changes.notes
   await apiClient.patch(`/reservations/${id}`, body)
+  emitNotificationRefresh()
 }
 
 /** Permanently deletes a reservation. Throws on failure. */
 export async function deleteReservationOnServer(id: string) {
   await apiClient.delete(`/reservations/${id}`)
+  emitNotificationRefresh()
 }
 
 /**
@@ -199,6 +205,9 @@ export async function createReservationOnServer(
   // The create response omits the customer relation, so it's filled in from
   // the record resolved above — otherwise the new row would render as
   // "Guest" until the next refetch.
+  // The backend records this as a "New reservation" (or "Walk-in seated")
+  // notification, so ask the bell to refetch right away.
+  emitNotificationRefresh()
   return {
     ...toCalendarReservation(created),
     customerId: customer.id,

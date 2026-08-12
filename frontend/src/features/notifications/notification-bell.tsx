@@ -1,4 +1,4 @@
-import { Bell, Check, CalendarPlus, CalendarX, CalendarClock, Users2, Info, X } from "lucide-react"
+import { Bell, Check, CalendarPlus, CalendarCheck, CalendarX, CalendarClock, Users2, Info, X } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,7 @@ import type { NotificationType } from "@/features/notifications/notification-dat
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
   reservation_new: CalendarPlus,
+  reservation_confirmed: CalendarCheck,
   reservation_cancelled: CalendarX,
   reservation_updated: CalendarClock,
   waitlist: Users2,
@@ -101,7 +102,17 @@ export function NotificationBell() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className={cn("truncate font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                      {n.href ? (
+                        <Link
+                          to={n.href}
+                          onClick={(e) => e.stopPropagation()}
+                          className={cn("truncate font-medium", !n.read && "font-semibold")}
+                        >
+                          {n.title}
+                        </Link>
+                      ) : (
+                        <p className={cn("truncate font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                      )}
                       {!n.read && <span className="bg-primary size-1.5 shrink-0 rounded-full" />}
                     </div>
                     <p className="text-muted-foreground line-clamp-2">{n.message}</p>

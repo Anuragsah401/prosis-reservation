@@ -9,6 +9,7 @@ import { restaurantRouter } from "@/modules/restaurant/restaurant.routes"
 import { tableRouter } from "@/modules/table/table.routes"
 import { reservationRouter } from "@/modules/reservation/reservation.routes"
 import { customerRouter } from "@/modules/customer/customer.routes"
+import { notificationRouter } from "@/modules/notification/notification.routes"
 
 export const app = express()
 
@@ -37,6 +38,7 @@ app.use("/api/restaurants", restaurantRouter)
 app.use("/api/tables", tableRouter)
 app.use("/api/reservations", reservationRouter)
 app.use("/api/customers", customerRouter)
+app.use("/api/notifications", notificationRouter)
 
 // 404 handler
 app.use((_req, res) => {

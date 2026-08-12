@@ -25,11 +25,12 @@ model Restaurant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roles        Role[]
-  users        User[]
-  tables       Table[]
-  customers    Customer[]
-  reservations Reservation[]
+  roles         Role[]
+  users         User[]
+  tables        Table[]
+  customers     Customer[]
+  reservations  Reservation[]
+  notifications Notification[]
 
   @@map("restaurants")
 }
@@ -153,6 +154,24 @@ model Reservation {
   @@index([customerId])
   @@index([reservedFor])
   @@map("reservations")
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  restaurantId String
+  type         String
+  title        String
+  message      String
+  href         String?
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, read])
+  @@index([restaurantId, createdAt])
+  @@map("notifications")
 }
 
 enum TableStatus {
