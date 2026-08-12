@@ -173,7 +173,7 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{t("pages.reservations.editDialog.title")}</DialogTitle>
           <DialogDescription>{t("pages.reservations.editDialog.description")}</DialogDescription>

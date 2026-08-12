@@ -114,7 +114,7 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
           <span className="sm:hidden">{t("pages.reservations.walkInShort")}</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{t("pages.reservations.walkInDialog.title")}</DialogTitle>
           <DialogDescription>{t("pages.reservations.walkInDialog.description")}</DialogDescription>

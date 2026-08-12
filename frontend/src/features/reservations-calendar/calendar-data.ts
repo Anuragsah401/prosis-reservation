@@ -37,6 +37,8 @@ export interface CalendarReservation {
   notes?: string
   /** Preferred food categories/cuisines requested by the customer, if any. */
   foodCategories?: string[]
+  /** The type of event this reservation is for (birthday, meeting, ...). */
+  eventType?: string
 }
 
 /**
