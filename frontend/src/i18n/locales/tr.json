@@ -401,8 +401,6 @@
         "phoneOptional": "Telefon numarası (isteğe bağlı)",
         "partySize": "Kişi sayısı",
         "table": "Masa",
-        "selectTable": "Masa seç",
-        "seats": "kişilik",
         "seat": "Yürüyerek geleni oturt",
         "errorRequired": "Lütfen bir isim girin ve masa seçin.",
         "errorPartySize": "Kişi sayısı en az 1 olmalıdır.",

@@ -401,8 +401,6 @@
         "phoneOptional": "Telefonnummer (valgfrit)",
         "partySize": "Selskabsstørrelse",
         "table": "Bord",
-        "selectTable": "Vælg bord",
-        "seats": "pladser",
         "seat": "Sæt walk-in",
         "errorRequired": "Indtast venligst et navn og vælg et bord.",
         "errorPartySize": "Selskabsstørrelsen skal være mindst 1.",

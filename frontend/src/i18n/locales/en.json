@@ -401,8 +401,6 @@
         "phoneOptional": "Phone number (optional)",
         "partySize": "Party size",
         "table": "Table",
-        "selectTable": "Select table",
-        "seats": "seats",
         "seat": "Seat walk-in",
         "errorRequired": "Please enter a name and select a table.",
         "errorPartySize": "Party size must be at least 1.",

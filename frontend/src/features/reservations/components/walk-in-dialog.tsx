@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { UserPlus } from "lucide-react"
+import { Check, LayoutGrid, UserPlus } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,11 +16,11 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
 import { createReservationOnServer } from "../reservations-api"
 import { useTableOptions } from "../reservations-utils"
+import { TablePickerDialog } from "./table-picker-dialog"
 
 interface WalkInDialogProps {
   onCreate: (reservation: CalendarReservation) => void
@@ -44,6 +45,10 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
   const setPartySize = (v: string) => setDraft((d) => ({ ...d, partySize: v }))
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  // The floor-plan table staff picked, used to label the picker button.
+  const selectedFloorTable = tableId ? tableOptions.find((t) => t.id === tableId) : undefined
 
   function resetForm() {
     setDraft({
@@ -155,33 +160,43 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="walkin-party">{t("pages.reservations.walkInDialog.partySize")}</Label>
-              <Input
-                id="walkin-party"
-                type="number"
-                min={1}
-                value={partySize}
-                onChange={(e) => setPartySize(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>{t("pages.reservations.walkInDialog.table")}</Label>
-              <Select value={tableId} onValueChange={setTableId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("pages.reservations.walkInDialog.selectTable")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {tableOptions.map((t2) => (
-                    <SelectItem key={t2.id} value={t2.id}>
-                      {t2.floor} · {t("pages.reservations.colTable")} {t2.name} ({t2.capacity}{" "}
-                      {t("pages.reservations.walkInDialog.seats")})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="walkin-party">{t("pages.reservations.walkInDialog.partySize")}</Label>
+            <Input
+              id="walkin-party"
+              type="number"
+              min={1}
+              value={partySize}
+              onChange={(e) => setPartySize(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>{t("pages.reservations.walkInDialog.table")}</Label>
+            <button
+              type="button"
+              aria-pressed={Boolean(selectedFloorTable)}
+              onClick={() => setPickerOpen(true)}
+              className={cn(
+                "flex w-full flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                selectedFloorTable ? "border-primary bg-primary/5" : "border-input hover:bg-accent/50",
+              )}
+            >
+              <span className="flex w-full items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <LayoutGrid className="text-muted-foreground size-4" />
+                  {selectedFloorTable
+                    ? `${t("pages.reservations.colTable")} ${selectedFloorTable.name}`
+                    : t("pages.reservations.newDialog.chooseFromFloorPlan")}
+                </span>
+                {selectedFloorTable && <Check className="text-primary size-4" />}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {selectedFloorTable
+                  ? selectedFloorTable.floor
+                  : t("pages.reservations.newDialog.chooseFromFloorPlanHint")}
+              </span>
+            </button>
           </div>
 
           {error && <p className="text-destructive text-sm">{error}</p>}
@@ -200,6 +215,17 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Nested dialog: remounts per open (via key) so the picker's local
+          selection re-initializes from the current assignment each time. */}
+      <TablePickerDialog
+        key={pickerOpen ? "picker-open" : "picker-closed"}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selectedTableId={tableId || null}
+        partySize={Number(partySize) || 1}
+        onConfirm={setTableId}
+      />
     </Dialog>
   )
 }
