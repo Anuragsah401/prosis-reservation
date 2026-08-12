@@ -1,6 +1,7 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import {
   Check,
   Eye,
@@ -29,24 +30,26 @@ import { authClient, AuthError } from "@/features/auth/auth-client"
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
 
 const steps = [
-  { title: "Your account", icon: User },
-  { title: "Restaurant details", icon: Store },
-  { title: "Tables & hours", icon: UtensilsCrossed },
-]
+  { titleKey: "auth.signup.stepYourAccount", icon: User },
+  { titleKey: "auth.signup.stepRestaurantDetails", icon: Store },
+  { titleKey: "auth.signup.stepTablesHours", icon: UtensilsCrossed },
+] as const
 
-const cuisineOptions = [
-  "American",
-  "Italian",
-  "Indian",
-  "Japanese",
-  "Mexican",
-  "Mediterranean",
-  "Other",
+// Stable values are stored in the form draft; only the display label is localized.
+const cuisineOptions: { value: string; labelKey: string }[] = [
+  { value: "American", labelKey: "auth.signup.cuisineAmerican" },
+  { value: "Italian", labelKey: "auth.signup.cuisineItalian" },
+  { value: "Indian", labelKey: "auth.signup.cuisineIndian" },
+  { value: "Japanese", labelKey: "auth.signup.cuisineJapanese" },
+  { value: "Mexican", labelKey: "auth.signup.cuisineMexican" },
+  { value: "Mediterranean", labelKey: "auth.signup.cuisineMediterranean" },
+  { value: "Other", labelKey: "auth.signup.cuisineOther" },
 ]
 
 const tableCountOptions = ["1-5", "6-10", "11-20", "21-40", "40+"]
 
 export function SignupPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -87,23 +90,23 @@ export function SignupPage() {
   function validateStep(current: number) {
     if (current === 0) {
       if (!name.trim() || !email.trim() || !password) {
-        return "Please fill in all fields."
+        return t("auth.signup.errorRequiredFields")
       }
       if (password.length < 8) {
-        return "Password must be at least 8 characters."
+        return t("auth.signup.errorPasswordLength")
       }
       if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-        return "Password must contain at least one letter and one number."
+        return t("auth.signup.errorPasswordComplexity")
       }
     }
     if (current === 1) {
       if (!restaurantName.trim() || !cuisine) {
-        return "Please fill in your restaurant name and cuisine type."
+        return t("auth.signup.errorRestaurantAndCuisine")
       }
     }
     if (current === 2) {
       if (!tableCount) {
-        return "Please select how many tables you have."
+        return t("auth.signup.errorTableCount")
       }
     }
     return null
@@ -147,7 +150,7 @@ export function SignupPage() {
         navigate("/reservations")
       })
       .catch((err: unknown) => {
-        setError(err instanceof AuthError ? err.message : "Something went wrong. Please try again.")
+        setError(err instanceof AuthError ? err.message : t("auth.signup.errorGeneric"))
       })
       .finally(() => {
         setLoading(false)
@@ -171,7 +174,7 @@ export function SignupPage() {
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
               PT
             </span>
-            <span className="text-lg font-semibold tracking-tight">Prosisit Table</span>
+            <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>
         </div>
 
@@ -181,7 +184,7 @@ export function SignupPage() {
             const isCompleted = index < step
             const isActive = index === step
             return (
-              <div key={s.title} className="flex flex-1 items-center gap-2">
+              <div key={s.titleKey} className="flex flex-1 items-center gap-2">
                 <div className="flex flex-col items-center gap-1.5">
                   <div
                     className={cn(
@@ -199,7 +202,7 @@ export function SignupPage() {
                       isActive ? "text-foreground font-medium" : "text-muted-foreground",
                     )}
                   >
-                    {s.title}
+                    {t(s.titleKey)}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
@@ -218,12 +221,12 @@ export function SignupPage() {
         <Card>
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-col gap-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight">{steps[step].title}</h1>
+              <h1 className="text-xl font-semibold tracking-tight">{t(steps[step].titleKey)}</h1>
               <p className="text-muted-foreground text-sm">
-                Step {step + 1} of {steps.length} —{" "}
-                {step === 0 && "let's start with your login details."}
-                {step === 1 && "tell us a bit about your restaurant."}
-                {step === 2 && "set up your tables and service hours."}
+                {t("auth.signup.stepOf", { current: step + 1, total: steps.length })} —{" "}
+                {step === 0 && t("auth.signup.stepIntroAccount")}
+                {step === 1 && t("auth.signup.stepIntroRestaurant")}
+                {step === 2 && t("auth.signup.stepIntroTables")}
               </p>
             </div>
 
@@ -234,11 +237,11 @@ export function SignupPage() {
               {step === 0 && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="name">Your name</Label>
+                    <Label htmlFor="name">{t("auth.signup.name")}</Label>
                     <Input
                       id="name"
                       type="text"
-                      placeholder="Jamie Rivera"
+                      placeholder={t("auth.signup.namePlaceholder")}
                       autoComplete="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -246,7 +249,7 @@ export function SignupPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("auth.signup.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -258,12 +261,12 @@ export function SignupPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">{t("auth.signup.password")}</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="At least 8 characters"
+                        placeholder={t("auth.signup.passwordPlaceholder")}
                         autoComplete="new-password"
                         className="pr-9"
                         value={password}
@@ -273,7 +276,7 @@ export function SignupPage() {
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
                         className="text-muted-foreground absolute top-1/2 right-2.5 -translate-y-1/2"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={showPassword ? t("auth.signup.hidePassword") : t("auth.signup.showPassword")}
                       >
                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
@@ -285,7 +288,7 @@ export function SignupPage() {
               {step === 1 && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="restaurant">Restaurant name</Label>
+                    <Label htmlFor="restaurant">{t("auth.signup.restaurantName")}</Label>
                     <Input
                       id="restaurant"
                       type="text"
@@ -297,15 +300,15 @@ export function SignupPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="cuisine">Cuisine type</Label>
+                    <Label htmlFor="cuisine">{t("auth.signup.cuisineType")}</Label>
                     <Select value={cuisine} onValueChange={setCuisine}>
                       <SelectTrigger id="cuisine" className="w-full">
-                        <SelectValue placeholder="Select a cuisine" />
+                        <SelectValue placeholder={t("auth.signup.selectCuisine")} />
                       </SelectTrigger>
                       <SelectContent>
                         {cuisineOptions.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
+                          <SelectItem key={c.value} value={c.value}>
+                            {t(c.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -313,10 +316,10 @@ export function SignupPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="phone">Phone number</Label>
+                    <Label htmlFor="phone">{t("auth.signup.phoneNumber")}</Label>
                     <PhoneInput
                       id="phone"
-                      placeholder="555 0100"
+                      placeholder={t("auth.signup.phonePlaceholder")}
                       value={phone}
                       onChange={setPhone}
                     />
@@ -327,15 +330,15 @@ export function SignupPage() {
               {step === 2 && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="tables">Number of tables</Label>
+                    <Label htmlFor="tables">{t("auth.signup.numTables")}</Label>
                     <Select value={tableCount} onValueChange={setTableCount}>
                       <SelectTrigger id="tables" className="w-full">
-                        <SelectValue placeholder="Select a range" />
+                        <SelectValue placeholder={t("auth.signup.selectRange")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {tableCountOptions.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t} tables
+                        {tableCountOptions.map((tCount) => (
+                          <SelectItem key={tCount} value={tCount}>
+                            {t("auth.signup.tablesCount", { count: tCount })}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -344,7 +347,7 @@ export function SignupPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="open-time">Opening time</Label>
+                      <Label htmlFor="open-time">{t("auth.signup.openingTime")}</Label>
                       <Input
                         id="open-time"
                         type="time"
@@ -353,7 +356,7 @@ export function SignupPage() {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="close-time">Closing time</Label>
+                      <Label htmlFor="close-time">{t("auth.signup.closingTime")}</Label>
                       <Input
                         id="close-time"
                         type="time"
@@ -370,33 +373,33 @@ export function SignupPage() {
               <div className="mt-1 flex gap-3">
                 {step > 0 && (
                   <Button type="button" variant="outline" className="flex-1" onClick={handleBack}>
-                    Back
+                    {t("auth.signup.back")}
                   </Button>
                 )}
                 {isLastStep ? (
                   <Button type="submit" className="flex-1" disabled={loading}>
                     {loading && <Loader2 className="size-4 animate-spin" />}
-                    Create account
+                    {t("auth.signup.createAccount")}
                   </Button>
                 ) : (
                   <Button type="button" className="flex-1" onClick={handleNext}>
-                    Continue
+                    {t("auth.signup.continue")}
                   </Button>
                 )}
               </div>
             </form>
 
             <p className="text-muted-foreground text-center text-sm">
-              Already have an account?{" "}
+              {t("auth.signup.haveAccount")}{" "}
               <Link to="/login" className="text-foreground font-medium hover:underline">
-                Sign in
+                {t("auth.signup.signIn")}
               </Link>
             </p>
           </CardContent>
         </Card>
 
         <p className="text-muted-foreground mt-6 text-center text-xs">
-          By signing up, you agree to our Terms and Privacy Policy.
+          {t("auth.signup.termsNotice")}
         </p>
       </div>
     </div>

@@ -13,6 +13,8 @@ interface CreateReservationOnServerInput {
   /** Omitted when the guest will choose their own table on the confirm page. */
   tableId?: string
   notes?: string
+  /** Set to "CHECKED_IN" for walk-ins, which are seated immediately. */
+  status?: "CHECKED_IN"
 }
 
 interface ApiCustomer {
@@ -45,10 +47,12 @@ const DEFAULT_DURATION_MINUTES = 90
 function toCalendarReservation(r: ApiReservation): CalendarReservation {
   return {
     id: r.id,
+    customerId: r.customer?.id ?? undefined,
     customerName: r.customer?.name ?? "Guest",
     customerPhone: r.customer?.phone ?? "",
     customerEmail: r.customer?.email ?? undefined,
     tableId: r.tableId ?? "",
+    tableName: r.table?.name ?? undefined,
     partySize: r.partySize,
     start: r.reservedFor,
     durationMinutes: DEFAULT_DURATION_MINUTES,
@@ -78,6 +82,52 @@ export async function fetchReservations(): Promise<CalendarReservation[]> {
  */
 export async function updateReservationStatusOnServer(id: string, status: ReservationStatus) {
   await apiClient.patch(`/reservations/${id}/status`, { status })
+}
+
+/** Editable reservation fields. `tableName` is client-side only (used to
+ * re-render the row) and is never sent to the backend. */
+export interface UpdateReservationChanges {
+  /** New ISO start datetime. */
+  start?: string
+  partySize?: number
+  /** New table assignment. Omit to leave the current assignment untouched. */
+  tableId?: string
+  /** Display name of the newly assigned table (not sent to the backend). */
+  tableName?: string
+  notes?: string
+}
+
+/**
+ * Persists edits to a reservation (time, party size, table, notes). The
+ * backend's update endpoint supports exactly these fields; customer contact
+ * info is intentionally excluded since the customer record is shared across
+ * that guest's reservations.
+ */
+export async function updateReservationOnServer(id: string, changes: UpdateReservationChanges) {
+  const body: Record<string, unknown> = {}
+  if (changes.start !== undefined) body.reservedFor = changes.start
+  if (changes.partySize !== undefined) body.partySize = changes.partySize
+  if (changes.tableId !== undefined) body.tableId = changes.tableId
+  if (changes.notes !== undefined) body.notes = changes.notes
+  await apiClient.patch(`/reservations/${id}`, body)
+}
+
+/** Permanently deletes a reservation. Throws on failure. */
+export async function deleteReservationOnServer(id: string) {
+  await apiClient.delete(`/reservations/${id}`)
+}
+
+/**
+ * Updates a customer's contact details. Used when editing a reservation's
+ * guest info — the reservation itself references the customer by id, so
+ * editing the shared record keeps every one of that guest's reservations
+ * consistent.
+ */
+export async function updateCustomerOnServer(
+  id: string,
+  changes: { name?: string; email?: string | null; phone?: string | null },
+) {
+  await apiClient.patch(`/customers/${id}`, changes)
 }
 
 /**
@@ -142,6 +192,8 @@ export async function createReservationOnServer(
     reservedFor: input.reservedFor,
     tableId: input.tableId,
     notes: input.notes,
+    // JSON.stringify drops undefined, so ordinary reservations are unaffected.
+    status: input.status,
   })
 
   // The create response omits the customer relation, so it's filled in from
@@ -149,6 +201,7 @@ export async function createReservationOnServer(
   // "Guest" until the next refetch.
   return {
     ...toCalendarReservation(created),
+    customerId: customer.id,
     customerName: customer.name,
     customerPhone: customer.phone ?? "",
     customerEmail: customer.email ?? undefined,

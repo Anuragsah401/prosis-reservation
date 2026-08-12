@@ -1,5 +1,13 @@
 import { useMemo } from "react"
-import { loadFloorPlanTables } from "@/features/floor-plan/floor-plan-storage"
+import {
+  loadFloorPlanTables,
+  loadPositions,
+} from "@/features/floor-plan/floor-plan-storage"
+import {
+  DEFAULT_TABLE_WIDTH,
+  DEFAULT_TABLE_HEIGHT,
+} from "@/features/floor-plan/floor-plan-data"
+import type { FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 
 export interface TableOption {
   id: string
@@ -18,6 +26,34 @@ export function useTableOptions(): TableOption[] {
     const floorPlanTables = loadFloorPlanTables()
     return floorPlanTables && floorPlanTables.length > 0 ? floorPlanTables : []
   }, [])
+}
+
+/**
+ * Builds the tables for the Floor Plan picker dialog from what the Floor Plan
+ * builder saved locally: each table's summary (id/name/capacity/floor) plus
+ * its saved geometry (position/size/shape/rotation). Tables the builder never
+ * placed have no geometry, so the viewer falls back to arranging them in a
+ * grid. Tables too small for the party are dimmed and not selectable.
+ */
+export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
+  const summaries = loadFloorPlanTables() ?? []
+  const positions = loadPositions()
+  return summaries.map((t) => {
+    const p = positions[t.id] ?? {}
+    return {
+      id: t.id,
+      name: t.name,
+      capacity: t.capacity,
+      floor: t.floor || "Main Floor",
+      shape: p.shape ?? "RECTANGLE",
+      positionX: p.positionX ?? null,
+      positionY: p.positionY ?? null,
+      width: p.width ?? DEFAULT_TABLE_WIDTH,
+      height: p.height ?? DEFAULT_TABLE_HEIGHT,
+      rotation: p.rotation ?? 0,
+      available: t.capacity >= partySize,
+    }
+  })
 }
 
 export function isSameDay(a: Date, b: Date) {

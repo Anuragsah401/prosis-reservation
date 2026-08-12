@@ -63,6 +63,14 @@ export function ReservationsPage() {
     setSelectedDate(new Date(reservation.start))
   }
 
+  function handleUpdateReservation(updated: CalendarReservation) {
+    setAllReservations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
+  }
+
+  function handleDeleteReservation(id: string) {
+    setAllReservations((prev) => prev.filter((r) => r.id !== id))
+  }
+
   const bookedDates = useMemo(() => {
     const set = new Set<string>()
     for (const r of allReservations) {
@@ -149,7 +157,12 @@ export function ReservationsPage() {
                 {t("pages.reservations.loading")}
               </div>
             ) : (
-              <ReservationsTable reservations={filteredReservations} onStatusChange={handleStatusChange} />
+              <ReservationsTable
+                reservations={filteredReservations}
+                onStatusChange={handleStatusChange}
+                onUpdateReservation={handleUpdateReservation}
+                onDeleteReservation={handleDeleteReservation}
+              />
             )}
           </div>
         </div>

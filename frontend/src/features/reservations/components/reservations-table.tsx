@@ -1,5 +1,6 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronDown, MessageSquare } from "lucide-react"
+import { ChevronDown, MessageSquare, Pencil, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,10 +17,14 @@ import {
 import { statusLabels, type CalendarReservation, type ReservationStatus } from "@/features/reservations-calendar/calendar-data"
 import { useScrollOverflow } from "@/hooks/use-scroll-overflow"
 import { statusCellStyles, statusOptions, statusStyles } from "../reservations-constants"
+import { EditReservationDialog } from "./edit-reservation-dialog"
+import { DeleteReservationDialog } from "./delete-reservation-dialog"
 
 interface ReservationsTableProps {
   reservations: CalendarReservation[]
   onStatusChange: (id: string, status: ReservationStatus) => void
+  onUpdateReservation: (updated: CalendarReservation) => void
+  onDeleteReservation: (id: string) => void
 }
 
 /**
@@ -27,9 +32,16 @@ interface ReservationsTableProps {
  * pinned via `sticky` while only the rows scroll; a small hint appears below
  * the table when there's more content to scroll to.
  */
-export function ReservationsTable({ reservations, onStatusChange }: ReservationsTableProps) {
+export function ReservationsTable({
+  reservations,
+  onStatusChange,
+  onUpdateReservation,
+  onDeleteReservation,
+}: ReservationsTableProps) {
   const { t } = useTranslation()
   const { ref: listScrollRef, hasMoreBelow } = useScrollOverflow<HTMLDivElement>([reservations])
+  const [editingReservation, setEditingReservation] = useState<CalendarReservation | null>(null)
+  const [deletingReservation, setDeletingReservation] = useState<CalendarReservation | null>(null)
 
   return (
     <Card>
@@ -50,12 +62,13 @@ export function ReservationsTable({ reservations, onStatusChange }: Reservations
                 <TableHead className="w-10">
                   <span className="sr-only">{t("pages.reservations.colComment")}</span>
                 </TableHead>
+                <TableHead className="w-24 text-right">{t("pages.reservations.colActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reservations.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
                     {t("pages.reservations.empty")}
                   </TableCell>
                 </TableRow>
@@ -68,7 +81,11 @@ export function ReservationsTable({ reservations, onStatusChange }: Reservations
                       {new Date(r.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     </TableCell>
                     <TableCell>{r.partySize}</TableCell>
-                    <TableCell>{r.tableId.toUpperCase()}</TableCell>
+                    <TableCell>
+                      {r.tableName ?? (
+                        <span className="text-muted-foreground">{t("pages.reservations.unassigned")}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -112,6 +129,28 @@ export function ReservationsTable({ reservations, onStatusChange }: Reservations
                         </Tooltip>
                       ) : null}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingReservation(r)}
+                          className="text-muted-foreground hover:text-foreground inline-flex size-8 items-center justify-center rounded-md hover:bg-accent"
+                          aria-label={t("pages.reservations.actions.edit")}
+                          title={t("pages.reservations.actions.edit")}
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingReservation(r)}
+                          className="text-muted-foreground hover:text-destructive inline-flex size-8 items-center justify-center rounded-md hover:bg-destructive/10"
+                          aria-label={t("pages.reservations.actions.delete")}
+                          title={t("pages.reservations.actions.delete")}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -124,6 +163,27 @@ export function ReservationsTable({ reservations, onStatusChange }: Reservations
           </p>
         )}
       </CardContent>
+
+      {editingReservation && (
+        <EditReservationDialog
+          reservation={editingReservation}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setEditingReservation(null)
+          }}
+          onSave={onUpdateReservation}
+        />
+      )}
+      {deletingReservation && (
+        <DeleteReservationDialog
+          reservation={deletingReservation}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setDeletingReservation(null)
+          }}
+          onDeleted={onDeleteReservation}
+        />
+      )}
     </Card>
   )
 }

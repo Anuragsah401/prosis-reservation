@@ -20,6 +20,9 @@ export const createReservationSchema = z.object({
   reservedFor: z.coerce.date({ error: "reservedFor must be a valid date" }),
   notes: z.string().optional(),
   createdById: z.string().min(1).optional(),
+  // Staff may create a reservation that's already seated (walk-in). PENDING is
+  // the default, and confirmations happen through the guest link.
+  status: z.enum(["CHECKED_IN"]).optional(),
 })
 
 export const updateReservationSchema = z.object({

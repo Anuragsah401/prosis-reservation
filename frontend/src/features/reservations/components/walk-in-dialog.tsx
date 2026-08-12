@@ -18,6 +18,7 @@ import {
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
+import { createReservationOnServer } from "../reservations-api"
 import { useTableOptions } from "../reservations-utils"
 
 interface WalkInDialogProps {
@@ -42,6 +43,7 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
   const setTableId = (v: string) => setDraft((d) => ({ ...d, tableId: v }))
   const setPartySize = (v: string) => setDraft((d) => ({ ...d, partySize: v }))
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   function resetForm() {
     setDraft({
@@ -68,21 +70,34 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
       return
     }
 
-    onCreate({
-      id: `w-${Date.now()}`,
+    // Persist the walk-in so it survives a refresh and the table flips to
+    // Occupied on the floor plan. `status: "CHECKED_IN"` seats the guest
+    // immediately, which also skips the confirmation email on the backend.
+    // Only close the dialog once the server confirms the booking — a failed
+    // save keeps the form open with the error instead of silently losing a
+    // guest who's already at the door.
+    setIsSubmitting(true)
+    setError(null)
+    createReservationOnServer({
       customerName: customerName.trim(),
-      customerPhone: customerPhone.trim() || "—",
+      customerPhone: customerPhone.trim() || undefined,
       customerEmail: customerEmail.trim() || undefined,
-      tableId,
       partySize: party,
-      start: new Date().toISOString(),
-      durationMinutes: 90,
-      status: "CHECKED_IN",
+      reservedFor: new Date().toISOString(),
+      tableId,
       notes: "Walk-in",
+      status: "CHECKED_IN",
     })
-
-    resetForm()
-    setOpen(false)
+      .then((created) => {
+        onCreate(created)
+        resetForm()
+        setOpen(false)
+      })
+      .catch((err) => {
+        console.error("[reservations] Failed to create walk-in:", err)
+        setError(err instanceof Error ? err.message : t("pages.reservations.walkInDialog.errorSave"))
+      })
+      .finally(() => setIsSubmitting(false))
   }
 
   return (
@@ -177,7 +192,11 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
                 {t("pages.reservations.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit">{t("pages.reservations.walkInDialog.seat")}</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting
+                ? t("pages.reservations.newDialog.saving")
+                : t("pages.reservations.walkInDialog.seat")}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

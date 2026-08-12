@@ -3,7 +3,7 @@ import { prisma } from "@/db/client"
 import { env } from "@/config/env"
 import { mailer } from "@/utils/mailer"
 import { sms } from "@/utils/sms"
-import type { Prisma, ReservationStatus } from "@prisma/client"
+import type { Prisma, ReservationStatus, TableStatus } from "@prisma/client"
 
 // Default duration a table is considered occupied by a single reservation,
 // used for overlap detection in availability checks.
@@ -34,6 +34,40 @@ const DB_TO_API_STATUS: Record<ReservationStatus, string> = {
 
 // Statuses that still occupy a table (used for availability + overlap checks).
 const ACTIVE_STATUSES: ReservationStatus[] = ["PENDING", "CONFIRMED", "SEATED"]
+
+/**
+ * Recomputes a table's status from its reservations so the floor plan reflects
+ * bookings without staff updating it by hand: Reserved while a
+ * PENDING/CONFIRMED reservation sits on it, Occupied once one is seated, and
+ * back to Available when the last active reservation leaves. A staff-set
+ * MAINTENANCE flag is never overridden.
+ *
+ * Called at every point a reservation's table assignment or status changes
+ * (create, confirm, reassign, seat, cancel, delete). Best-effort — failures
+ * are logged by the caller's surrounding error handling and never roll back
+ * the reservation operation itself.
+ */
+async function syncTableStatus(tableId: string | null) {
+  if (!tableId) return
+
+  const table = await prisma.table.findUnique({ where: { id: tableId } })
+  if (!table || table.status === "MAINTENANCE") return
+
+  const active = await prisma.reservation.findMany({
+    where: { tableId, status: { in: ACTIVE_STATUSES } },
+    select: { status: true },
+  })
+
+  const nextStatus: TableStatus = active.some((r) => r.status === "SEATED")
+    ? "OCCUPIED"
+    : active.length > 0
+      ? "RESERVED"
+      : "AVAILABLE"
+
+  if (table.status !== nextStatus) {
+    await prisma.table.update({ where: { id: tableId }, data: { status: nextStatus } })
+  }
+}
 
 /**
  * Normalises a DB row into the API shape. Also drops `confirmationTokenHash`,
@@ -120,6 +154,7 @@ export const reservationService = {
     reservedFor: Date
     notes?: string
     createdById?: string
+    status?: string
   }) {
     if (data.tableId) {
       const { available } = await this.checkAvailability({
@@ -134,6 +169,10 @@ export const reservationService = {
 
     const rawToken = crypto.randomBytes(32).toString("hex")
 
+    // Walk-ins are created already seated; everything else starts as PENDING
+    // and waits for the guest to confirm via the emailed link.
+    const dbStatus = data.status ? API_TO_DB_STATUS[data.status] : undefined
+
     const reservation = await prisma.reservation.create({
       data: {
         restaurantId: data.restaurantId,
@@ -144,24 +183,33 @@ export const reservationService = {
         notes: data.notes,
         createdById: data.createdById,
         confirmationTokenHash: hashConfirmationToken(rawToken),
+        ...(dbStatus ? { status: dbStatus } : {}),
       },
       include: {
         customer: { select: { name: true, email: true, phone: true } },
         restaurant: { select: { name: true } },
-        table: { select: { number: true } },
+        table: { select: { id: true, number: true, section: true } },
       },
     })
+
+    // The table is now booked, so the floor plan should show it as Reserved.
+    await syncTableStatus(data.tableId ?? null)
 
     // Notify the customer so they can confirm. Email is preferred (it renders
     // the full details and floor plan link); SMS is the fallback for customers
     // who only left a phone number. Sending failures are logged but never fail
     // reservation creation — staff can always re-send or confirm manually.
+    // Walk-ins are already seated, so there's nothing to confirm — no
+    // confirmation email/SMS is sent for them.
+    const isWalkIn = reservation.status === "SEATED"
     const confirmUrl = `${env.APP_URL}/reservation/confirm?token=${rawToken}`
-    const notifyVia = reservation.customer.email
-      ? "email"
-      : reservation.customer.phone
-        ? "sms"
-        : null
+    const notifyVia = isWalkIn
+      ? null
+      : reservation.customer.email
+        ? "email"
+        : reservation.customer.phone
+          ? "sms"
+          : null
 
     if (notifyVia) {
       try {
@@ -193,15 +241,20 @@ export const reservationService = {
         // eslint-disable-next-line no-console
         console.error(`[reservation] Failed to send confirmation ${notifyVia}:`, err)
       }
-    } else {
+    } else if (!isWalkIn) {
       // eslint-disable-next-line no-console
       console.warn(
         `[reservation] Customer ${reservation.customerId} has neither email nor phone — no confirmation sent.`,
       )
     }
 
-    const { customer: _c, restaurant: _r, table: _t, ...rest } = reservation
-    return toApiShape(rest)
+    const { customer: _c, restaurant: _r, table, ...rest } = reservation
+    return toApiShape({
+      ...rest,
+      // Match the list endpoint's shape so the frontend can resolve the table
+      // name from the create response (e.g. the new row's "Table" column).
+      table: table ? { id: table.id, name: table.number, location: table.section } : null,
+    })
   },
 
   /**
@@ -331,6 +384,10 @@ export const reservationService = {
         ...(tableId ? { tableId } : {}),
       },
     })
+    // Release the previously assigned table (if the guest changed it) and
+    // mark the newly chosen one as Reserved.
+    await syncTableStatus(reservation.tableId)
+    await syncTableStatus(updated.tableId)
     return toApiShape(updated)
   },
 
@@ -362,6 +419,7 @@ export const reservationService = {
       where: { id: reservation.id },
       data: { status: "CANCELLED" },
     })
+    await syncTableStatus(reservation.tableId)
     return toApiShape(updated)
   },
 
@@ -383,6 +441,9 @@ export const reservationService = {
       where: { id },
       data: data as Prisma.ReservationUpdateInput,
     })
+    // Reassigning to another table releases the old one and books the new one.
+    await syncTableStatus(existing.tableId)
+    await syncTableStatus(reservation.tableId)
     return toApiShape(reservation)
   },
 
@@ -412,6 +473,8 @@ export const reservationService = {
       where: { id },
       data: { status: nextStatus },
     })
+    // Seating occupies the table; cancelling/completing/no-showing frees it.
+    await syncTableStatus(reservation.tableId)
     return toApiShape(reservation)
   },
 
@@ -424,6 +487,8 @@ export const reservationService = {
     if (!existing) {
       throw new Error("Reservation not found")
     }
-    return prisma.reservation.delete({ where: { id } })
+    const deleted = await prisma.reservation.delete({ where: { id } })
+    await syncTableStatus(existing.tableId)
+    return deleted
   },
 }

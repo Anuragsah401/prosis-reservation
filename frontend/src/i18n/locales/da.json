@@ -145,7 +145,45 @@
       "backHome": "← Tilbage til forsiden",
       "back": "Tilbage",
       "continue": "Fortsæt",
-      "createAccount": "Opret konto"
+      "createAccount": "Opret konto",
+      "stepYourAccount": "Din konto",
+      "stepRestaurantDetails": "Restaurantoplysninger",
+      "stepTablesHours": "Borde & åbningstider",
+      "stepOf": "Trin {{current}} af {{total}}",
+      "stepIntroAccount": "lad os starte med dine loginoplysninger.",
+      "stepIntroRestaurant": "fortæl os lidt om din restaurant.",
+      "stepIntroTables": "sæt dine borde og åbningstider op.",
+      "name": "Dit navn",
+      "namePlaceholder": "Jamie Rivera",
+      "email": "E-mail",
+      "password": "Adgangskode",
+      "passwordPlaceholder": "Mindst 8 tegn",
+      "showPassword": "Vis adgangskode",
+      "hidePassword": "Skjul adgangskode",
+      "restaurantName": "Restaurantnavn",
+      "cuisineType": "Madtype",
+      "selectCuisine": "Vælg en madtype",
+      "cuisineAmerican": "Amerikansk",
+      "cuisineItalian": "Italiensk",
+      "cuisineIndian": "Indisk",
+      "cuisineJapanese": "Japansk",
+      "cuisineMexican": "Mexicansk",
+      "cuisineMediterranean": "Middelhavs",
+      "cuisineOther": "Andet",
+      "phoneNumber": "Telefonnummer",
+      "phonePlaceholder": "555 0100",
+      "numTables": "Antal borde",
+      "selectRange": "Vælg et interval",
+      "tablesCount": "{{count}} borde",
+      "openingTime": "Åbningstid",
+      "closingTime": "Lukketid",
+      "errorRequiredFields": "Udfyld venligst alle felter.",
+      "errorPasswordLength": "Adgangskoden skal være mindst 8 tegn.",
+      "errorPasswordComplexity": "Adgangskoden skal indeholde mindst ét bogstav og ét tal.",
+      "errorRestaurantAndCuisine": "Udfyld venligst restaurantens navn og madtype.",
+      "errorTableCount": "Vælg venligst hvor mange borde du har.",
+      "errorGeneric": "Der gik noget galt. Prøv venligst igen.",
+      "termsNotice": "Ved oprettelse accepterer du vores vilkår og privatlivspolitik."
     },
     "forgotPassword": {
       "title": "Glemt din adgangskode?",
@@ -279,6 +317,28 @@
       "colTable": "Bord",
       "colStatus": "Status",
       "colComment": "Kommentar",
+      "unassigned": "Ikke tildelt",
+      "colActions": "Handlinger",
+      "actions": {
+        "edit": "Rediger",
+        "delete": "Slet"
+      },
+      "editDialog": {
+        "title": "Rediger reservation",
+        "description": "Opdater oplysningerne for denne reservation.",
+        "notes": "Bemærkninger",
+        "notesPlaceholder": "f.eks. bord ved vinduet ønskes",
+        "save": "Gem ændringer",
+        "errorRequired": "Vælg venligst en dato og et tidspunkt.",
+        "errorCustomerName": "Indtast venligst kundens navn.",
+        "errorSave": "Reservationen kunne ikke gemmes. Prøv igen."
+      },
+      "deleteDialog": {
+        "title": "Slet reservation?",
+        "description": "Dette fjerner permanent reservationen for {{name}}. Dette kan ikke fortrydes.",
+        "confirm": "Slet",
+        "errorDelete": "Reservationen kunne ikke slettes. Prøv igen."
+      },
       "empty": "Ingen reservationer for denne dato.",
       "setStatus": "Sæt status",
       "cancel": "Annuller",
@@ -314,7 +374,11 @@
         "saving": "Gemmer...",
         "errorRequired": "Udfyld venligst alle påkrævede felter.",
         "errorPartySize": "Selskabsstørrelsen skal være mindst 1.",
-        "errorSave": "Reservationen kunne ikke gemmes. Prøv igen."
+        "errorSave": "Reservationen kunne ikke gemmes. Prøv igen.",
+        "letCustomerChoose": "Lad kunden vælge",
+        "letCustomerChooseHint": "Gæsten vælger et bord på bekræftelsessiden.",
+        "chooseFromFloorPlan": "Vælg fra pladstegningen",
+        "chooseFromFloorPlanHint": "Vælg et bord fra dit layout."
       },
       "walkInDialog": {
         "title": "Walk-in kunde",
@@ -328,7 +392,14 @@
         "seats": "pladser",
         "seat": "Sæt walk-in",
         "errorRequired": "Indtast venligst et navn og vælg et bord.",
-        "errorPartySize": "Selskabsstørrelsen skal være mindst 1."
+        "errorPartySize": "Selskabsstørrelsen skal være mindst 1.",
+        "errorSave": "Walk-in'en kunne ikke oprettes. Prøv igen."
+      },
+      "tablePicker": {
+        "title": "Vælg et bord",
+        "description": "Vælg bordet til denne reservation fra din pladstegning.",
+        "confirm": "Vælg dette bord",
+        "empty": "Ingen borde endnu. Tilføj først borde i pladstegningsværktøjet."
       }
     },
     "floorPlan": {

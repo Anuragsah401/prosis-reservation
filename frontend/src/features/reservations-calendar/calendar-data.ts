@@ -18,12 +18,16 @@ export interface CalendarTable {
 
 export interface CalendarReservation {
   id: string
+  /** The underlying customer record, so contact edits can be persisted. */
+  customerId?: string
   customerName: string
   /** Customer contact phone number. */
   customerPhone: string
   /** Optional customer email address. */
   customerEmail?: string
   tableId: string
+  /** Name of the assigned table. Missing when the guest will choose their own table. */
+  tableName?: string
   partySize: number
   /** ISO datetime string for the reservation start. */
   start: string

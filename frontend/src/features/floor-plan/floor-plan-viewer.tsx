@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { Check, Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -24,6 +25,13 @@ interface FloorPlanViewerProps {
   currentTableId?: string | null
   onSelect: (tableId: string | null) => void
   seatsLabel: string
+  /** Fired when the maximize overlay opens or closes, so a wrapping dialog can
+   *  react — e.g. swallow Escape so it only exits fullscreen instead of also
+   *  closing the dialog. */
+  onFullscreenChange?: (fullscreen: boolean) => void
+  /** Hide the maximize control. Used where the viewer already fills its
+   *  container (e.g. the table picker dialog), making fullscreen pointless. */
+  showFullscreen?: boolean
 }
 
 const PADDING = 24
@@ -45,8 +53,13 @@ export function FloorPlanViewer({
   currentTableId,
   onSelect,
   seatsLabel,
+  onFullscreenChange,
+  showFullscreen = true,
 }: FloorPlanViewerProps) {
-  const floors = useMemo(() => [...new Set(tables.map((t) => t.floor))], [tables])
+  const floors = useMemo(
+    () => [...new Set(tables.map((t) => t.floor).filter((f): f is string => Boolean(f)))],
+    [tables],
+  )
   const [activeFloor, setActiveFloor] = useState(floors[0] ?? "Main Floor")
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -95,7 +108,10 @@ export function FloorPlanViewer({
     if (!fullscreen) return
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false)
+      if (e.key === "Escape") {
+        setFullscreen(false)
+        onFullscreenChange?.(false)
+      }
     }
     document.addEventListener("keydown", onKeyDown)
 
@@ -106,20 +122,27 @@ export function FloorPlanViewer({
       document.removeEventListener("keydown", onKeyDown)
       document.body.style.overflow = previousOverflow
     }
-  }, [fullscreen])
+  }, [fullscreen, onFullscreenChange])
 
-  return (
+  // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't support
+  // requestFullscreen() on non-video elements, which is exactly the mobile
+  // case this matters most for. Wrapping the whole component (not just the
+  // canvas) keeps the floor tabs reachable while expanded. The overlay is
+  // portaled to <body> so it can't be trapped by an ancestor that creates a
+  // containing block (a dialog's transform) or clips it (a dialog's
+  // overflow) — otherwise "fullscreen" would just squash the viewer into the
+  // dialog's box instead of covering the whole screen.
+  const viewer = (
     <div
       className={cn(
         "flex flex-col gap-2",
-        // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't
-        // support requestFullscreen() on non-video elements, which is exactly
-        // the mobile case this matters most for. Wrapping the whole component
-        // (not just the canvas) keeps the floor tabs reachable while expanded.
-        fullscreen && "bg-background fixed inset-0 z-50 p-3",
+        fullscreen && "bg-background fixed inset-0 z-[60] p-3",
       )}
     >
-      {floors.length > 1 && (
+      {/* Always shown so the current floor is visible even with a single
+          floor — without this, one-floor plans gave no indication which
+          floor's tables were on display. */}
+      {floors.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 rounded-md border p-0.5 self-start">
           {floors.map((floor) => (
             <button
@@ -183,18 +206,22 @@ export function FloorPlanViewer({
           >
             <RotateCcw className="size-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setFullscreen((f) => !f)
-              setZoom(1)
-              setPan({ x: 0, y: 0 })
-            }}
-            className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
-            aria-label={fullscreen ? "Exit full screen" : "View full screen"}
-          >
-            {fullscreen ? <Minimize className="size-3.5" /> : <Maximize className="size-3.5" />}
-          </button>
+          {showFullscreen !== false && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !fullscreen
+                setFullscreen(next)
+                onFullscreenChange?.(next)
+                setZoom(1)
+                setPan({ x: 0, y: 0 })
+              }}
+              className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
+              aria-label={fullscreen ? "Exit full screen" : "View full screen"}
+            >
+              {fullscreen ? <Minimize className="size-3.5" /> : <Maximize className="size-3.5" />}
+            </button>
+          )}
         </div>
 
         <div
@@ -335,4 +362,6 @@ export function FloorPlanViewer({
       </div>
     </div>
   )
+
+  return fullscreen ? createPortal(viewer, document.body) : viewer
 }

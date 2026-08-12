@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Check, Plus } from "lucide-react"
+import { Check, LayoutGrid, Plus, UserRound } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +24,7 @@ import type { CalendarReservation } from "@/features/reservations-calendar/calen
 import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
 import { capitalize, toDateInputValue, useTableOptions } from "../reservations-utils"
 import { createReservationOnServer } from "../reservations-api"
+import { TablePickerDialog } from "./table-picker-dialog"
 
 /**
  * Sentinel `tableId` meaning "don't assign a table now — let the guest pick
@@ -80,6 +82,11 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     }))
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  // The floor-plan table the staff chose, used to label the picker button.
+  const selectedFloorTable =
+    tableId && tableId !== LET_CUSTOMER_CHOOSE ? tableOptions.find((t) => t.id === tableId) : undefined
 
   function resetForm() {
     setDraft({
@@ -254,22 +261,56 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
 
           <div className="flex flex-col gap-1.5">
             <Label>{t("pages.reservations.newDialog.table")}</Label>
-            <Select value={tableId} onValueChange={setTableId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t("pages.reservations.newDialog.selectTable")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={LET_CUSTOMER_CHOOSE}>
-                  {t("pages.reservations.newDialog.letCustomerChoose")}
-                </SelectItem>
-                {tableOptions.map((t2) => (
-                  <SelectItem key={t2.id} value={t2.id}>
-                    {t2.floor} · {t("pages.reservations.colTable")} {t2.name} ({t2.capacity}{" "}
-                    {t("pages.reservations.newDialog.seats")})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                aria-pressed={tableId === LET_CUSTOMER_CHOOSE}
+                onClick={() => setTableId(LET_CUSTOMER_CHOOSE)}
+                className={cn(
+                  "flex w-full flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                  tableId === LET_CUSTOMER_CHOOSE
+                    ? "border-primary bg-primary/5"
+                    : "border-input hover:bg-accent/50",
+                )}
+              >
+                <span className="flex w-full items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <UserRound className="text-muted-foreground size-4" />
+                    {t("pages.reservations.newDialog.letCustomerChoose")}
+                  </span>
+                  {tableId === LET_CUSTOMER_CHOOSE && <Check className="text-primary size-4" />}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {t("pages.reservations.newDialog.letCustomerChooseHint")}
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={Boolean(selectedFloorTable)}
+                onClick={() => setPickerOpen(true)}
+                className={cn(
+                  "flex w-full flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                  selectedFloorTable
+                    ? "border-primary bg-primary/5"
+                    : "border-input hover:bg-accent/50",
+                )}
+              >
+                <span className="flex w-full items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <LayoutGrid className="text-muted-foreground size-4" />
+                    {selectedFloorTable
+                      ? `${t("pages.reservations.colTable")} ${selectedFloorTable.name}`
+                      : t("pages.reservations.newDialog.chooseFromFloorPlan")}
+                  </span>
+                  {selectedFloorTable && <Check className="text-primary size-4" />}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {selectedFloorTable
+                    ? selectedFloorTable.floor
+                    : t("pages.reservations.newDialog.chooseFromFloorPlanHint")}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -332,6 +373,17 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Nested dialog: remounts per open (via key) so the picker's local
+          selection re-initializes from the current assignment each time. */}
+      <TablePickerDialog
+        key={pickerOpen ? "picker-open" : "picker-closed"}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selectedTableId={tableId === LET_CUSTOMER_CHOOSE ? null : tableId}
+        partySize={Number(partySize) || 1}
+        onConfirm={setTableId}
+      />
     </Dialog>
   )
 }

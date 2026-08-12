@@ -145,7 +145,45 @@
       "backHome": "← Ana sayfaya dön",
       "back": "Geri",
       "continue": "Devam et",
-      "createAccount": "Hesap oluştur"
+      "createAccount": "Hesap oluştur",
+      "stepYourAccount": "Hesabınız",
+      "stepRestaurantDetails": "Restoran bilgileri",
+      "stepTablesHours": "Masalar ve saatler",
+      "stepOf": "Adım {{current}} / {{total}}",
+      "stepIntroAccount": "giriş bilgilerinizle başlayalım.",
+      "stepIntroRestaurant": "bize restoranınız hakkında biraz bilgi verin.",
+      "stepIntroTables": "masalarınızı ve hizmet saatlerinizi ayarlayın.",
+      "name": "Adınız",
+      "namePlaceholder": "Jamie Rivera",
+      "email": "E-posta",
+      "password": "Şifre",
+      "passwordPlaceholder": "En az 8 karakter",
+      "showPassword": "Şifreyi göster",
+      "hidePassword": "Şifreyi gizle",
+      "restaurantName": "Restoran adı",
+      "cuisineType": "Mutfak türü",
+      "selectCuisine": "Bir mutfak seçin",
+      "cuisineAmerican": "Amerikan",
+      "cuisineItalian": "İtalyan",
+      "cuisineIndian": "Hint",
+      "cuisineJapanese": "Japon",
+      "cuisineMexican": "Meksika",
+      "cuisineMediterranean": "Akdeniz",
+      "cuisineOther": "Diğer",
+      "phoneNumber": "Telefon numarası",
+      "phonePlaceholder": "555 0100",
+      "numTables": "Masa sayısı",
+      "selectRange": "Bir aralık seçin",
+      "tablesCount": "{{count}} masa",
+      "openingTime": "Açılış saati",
+      "closingTime": "Kapanış saati",
+      "errorRequiredFields": "Lütfen tüm alanları doldurun.",
+      "errorPasswordLength": "Şifre en az 8 karakter olmalıdır.",
+      "errorPasswordComplexity": "Şifre en az bir harf ve bir rakam içermelidir.",
+      "errorRestaurantAndCuisine": "Lütfen restoran adınızı ve mutfak türünü doldurun.",
+      "errorTableCount": "Lütfen kaç masanız olduğunu seçin.",
+      "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+      "termsNotice": "Kaydolarak Hizmet Şartlarımızı ve Gizlilik Politikamızı kabul etmiş olursunuz."
     },
     "forgotPassword": {
       "title": "Şifrenizi mi unuttunuz?",
@@ -187,6 +225,14 @@
     "confirm": "Rezervasyonu onayla",
     "confirmedTitle": "Rezervasyon onaylandı!",
     "confirmedSubtitle": "{{restaurant}} restoranında görüşmek üzere. Sizi ağırlamayı dört gözle bekliyoruz.",
+    "table": "Masa",
+    "cancelReservation": "Bu rezervasyonu iptal et",
+    "cancelConfirmTitle": "Bu rezervasyon iptal edilsin mi?",
+    "cancelConfirmHint": "Bu, rezervasyonunuzu diğer misafirler için boşaltır ve geri alınamaz.",
+    "cancelYes": "Evet, iptal et",
+    "cancelNo": "Kalsın",
+    "cancelledTitle": "Rezervasyon iptal edildi",
+    "cancelledSubtitle": "{{restaurant}} restoranındaki rezervasyonunuz iptal edildi. Sizi başka bir zaman görmeyi umuyoruz.",
     "errorTitle": "Rezervasyon yüklenemedi",
     "errorMissingToken": "Bu onay bağlantısı geçersiz veya bir jeton eksik.",
     "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
@@ -271,6 +317,28 @@
       "colTable": "Masa",
       "colStatus": "Durum",
       "colComment": "Yorum",
+      "unassigned": "Atanmamış",
+      "colActions": "İşlemler",
+      "actions": {
+        "edit": "Düzenle",
+        "delete": "Sil"
+      },
+      "editDialog": {
+        "title": "Rezervasyonu düzenle",
+        "description": "Bu rezervasyonun ayrıntılarını güncelleyin.",
+        "notes": "Notlar",
+        "notesPlaceholder": "örn. pencere kenarı masa istendi",
+        "save": "Değişiklikleri kaydet",
+        "errorRequired": "Lütfen bir tarih ve saat seçin.",
+        "errorCustomerName": "Lütfen müşterinin adını girin.",
+        "errorSave": "Rezervasyon kaydedilemedi. Lütfen tekrar deneyin."
+      },
+      "deleteDialog": {
+        "title": "Rezervasyon silinsin mi?",
+        "description": "Bu, {{name}} için rezervasyonu kalıcı olarak kaldırır. Bu işlem geri alınamaz.",
+        "confirm": "Sil",
+        "errorDelete": "Rezervasyon silinemedi. Lütfen tekrar deneyin."
+      },
       "empty": "Bu tarih için rezervasyon yok.",
       "setStatus": "Durumu ayarla",
       "cancel": "İptal",
@@ -306,7 +374,11 @@
         "saving": "Kaydediliyor...",
         "errorRequired": "Lütfen tüm gerekli alanları doldurun.",
         "errorPartySize": "Kişi sayısı en az 1 olmalıdır.",
-        "errorSave": "Rezervasyon kaydedilemedi. Lütfen tekrar deneyin."
+        "errorSave": "Rezervasyon kaydedilemedi. Lütfen tekrar deneyin.",
+        "letCustomerChoose": "Müşteri seçsin",
+        "letCustomerChooseHint": "Misafir, onay sayfasında masayı seçer.",
+        "chooseFromFloorPlan": "Kat planından seç",
+        "chooseFromFloorPlanHint": "Düzeninizden bir masa seçin."
       },
       "walkInDialog": {
         "title": "Yürüyerek gelen müşteri",
@@ -320,7 +392,14 @@
         "seats": "kişilik",
         "seat": "Yürüyerek geleni oturt",
         "errorRequired": "Lütfen bir isim girin ve masa seçin.",
-        "errorPartySize": "Kişi sayısı en az 1 olmalıdır."
+        "errorPartySize": "Kişi sayısı en az 1 olmalıdır.",
+        "errorSave": "Walk-in oluşturulamadı. Lütfen tekrar deneyin."
+      },
+      "tablePicker": {
+        "title": "Masa seç",
+        "description": "Bu rezervasyon için masayı kat planınızdan seçin.",
+        "confirm": "Bu masayı seç",
+        "empty": "Henüz masa yok. Önce kat planı düzenleyicisine masa ekleyin."
       }
     },
     "floorPlan": {

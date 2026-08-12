@@ -42,7 +42,7 @@ export function CalendarGridView({
         const colors = statusColors[r.status]
         return {
           id: r.id,
-          title: `${r.customerName} · ${tableNameById.get(r.tableId) ?? r.tableId} · ${r.partySize}p`,
+          title: `${r.customerName} · ${r.tableName ?? tableNameById.get(r.tableId) ?? "—"} · ${r.partySize}p`,
           start,
           end,
           backgroundColor: colors.bg,
