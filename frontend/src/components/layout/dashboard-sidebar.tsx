@@ -11,7 +11,7 @@ export function DashboardSidebar() {
   return (
     <aside
       className={cn(
-        "bg-background hidden shrink-0 border-r transition-[width] duration-200 md:flex md:flex-col",
+        "bg-background hidden shrink-0 border-r transition-[width] duration-200 md:flex md:flex-col sticky top-0 h-svh",
         collapsed ? "w-16" : "w-64",
       )}
     >

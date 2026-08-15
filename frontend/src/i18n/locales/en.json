@@ -459,7 +459,8 @@
       "tableUtilization": "Table Utilization",
       "tableUtilizationDesc": "Percentage of service hours each table was occupied",
       "weeklyTraffic": "Weekly Traffic Pattern",
-      "weeklyTrafficDesc": "Average reservations by day of week"
+      "weeklyTrafficDesc": "Average reservations by day of week",
+      "loading": "Loading analytics…"
     },
     "settings": {
       "title": "Settings",
