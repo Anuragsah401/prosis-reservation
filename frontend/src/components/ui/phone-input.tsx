@@ -108,6 +108,7 @@ export interface PhoneInputProps {
   id?: string
   className?: string
   disabled?: boolean
+  required?: boolean
 }
 
 /** Best-effort guess at the user's country, used to preselect the dial code. */
@@ -164,6 +165,7 @@ export function PhoneInput({
   id,
   className,
   disabled,
+  required,
 }: PhoneInputProps) {
   const autoCountry = useAutoDetectedCountry(defaultCountry)
 
@@ -174,6 +176,7 @@ export function PhoneInput({
       value={value}
       onChange={onChange}
       disabled={disabled}
+      required={required}
       placeholder={placeholder}
       id={id}
       labels={en}

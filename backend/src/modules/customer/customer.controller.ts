@@ -21,6 +21,15 @@ export const customerController = {
     }
   },
 
+  async getReservations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await customerService.getReservations(String(req.params.id))
+      res.status(200).json(result)
+    } catch (err) {
+      next(err)
+    }
+  },
+
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await customerService.create(req.body)

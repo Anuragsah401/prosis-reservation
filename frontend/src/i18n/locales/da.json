@@ -277,10 +277,50 @@
       "addCustomer": "Tilføj kunde",
       "searchPlaceholder": "Søg efter kunder...",
       "loading": "Indlæser kunder…",
+      "retry": "Prøv igen",
       "noRestaurant": "Ingen restaurant er endnu tilknyttet din konto.",
       "loadError": "Kunne ikke indlæse kunder.",
       "empty": "Ingen kunder endnu. Nye kunder vises her, når reservationer kommer ind.",
-      "noMatch": "Ingen kunder matcher din søgning."
+      "noMatch": "Ingen kunder matcher din søgning.",
+      "cancel": "Annuller",
+      "editAction": "Rediger kunde",
+      "deleteAction": "Slet kunde",
+      "viewHistory": "Vis historik",
+      "dialog": {
+        "addTitle": "Tilføj kunde",
+        "editTitle": "Rediger kunde",
+        "description": "Kontaktoplysninger, tags og noter deles på tværs af alle denne gæsts reservationer.",
+        "name": "Navn",
+        "namePlaceholder": "Fuldt navn",
+        "nameRequired": "Angiv venligst et navn.",
+        "email": "Email",
+        "emailRequired": "Angiv venligst en emailadresse.",
+        "emailPlaceholder": "eksempel@email.dk",
+        "phone": "Telefon",
+        "phoneRequired": "Angiv venligst et telefonnummer.",
+        "tags": "Tags",
+        "tagsPlaceholder": "Skriv en tag og tryk Enter",
+        "removeTag": "Fjern tag {{tag}}",
+        "notes": "Noter",
+        "notesPlaceholder": "Allergier, præferencer, pladsning…",
+        "create": "Opret",
+        "save": "Gem",
+        "errorSave": "Kunne ikke gemme kunde."
+      },
+      "delete": {
+        "title": "Slet kunde",
+        "description": "Dette fjerner permanent {{name}} og deres oplysninger. Det kan ikke fortrydes.",
+        "confirm": "Slet",
+        "errorDelete": "Kunne ikke slette kunde."
+      },
+      "detail": {
+        "history": "Reservationshistorik",
+        "loadingHistory": "Indlæser historik…",
+        "historyError": "Kunne ikke indlæse reservationshistorik.",
+        "noHistory": "Ingen reservationer endnu.",
+        "partyOf": "{{count}} personer",
+        "edit": "Rediger"
+      }
     },
     "notifications": {
       "backToReservations": "Tilbage til reservationer",

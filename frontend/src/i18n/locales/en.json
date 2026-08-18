@@ -277,10 +277,50 @@
       "addCustomer": "Add Customer",
       "searchPlaceholder": "Search customers...",
       "loading": "Loading customers…",
+      "retry": "Retry",
       "noRestaurant": "No restaurant associated with your account yet.",
       "loadError": "Failed to load customers.",
       "empty": "No customers yet. New customers will appear here once reservations come in.",
-      "noMatch": "No customers match your search."
+      "noMatch": "No customers match your search.",
+      "cancel": "Cancel",
+      "editAction": "Edit customer",
+      "deleteAction": "Delete customer",
+      "viewHistory": "View history",
+      "dialog": {
+        "addTitle": "Add Customer",
+        "editTitle": "Edit Customer",
+        "description": "Contact details, tags, and notes are shared across all of this guest's reservations.",
+        "name": "Name",
+        "namePlaceholder": "Full name",
+        "nameRequired": "Please enter a name.",
+        "email": "Email",
+        "emailRequired": "Please enter an email address.",
+        "emailPlaceholder": "email@example.com",
+        "phone": "Phone",
+        "phoneRequired": "Please enter a phone number.",
+        "tags": "Tags",
+        "tagsPlaceholder": "Type a tag and press Enter",
+        "removeTag": "Remove tag {{tag}}",
+        "notes": "Notes",
+        "notesPlaceholder": "Dietary needs, preferences, seating…",
+        "create": "Create",
+        "save": "Save",
+        "errorSave": "Failed to save customer."
+      },
+      "delete": {
+        "title": "Delete Customer",
+        "description": "This permanently removes {{name}} and their record. This cannot be undone.",
+        "confirm": "Delete",
+        "errorDelete": "Failed to delete customer."
+      },
+      "detail": {
+        "history": "Reservation history",
+        "loadingHistory": "Loading history…",
+        "historyError": "Failed to load reservation history.",
+        "noHistory": "No reservations yet.",
+        "partyOf": "Party of {{count}}",
+        "edit": "Edit"
+      }
     },
     "notifications": {
       "backToReservations": "Back to reservations",

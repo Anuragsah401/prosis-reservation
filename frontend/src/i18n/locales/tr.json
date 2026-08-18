@@ -277,10 +277,50 @@
       "addCustomer": "Müşteri ekle",
       "searchPlaceholder": "Müşteri ara...",
       "loading": "Müşteriler yükleniyor…",
+      "retry": "Tekrar dene",
       "noRestaurant": "Hesabınıza henüz bir restoran bağlı değil.",
       "loadError": "Müşteriler yüklenemedi.",
       "empty": "Henüz müşteri yok. Rezervasyonlar geldikçe yeni müşteriler burada görünecek.",
-      "noMatch": "Aramanızla eşleşen müşteri yok."
+      "noMatch": "Aramanızla eşleşen müşteri yok.",
+      "cancel": "İptal",
+      "editAction": "Müşteriyi düzenle",
+      "deleteAction": "Müşteriyi sil",
+      "viewHistory": "Geçmişi görüntüle",
+      "dialog": {
+        "addTitle": "Müşteri ekle",
+        "editTitle": "Müşteriyi düzenle",
+        "description": "İletişim bilgileri, etiketler ve notlar bu misafirin tüm rezervasyonlarında paylaşılır.",
+        "name": "Ad",
+        "namePlaceholder": "Ad soyad",
+        "nameRequired": "Lütfen bir ad girin.",
+        "email": "E-posta",
+        "emailRequired": "Lütfen bir e-posta adresi girin.",
+        "emailPlaceholder": "ornek@eposta.com",
+        "phone": "Telefon",
+        "phoneRequired": "Lütfen bir telefon numarası girin.",
+        "tags": "Etiketler",
+        "tagsPlaceholder": "Etiket yazıp Enter'a basın",
+        "removeTag": "{{tag}} etiketini kaldır",
+        "notes": "Notlar",
+        "notesPlaceholder": "Diyet ihtiyaçları, tercihler, oturma düzeni…",
+        "create": "Oluştur",
+        "save": "Kaydet",
+        "errorSave": "Müşteri kaydedilemedi."
+      },
+      "delete": {
+        "title": "Müşteriyi sil",
+        "description": "Bu işlem {{name}} ve kaydını kalıcı olarak kaldırır. Bu geri alınamaz.",
+        "confirm": "Sil",
+        "errorDelete": "Müşteri silinemedi."
+      },
+      "detail": {
+        "history": "Rezervasyon geçmişi",
+        "loadingHistory": "Geçmiş yükleniyor…",
+        "historyError": "Rezervasyon geçmişi yüklenemedi.",
+        "noHistory": "Henüz rezervasyon yok.",
+        "partyOf": "{{count}} kişilik grup",
+        "edit": "Düzenle"
+      }
     },
     "notifications": {
       "backToReservations": "Rezervasyonlara dön",

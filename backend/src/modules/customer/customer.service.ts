@@ -9,11 +9,47 @@ export const customerService = {
     return prisma.customer.findUnique({ where: { id } })
   },
 
-  async create(data: { restaurantId: string; name: string; email?: string; phone?: string }) {
+  async getReservations(customerId: string) {
+    const reservations = await prisma.reservation.findMany({
+      where: { customerId },
+      orderBy: { reservedFor: "desc" },
+      take: 50,
+      include: {
+        table: { select: { id: true, number: true, section: true } },
+      },
+    })
+    return reservations.map((r) => {
+      const { table, ...rest } = r
+      return {
+        ...rest,
+        // The reservations list renders `name`/`location`, so map the table
+        // columns onto those before the API shape is applied.
+        table: table ? { id: table.id, name: table.number, location: table.section } : null,
+      }
+    })
+  },
+
+  async create(data: {
+    restaurantId: string
+    name: string
+    email?: string
+    phone?: string
+    notes?: string
+    tags?: string[]
+  }) {
     return prisma.customer.create({ data })
   },
 
-  async update(id: string, data: Partial<{ name: string; email: string; phone: string; notes: string }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string
+      email: string
+      phone: string
+      notes: string
+      tags: string[]
+    }>,
+  ) {
     return prisma.customer.update({ where: { id }, data })
   },
 
