@@ -256,10 +256,14 @@ export const reservationService = {
     createdById?: string
     status?: string
   }) {
-    if (data.tableId) {
+    // Frontend sends "__customer_choice__" sentinel when guest picks their own table.
+    // Treat it as undefined (no table assigned yet).
+    const tableId = data.tableId === "__customer_choice__" ? undefined : data.tableId
+
+    if (tableId) {
       const { available } = await this.checkAvailability({
         restaurantId: data.restaurantId,
-        tableId: data.tableId,
+        tableId,
         reservedFor: data.reservedFor,
       })
       if (!available) {
@@ -277,7 +281,7 @@ export const reservationService = {
       data: {
         restaurantId: data.restaurantId,
         customerId: data.customerId,
-        tableId: data.tableId,
+        tableId,
         partySize: data.partySize,
         reservedFor: data.reservedFor,
         notes: data.notes,
