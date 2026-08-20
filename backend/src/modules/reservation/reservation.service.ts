@@ -286,7 +286,7 @@ export const reservationService = {
         ...(dbStatus ? { status: dbStatus } : {}),
       },
       include: {
-        customer: { select: { name: true, email: true, phone: true } },
+        customer: { select: { id: true, name: true, email: true, phone: true } },
         restaurant: { select: { name: true } },
         table: { select: { id: true, number: true, section: true } },
       },
@@ -368,11 +368,14 @@ export const reservationService = {
       })
     }
 
-    const { customer: _c, restaurant: _r, table, ...rest } = reservation
+    const { restaurant: _r, table, ...rest } = reservation
     return toApiShape({
       ...rest,
-      // Match the list endpoint's shape so the frontend can resolve the table
-      // name from the create response (e.g. the new row's "Table" column).
+      // Match the list endpoint's shape so the frontend renders the customer
+      // name and table correctly from the create response without a refetch.
+      customer: reservation.customer
+        ? { id: reservation.customer.id, name: reservation.customer.name, email: reservation.customer.email, phone: reservation.customer.phone }
+        : null,
       table: table ? { id: table.id, name: table.number, location: table.section } : null,
     })
   },
@@ -510,6 +513,59 @@ export const reservationService = {
     await syncTableStatus(updated.tableId)
     await notifyStatusChange(updated.id, updated.restaurantId, "CONFIRMED")
     return toApiShape(updated)
+  },
+
+  /**
+   * Staff-facing: re-sends the confirmation email to any email address.
+   * Useful when the customer's email on file is wrong or staff needs to send
+   * the link to a different address.
+   */
+  async resendConfirmationEmail(reservationId: string, toEmail: string) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        customer: { select: { name: true } },
+        restaurant: { select: { name: true } },
+        table: { select: { number: true } },
+      },
+    })
+
+    if (!reservation) {
+      throw new Error("Reservation not found")
+    }
+    if (reservation.status === "CANCELLED") {
+      throw new Error("This reservation has been cancelled")
+    }
+
+    // Get the raw token from the hash - we can't reverse the hash, so we need to generate a new one
+    // Actually, we should store the raw token or generate a new one. For now, generate new token.
+    const rawToken = crypto.randomBytes(32).toString("hex")
+    const tokenHash = hashConfirmationToken(rawToken)
+
+    // Update the reservation with new token hash
+    await prisma.reservation.update({
+      where: { id: reservationId },
+      data: { confirmationTokenHash: tokenHash },
+    })
+
+    const confirmUrl = `${env.APP_URL}/reservation/confirm?token=${rawToken}`
+
+    await mailer.sendReservationConfirmationEmail({
+      to: toEmail,
+      customerName: reservation.customer.name,
+      restaurantName: reservation.restaurant.name,
+      reservedFor: reservation.reservedFor,
+      partySize: reservation.partySize,
+      tableName: reservation.table?.number ?? null,
+      confirmUrl,
+    })
+
+    await prisma.reservation.update({
+      where: { id: reservationId },
+      data: { confirmationSentAt: new Date() },
+    })
+
+    return { success: true }
   },
 
   /**

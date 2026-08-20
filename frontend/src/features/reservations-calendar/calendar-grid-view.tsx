@@ -11,6 +11,8 @@ import {
   statusColors,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
+import { useRestaurant } from "@/features/restaurant/restaurant-context"
+import { minutesToHour } from "@/features/restaurant/restaurant-api"
 
 export interface CalendarGridViewProps {
   view: "day" | "week"
@@ -21,6 +23,10 @@ export interface CalendarGridViewProps {
   onReservationChange: (id: string, changes: { start?: string; durationMinutes?: number }) => void
 }
 
+function formatSlotTime(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00:00`
+}
+
 export function CalendarGridView({
   view,
   reservations,
@@ -29,6 +35,12 @@ export function CalendarGridView({
   onReservationClick,
   onReservationChange,
 }: CalendarGridViewProps) {
+  const { profile } = useRestaurant()
+
+  // Use restaurant opening/closing hours if available, otherwise defaults
+  const openingHour = profile ? minutesToHour(profile.openingTime) : 10
+  const closingHour = profile ? Math.ceil(profile.closingTime / 60) : 24
+
   const tableNameById = useMemo(
     () => new Map(getCalendarTables().map((t) => [t.id, t.name])),
     [],
@@ -91,8 +103,8 @@ export function CalendarGridView({
         headerToolbar={false}
         height="auto"
         allDaySlot={false}
-        slotMinTime="10:00:00"
-        slotMaxTime="24:00:00"
+        slotMinTime={formatSlotTime(openingHour)}
+        slotMaxTime={formatSlotTime(closingHour)}
         slotDuration="00:15:00"
         nowIndicator
         editable

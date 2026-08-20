@@ -51,3 +51,7 @@ export const confirmReservationSchema = z.object({
 export const cancelReservationByTokenSchema = z.object({
   token: z.string().trim().min(1, "token is required"),
 })
+
+export const resendConfirmationEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
+})

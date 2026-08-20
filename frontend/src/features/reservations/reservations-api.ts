@@ -124,6 +124,15 @@ export async function deleteReservationOnServer(id: string) {
 }
 
 /**
+ * Re-sends the confirmation email to any email address.
+ * Useful when the customer's email on file is wrong or staff needs to send
+ * the link to a different address.
+ */
+export async function resendConfirmationEmail(reservationId: string, email: string) {
+  await apiClient.post(`/reservations/${reservationId}/resend-confirmation`, { email })
+}
+
+/**
  * Updates a customer's contact details. Used when editing a reservation's
  * guest info — the reservation itself references the customer by id, so
  * editing the shared record keeps every one of that guest's reservations

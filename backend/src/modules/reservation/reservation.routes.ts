@@ -9,6 +9,8 @@ reservationRouter.get("/availability", reservationController.checkAvailability)
 reservationRouter.get("/confirmation", reservationController.getConfirmationDetails)
 reservationRouter.post("/confirm", reservationController.confirm)
 reservationRouter.post("/cancel-by-token", reservationController.cancelByToken)
+// Staff-facing: resend confirmation email to any address
+reservationRouter.post("/:id/resend-confirmation", requireAuth, reservationController.resendConfirmationEmail)
 reservationRouter.get("/", reservationController.list)
 reservationRouter.get("/:id", reservationController.getById)
 reservationRouter.post("/", requireAuth, reservationController.create)

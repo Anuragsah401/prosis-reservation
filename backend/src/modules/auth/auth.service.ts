@@ -70,6 +70,8 @@ export const authService = {
             phone: data.restaurantPhone,
             timezone: data.restaurantTimezone || "UTC",
             email: data.email,
+            openingTime: data.restaurantOpeningTime ?? 660, // 11:00 AM default
+            closingTime: data.restaurantClosingTime ?? 1380, // 11:00 PM default
           },
         })
 

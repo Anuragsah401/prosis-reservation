@@ -26,6 +26,9 @@ export const registerSchema = z.object({
   restaurantName: z.string().trim().min(1).max(120).optional(),
   restaurantPhone: z.string().trim().max(32).optional(),
   restaurantTimezone: z.string().trim().max(64).optional(),
+  // Restaurant opening/closing hours as minutes from midnight (optional)
+  restaurantOpeningTime: z.number().int().min(0).max(1439).optional(),
+  restaurantClosingTime: z.number().int().min(1).max(1440).optional(),
   // Staff-invite path (joins an existing restaurant), mutually exclusive
   // with restaurantName in practice:
   restaurantId: z.string().trim().min(1).optional(),

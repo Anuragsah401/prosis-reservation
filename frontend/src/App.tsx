@@ -16,10 +16,12 @@ import { SignupPage } from '@/pages/signup-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { ResetPasswordPage } from '@/pages/reset-password-page'
 import { ReservationConfirmPage } from '@/pages/reservation-confirm-page'
+import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
 
 function App() {
   return (
-    <Routes>
+    <RestaurantProvider>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
@@ -69,6 +71,7 @@ function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </RestaurantProvider>
   )
 }
 

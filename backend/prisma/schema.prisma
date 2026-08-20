@@ -21,6 +21,10 @@ model Restaurant {
   phone     String?
   address   String?
   timezone  String   @default("UTC")
+  /** Restaurant opening time as minutes from midnight (e.g. 11:00 = 660). */
+  openingTime Int      @default(660)
+  /** Restaurant closing time as minutes from midnight (e.g. 23:00 = 1380). */
+  closingTime Int      @default(1380)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

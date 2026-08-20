@@ -137,6 +137,16 @@ export function SignupPage() {
     setError(null)
     setLoading(true)
 
+    // Convert "HH:MM" strings to minutes from midnight
+    const openingMinutes = (() => {
+      const [h, m] = openTime.split(":").map(Number)
+      return h * 60 + m
+    })()
+    const closingMinutes = (() => {
+      const [h, m] = closeTime.split(":").map(Number)
+      return h * 60 + m
+    })()
+
     authClient
       .register({
         name: name.trim(),
@@ -144,6 +154,8 @@ export function SignupPage() {
         password,
         restaurantName: restaurantName.trim(),
         restaurantPhone: phone?.trim() || undefined,
+        restaurantOpeningTime: openingMinutes,
+        restaurantClosingTime: closingMinutes,
       })
       .then(() => {
         clearDraft()

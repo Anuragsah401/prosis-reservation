@@ -7,6 +7,8 @@ import {
   statusColors,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
+import { useRestaurant } from "@/features/restaurant/restaurant-context"
+import { minutesToHour } from "@/features/restaurant/restaurant-api"
 
 export type TimeFilter = "all" | "morning" | "lunch" | "evening"
 
@@ -18,6 +20,10 @@ export interface BookingDiagramViewProps {
   onReservationChange: (id: string, changes: { start?: string; tableId?: string }) => void
 }
 
+/**
+ * Default hour ranges used when the restaurant hasn't set opening/closing times.
+ * Filters (morning/lunch/evening) operate within this window.
+ */
 const HOUR_RANGES: Record<TimeFilter, [number, number]> = {
   all: [10, 24],
   morning: [10, 12],
@@ -34,9 +40,8 @@ function minutesSince(startHour: number, date: Date) {
 
 function formatHourLabel(h: number) {
   const hour = h % 24
-  if (hour === 0) return "12 AM"
-  if (hour === 12) return "12 PM"
-  return hour > 12 ? `${hour - 12} PM` : `${hour} AM`
+  // 24-hour format: pad to 2 digits (e.g., "00", "13", "23")
+  return `${String(hour).padStart(2, "0")}:00`
 }
 
 export function BookingDiagramView({
@@ -46,7 +51,17 @@ export function BookingDiagramView({
   onReservationClick,
   onReservationChange,
 }: BookingDiagramViewProps) {
-  const [startHour, endHour] = HOUR_RANGES[timeFilter]
+  const { profile } = useRestaurant()
+
+  // Use restaurant opening/closing hours if available, otherwise defaults
+  const openingHour = profile ? minutesToHour(profile.openingTime) : 10
+  const closingHour = profile ? Math.ceil(profile.closingTime / 60) : 24
+
+  // When in "all" view, constrain to the restaurant's hours; other filters
+  // (morning/lunch/evening) are relative to the default ranges.
+  const effectiveStartHour = timeFilter === "all" ? openingHour : HOUR_RANGES[timeFilter][0]
+  const effectiveEndHour = timeFilter === "all" ? closingHour : HOUR_RANGES[timeFilter][1]
+
   const [dragState, setDragState] = useState<{ id: string; startX: number; originalMinutes: number } | null>(
     null,
   )
@@ -76,18 +91,18 @@ export function BookingDiagramView({
 
   const hours = useMemo(() => {
     const arr: number[] = []
-    for (let h = startHour; h <= endHour; h++) arr.push(h)
+    for (let h = effectiveStartHour; h <= effectiveEndHour; h++) arr.push(h)
     return arr
-  }, [startHour, endHour])
+  }, [effectiveStartHour, effectiveEndHour])
 
-  const totalWidth = (endHour - startHour) * 60 * PX_PER_MINUTE
+  const totalWidth = (effectiveEndHour - effectiveStartHour) * 60 * PX_PER_MINUTE
 
   const now = new Date()
   const isToday =
     now.getFullYear() === currentDate.getFullYear() &&
     now.getMonth() === currentDate.getMonth() &&
     now.getDate() === currentDate.getDate()
-  const nowOffset = minutesSince(startHour, now) * PX_PER_MINUTE
+  const nowOffset = minutesSince(effectiveStartHour, now) * PX_PER_MINUTE
   const showNowLine = isToday && nowOffset >= 0 && nowOffset <= totalWidth
 
   const handlePointerDown = useCallback((e: React.PointerEvent, reservation: CalendarReservation) => {
@@ -96,9 +111,9 @@ export function BookingDiagramView({
     setDragState({
       id: reservation.id,
       startX: e.clientX,
-      originalMinutes: minutesSince(startHour, new Date(reservation.start)),
+      originalMinutes: minutesSince(effectiveStartHour, new Date(reservation.start)),
     })
-  }, [startHour])
+  }, [effectiveStartHour])
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
@@ -159,6 +174,72 @@ export function BookingDiagramView({
             </div>
           )}
 
+          {/* Unassigned reservations (no table selected yet) */}
+          {dayReservations.some((r) => !r.tableId) && (
+            <div>
+              <div className="bg-muted/60 text-muted-foreground border-b px-3 py-1 text-[11px] font-semibold uppercase tracking-wide">
+                Unassigned
+              </div>
+              <div
+                className="flex border-b last:border-b-0"
+                onDragOver={(e) => e.preventDefault()}
+              >
+                <div className="bg-card flex w-24 shrink-0 items-center gap-1.5 border-r px-2.5">
+                  <span className="text-sm font-medium">Unassigned</span>
+                  <span className="text-muted-foreground text-[10px]">
+                    ({dayReservations.filter((r) => !r.tableId).length})
+                  </span>
+                </div>
+                <div className="relative shrink-0" style={{ width: totalWidth, height: ROW_HEIGHT }}>
+                  {hours.map((h) => (
+                    <div
+                      key={h}
+                      className="border-border/50 absolute top-0 h-full border-r"
+                      style={{ left: (h - effectiveStartHour) * 60 * PX_PER_MINUTE }}
+                    />
+                  ))}
+                  {dayReservations
+                    .filter((r) => !r.tableId)
+                    .map((r) => {
+                      const start = new Date(r.start)
+                      const left = Math.max(0, minutesSince(effectiveStartHour, start) * PX_PER_MINUTE)
+                      const width = Math.max(r.durationMinutes * PX_PER_MINUTE, 56)
+                      const colors = statusColors[r.status]
+                      return (
+                        <div
+                          key={r.id}
+                          id={`diagram-event-${r.id}`}
+                          draggable
+                          onDragStart={(e) => e.dataTransfer.setData("text/reservation-id", r.id)}
+                          onPointerDown={(e) => handlePointerDown(e, r)}
+                          onPointerMove={handlePointerMove}
+                          onPointerUp={handlePointerUp}
+                          onClick={() => onReservationClick(r)}
+                          className={cn(
+                            "absolute top-1.5 flex h-8 cursor-grab items-center gap-1.5 overflow-hidden rounded-md border px-2 text-[11px] font-medium shadow-sm select-none active:cursor-grabbing",
+                          )}
+                          style={{
+                            left,
+                            width,
+                            backgroundColor: colors.bg,
+                            borderColor: colors.border,
+                            color: colors.text,
+                          }}
+                          title={`${r.customerName} · ${r.partySize} guests · ${start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+                        >
+                          <span className="truncate">{r.customerName}</span>
+                          <span className="ml-auto flex shrink-0 items-center gap-0.5 opacity-80">
+                            <Users className="size-3" />
+                            {r.partySize}
+                          </span>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {floors.map(([floorName, tables]) => (
             <div key={floorName}>
               <div className="bg-muted/60 text-muted-foreground border-b px-3 py-1 text-[11px] font-semibold uppercase tracking-wide">
@@ -186,12 +267,12 @@ export function BookingDiagramView({
                         <div
                           key={h}
                           className="border-border/50 absolute top-0 h-full border-r"
-                          style={{ left: (h - startHour) * 60 * PX_PER_MINUTE }}
+                          style={{ left: (h - effectiveStartHour) * 60 * PX_PER_MINUTE }}
                         />
                       ))}
                       {tableReservations.map((r) => {
                         const start = new Date(r.start)
-                        const left = Math.max(0, minutesSince(startHour, start) * PX_PER_MINUTE)
+                        const left = Math.max(0, minutesSince(effectiveStartHour, start) * PX_PER_MINUTE)
                         const width = Math.max(r.durationMinutes * PX_PER_MINUTE, 56)
                         const colors = statusColors[r.status]
                         return (

@@ -23,6 +23,7 @@ import {
   statusLabels,
   type CalendarReservation,
 } from "@/features/reservations-calendar/calendar-data"
+import { resendConfirmationEmail } from "@/features/reservations/reservations-api"
 
 export interface ReservationDetailsDialogProps {
   reservation: CalendarReservation | null
@@ -69,12 +70,41 @@ function ReservationDetailsForm({
   const [durationMinutes, setDurationMinutes] = useState(String(reservation.durationMinutes))
   const calendarTables = useMemo(() => getCalendarTables(), [])
 
+  // Send confirmation email state
+  const [showSendEmail, setShowSendEmail] = useState(false)
+  const [sendEmailAddress, setSendEmailAddress] = useState(reservation.customerEmail ?? "")
+  const [isSending, setIsSending] = useState(false)
+  const [sendResult, setSendResult] = useState<{ type: "success" | "error"; message: string } | null>(
+    null,
+  )
+
   const handleSave = () => {
     onSave(reservation.id, {
       tableId,
       start: new Date(start).toISOString(),
       durationMinutes: Math.max(15, Number(durationMinutes) || 90),
     })
+  }
+
+  const handleSendConfirmation = async () => {
+    if (!sendEmailAddress) return
+    setIsSending(true)
+    setSendResult(null)
+    try {
+      await resendConfirmationEmail(reservation.id, sendEmailAddress)
+      setSendResult({ type: "success", message: "Confirmation email sent!" })
+      setTimeout(() => {
+        setShowSendEmail(false)
+        setSendResult(null)
+      }, 2000)
+    } catch (err) {
+      setSendResult({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to send email",
+      })
+    } finally {
+      setIsSending(false)
+    }
   }
 
   return (
@@ -129,6 +159,56 @@ function ReservationDetailsForm({
             />
           </div>
         </div>
+
+        {/* Send Confirmation to Email Section */}
+        {reservation.status === "PENDING" && (
+          <div className="border-t pt-4">
+            {showSendEmail ? (
+              <div className="grid gap-3">
+                <Label htmlFor="send-email">Send confirmation to any email</Label>
+                <Input
+                  id="send-email"
+                  type="email"
+                  placeholder="guest@example.com"
+                  value={sendEmailAddress}
+                  onChange={(e) => {
+                    setSendEmailAddress(e.target.value)
+                    setSendResult(null)
+                  }}
+                />
+                {sendResult && (
+                  <p className={`text-sm ${sendResult.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                    {sendResult.message}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowSendEmail(false)
+                      setSendResult(null)
+                    }}
+                    disabled={isSending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSendConfirmation}
+                    disabled={!sendEmailAddress || isSending}
+                  >
+                    {isSending ? "Sending..." : "Send Email"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowSendEmail(true)}>
+                Send confirmation to email
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <DialogFooter>

@@ -7,6 +7,7 @@ import {
   checkAvailabilitySchema,
   confirmReservationSchema,
   cancelReservationByTokenSchema,
+  resendConfirmationEmailSchema,
 } from "@/modules/reservation/reservation.validation"
 
 // Errors from the public confirmation flow that are safe to expose to guests.
@@ -180,6 +181,27 @@ export const reservationController = {
     } catch (err) {
       if (err instanceof Error && CONFIRMATION_ERRORS.has(err.message)) {
         return res.status(400).json({ error: err.message })
+      }
+      next(err)
+    }
+  },
+
+  /** Staff: re-send confirmation email to any email address. */
+  async resendConfirmationEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = resendConfirmationEmailSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
+      }
+      const reservationId = String(req.params.id)
+      const result = await reservationService.resendConfirmationEmail(reservationId, parsed.data.email)
+      res.status(200).json(result)
+    } catch (err) {
+      if (err instanceof Error && CONFIRMATION_ERRORS.has(err.message)) {
+        return res.status(400).json({ error: err.message })
+      }
+      if (err instanceof Error && err.message === "Reservation not found") {
+        return res.status(404).json({ error: err.message })
       }
       next(err)
     }
