@@ -21,7 +21,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
 import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
-import { capitalize, toDateInputValue, useTableOptions } from "../reservations-utils"
+import { capitalize, toDateInputValue, useTableOptions, type TableOption } from "../reservations-utils"
 import { createReservationOnServer } from "../reservations-api"
 import { TablePickerDialog } from "./table-picker-dialog"
 
@@ -93,10 +93,13 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickedTable, setPickedTable] = useState<TableOption | null>(null)
 
   // The floor-plan table the staff chose, used to label the picker button.
   const selectedFloorTable =
-    tableId && tableId !== LET_CUSTOMER_CHOOSE ? tableOptions.find((t) => t.id === tableId) : undefined
+    tableId && tableId !== LET_CUSTOMER_CHOOSE
+      ? tableOptions.find((t) => t.id === tableId) ?? (pickedTable?.id === tableId ? pickedTable : undefined)
+      : undefined
 
   const steps = [
     t("pages.reservations.newDialog.stepGuest"),
@@ -118,6 +121,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       eventType: "unspecified",
     })
     clearDraft()
+    setPickedTable(null)
     setError(null)
   }
 
@@ -400,7 +404,10 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
                   <button
                     type="button"
                     aria-pressed={tableId === LET_CUSTOMER_CHOOSE}
-                    onClick={() => setTableId(LET_CUSTOMER_CHOOSE)}
+                    onClick={() => {
+                      setTableId(LET_CUSTOMER_CHOOSE)
+                      setPickedTable(null)
+                    }}
                     className={cn(
                       "flex w-full flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
                       tableId === LET_CUSTOMER_CHOOSE
@@ -549,7 +556,10 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
         onOpenChange={setPickerOpen}
         selectedTableId={tableId === LET_CUSTOMER_CHOOSE ? null : tableId}
         partySize={Number(partySize) || 1}
-        onConfirm={setTableId}
+        onConfirm={(chosenId, chosenTable) => {
+          setTableId(chosenId)
+          if (chosenTable) setPickedTable(chosenTable)
+        }}
       />
     </Dialog>
   )

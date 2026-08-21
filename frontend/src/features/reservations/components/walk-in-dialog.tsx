@@ -19,7 +19,7 @@ import {
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
 import { createReservationOnServer } from "../reservations-api"
-import { useTableOptions } from "../reservations-utils"
+import { useTableOptions, type TableOption } from "../reservations-utils"
 import { TablePickerDialog } from "./table-picker-dialog"
 
 interface WalkInDialogProps {
@@ -46,9 +46,12 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickedTable, setPickedTable] = useState<TableOption | null>(null)
 
   // The floor-plan table staff picked, used to label the picker button.
-  const selectedFloorTable = tableId ? tableOptions.find((t) => t.id === tableId) : undefined
+  const selectedFloorTable = tableId
+    ? tableOptions.find((t) => t.id === tableId) ?? (pickedTable?.id === tableId ? pickedTable : undefined)
+    : undefined
 
   function resetForm() {
     setDraft({
@@ -59,6 +62,7 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
       partySize: "2",
     })
     clearDraft()
+    setPickedTable(null)
     setError(null)
   }
 
@@ -224,7 +228,10 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
         onOpenChange={setPickerOpen}
         selectedTableId={tableId || null}
         partySize={Number(partySize) || 1}
-        onConfirm={setTableId}
+        onConfirm={(chosenId, chosenTable) => {
+          setTableId(chosenId)
+          if (chosenTable) setPickedTable(chosenTable)
+        }}
       />
     </Dialog>
   )

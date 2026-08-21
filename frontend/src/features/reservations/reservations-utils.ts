@@ -1,6 +1,7 @@
-import { useMemo } from "react"
+import { useEffect, useState } from "react"
 import {
   loadFloorPlanTables,
+  saveFloorPlanTables,
   loadPositions,
   fetchFloorPlanFromServer,
 } from "@/features/floor-plan/floor-plan-storage"
@@ -19,15 +20,35 @@ export interface TableOption {
 }
 
 /**
- * Table choices for the New Reservation / Walk-in forms. Prefers whatever
- * tables are currently configured in the Floor Plan builder, so adding a
- * table there makes it selectable here immediately.
+ * Table choices for the New Reservation / Walk-in forms. Fetches the authoritative
+ * table list from the backend server so deployed/fresh environments show all tables,
+ * while initializing from the local snapshot for immediate render.
  */
 export function useTableOptions(): TableOption[] {
-  return useMemo(() => {
+  const [options, setOptions] = useState<TableOption[]>(() => {
     const floorPlanTables = loadFloorPlanTables()
     return floorPlanTables && floorPlanTables.length > 0 ? floorPlanTables : []
+  })
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchFloorPlanFromServer().then((tables) => {
+      if (cancelled || !tables) return
+      const summaries: TableOption[] = tables.map((t) => ({
+        id: t.id,
+        name: t.name,
+        floor: t.floor || "Main Floor",
+        capacity: t.capacity,
+      }))
+      setOptions(summaries)
+      saveFloorPlanTables(summaries)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
+
+  return options
 }
 
 /**
@@ -68,7 +89,17 @@ export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
  */
 export async function loadViewerTables(partySize: number): Promise<FloorPlanViewerTable[]> {
   const serverTables = await fetchFloorPlanFromServer()
-  if (serverTables !== null) return serverTables.map((t) => toViewerTable(t, partySize))
+  if (serverTables !== null) {
+    saveFloorPlanTables(
+      serverTables.map((t) => ({
+        id: t.id,
+        name: t.name,
+        floor: t.floor || "Main Floor",
+        capacity: t.capacity,
+      }))
+    )
+    return serverTables.map((t) => toViewerTable(t, partySize))
+  }
   return buildViewerTables(partySize)
 }
 

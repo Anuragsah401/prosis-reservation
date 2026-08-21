@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import type { FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 import { FloorPlanViewer } from "@/features/floor-plan/floor-plan-viewer"
+import type { TableOption } from "../reservations-utils"
 import { buildViewerTables, loadViewerTables } from "../reservations-utils"
 
 interface TablePickerDialogProps {
@@ -22,8 +23,8 @@ interface TablePickerDialogProps {
   selectedTableId: string | null
   /** Used to dim tables too small for the party. */
   partySize: number
-  /** Called with the chosen table id when staff confirms the selection. */
-  onConfirm: (tableId: string) => void
+  /** Called with the chosen table id and details when staff confirms the selection. */
+  onConfirm: (tableId: string, table?: TableOption) => void
 }
 
 /**
@@ -102,7 +103,11 @@ export function TablePickerDialog({
             disabled={selection === null}
             onClick={() => {
               if (selection !== null) {
-                onConfirm(selection)
+                const chosen = tables.find((t) => t.id === selection)
+                const tableOpt: TableOption | undefined = chosen
+                  ? { id: chosen.id, name: chosen.name, floor: chosen.floor, capacity: chosen.capacity }
+                  : undefined
+                onConfirm(selection, tableOpt)
                 onOpenChange(false)
               }
             }}
