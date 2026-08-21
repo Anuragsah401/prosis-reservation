@@ -1,4 +1,5 @@
 import { API_URL } from "@/lib/config"
+import { clearAllFormDrafts } from "@/hooks/use-form-persistence"
 
 const TOKEN_KEY = "prosisit:auth:token"
 const USER_KEY = "prosisit:auth:user"
@@ -131,6 +132,7 @@ export const authClient = {
   logout() {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
+    clearAllFormDrafts()
   },
 
   getToken(): string | null {

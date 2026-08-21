@@ -128,3 +128,25 @@ export function usePersistedState<T>(
 export function clearFormDraft(key: string) {
   removeStorage(key)
 }
+
+/**
+ * Removes all form drafts from localStorage.
+ * Called automatically upon user logout to prevent lingering draft data.
+ */
+export function clearAllFormDrafts() {
+  try {
+    const keysToRemove: string[] = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (key && key.startsWith(PREFIX)) {
+        keysToRemove.push(key)
+      }
+    }
+    for (const key of keysToRemove) {
+      window.localStorage.removeItem(key)
+    }
+  } catch {
+    // ignore
+  }
+}
+
