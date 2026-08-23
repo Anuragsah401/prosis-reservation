@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -22,8 +23,14 @@ export function TimeSlotGrid({
   selected,
   onSelect,
 }: TimeSlotGridProps) {
+  const { t } = useTranslation()
+
   if (slots.length === 0) {
-    return <p className="text-muted-foreground text-sm">No time slots available for this date.</p>
+    return (
+      <p className="text-muted-foreground text-sm">
+        {t("publicBooking.step1.noSlots", "No time slots available for this date.")}
+      </p>
+    )
   }
 
   return (

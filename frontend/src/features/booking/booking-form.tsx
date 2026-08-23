@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +21,7 @@ interface BookingFormProps {
 }
 
 export function BookingForm({ isSubmitting, onSubmit }: BookingFormProps) {
+  const { t } = useTranslation()
   const [draft, setDraft, clearDraft] = usePersistedFormState("booking-form", {
     name: "",
     email: "",
@@ -35,11 +37,11 @@ export function BookingForm({ isSubmitting, onSubmit }: BookingFormProps) {
 
   function validate(): boolean {
     const nextErrors: Partial<Record<keyof BookingContactDetails, string>> = {}
-    if (!name.trim()) nextErrors.name = "Name is required"
+    if (!name.trim()) nextErrors.name = t("publicBooking.step3.errorName", "Name is required")
     if (!email.trim()) {
-      nextErrors.email = "Email is required"
+      nextErrors.email = t("publicBooking.step3.errorEmail", "Email is required")
     } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      nextErrors.email = "Enter a valid email"
+      nextErrors.email = t("publicBooking.step3.errorEmailInvalid", "Enter a valid email")
     }
     if (!phone.trim()) nextErrors.phone = "Phone number is required"
     setErrors(nextErrors)
@@ -56,7 +58,7 @@ export function BookingForm({ isSubmitting, onSubmit }: BookingFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="booking-name">Full name</Label>
+        <Label htmlFor="booking-name">{t("publicBooking.step3.fullName", "Full name")}</Label>
         <Input
           id="booking-name"
           value={name}

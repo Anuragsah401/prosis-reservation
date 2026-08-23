@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Minus } from "lucide-react"
@@ -10,6 +11,7 @@ interface GuestSelectorProps {
 }
 
 export function GuestSelector({ value, onChange }: GuestSelectorProps) {
+  const { t } = useTranslation()
   const quickOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
 
   return (
@@ -30,7 +32,7 @@ export function GuestSelector({ value, onChange }: GuestSelectorProps) {
       </div>
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-        <span>Custom party size:</span>
+        <span>{t("publicBooking.step1.customPartySize", "Custom party size:")}</span>
         <div className="flex items-center gap-1">
           <Button
             type="button"
