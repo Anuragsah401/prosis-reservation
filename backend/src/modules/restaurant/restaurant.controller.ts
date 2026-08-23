@@ -57,8 +57,12 @@ export const restaurantController = {
     }
   },
 
-  async update(req: Request, res: Response, next: NextFunction) {
+  async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId || restaurantId !== req.params.id) {
+        return res.status(403).json({ error: "You are not authorized to update this restaurant" })
+      }
       const parsed = updateRestaurantSchema.safeParse(req.body)
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
@@ -73,8 +77,12 @@ export const restaurantController = {
     }
   },
 
-  async remove(req: Request, res: Response, next: NextFunction) {
+  async remove(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId || restaurantId !== req.params.id) {
+        return res.status(403).json({ error: "You are not authorized to delete this restaurant" })
+      }
       await restaurantService.remove(String(req.params.id))
       res.status(204).send()
     } catch (err) {

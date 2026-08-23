@@ -17,10 +17,12 @@ import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { ResetPasswordPage } from '@/pages/reset-password-page'
 import { ReservationConfirmPage } from '@/pages/reservation-confirm-page'
 import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
+import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   return (
     <RestaurantProvider>
+      <Toaster />
       <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route

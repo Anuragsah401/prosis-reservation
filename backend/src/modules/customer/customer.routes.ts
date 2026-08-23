@@ -1,7 +1,10 @@
 import { Router } from "express"
 import { customerController } from "@/modules/customer/customer.controller"
+import { requireAuth } from "@/modules/auth/auth.middleware"
 
 export const customerRouter = Router()
+
+customerRouter.use(requireAuth)
 
 customerRouter.get("/", customerController.list)
 customerRouter.get("/:id", customerController.getById)
@@ -9,3 +12,4 @@ customerRouter.get("/:id/reservations", customerController.getReservations)
 customerRouter.post("/", customerController.create)
 customerRouter.patch("/:id", customerController.update)
 customerRouter.delete("/:id", customerController.remove)
+

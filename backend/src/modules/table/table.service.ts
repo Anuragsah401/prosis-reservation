@@ -73,6 +73,7 @@ export const tableService = {
 
   async update(
     id: string,
+    restaurantId: string,
     data: Partial<{
       name: string
       capacity: number
@@ -87,7 +88,7 @@ export const tableService = {
       rotation: number
     }>,
   ) {
-    const existing = await prisma.table.findUnique({ where: { id } })
+    const existing = await prisma.table.findFirst({ where: { id, restaurantId } })
     if (!existing) {
       throw new Error("Table not found")
     }
@@ -111,8 +112,8 @@ export const tableService = {
     return toApiShape(table)
   },
 
-  async remove(id: string) {
-    const existing = await prisma.table.findUnique({ where: { id } })
+  async remove(id: string, restaurantId: string) {
+    const existing = await prisma.table.findFirst({ where: { id, restaurantId } })
     if (!existing) {
       throw new Error("Table not found")
     }

@@ -56,10 +56,22 @@ function extractLinks(html: string): string {
   return links.length > 0 ? `Links:\n${[...new Set(links)].join("\n")}` : html
 }
 
+/** Sanitizes text to prevent HTML injection in transactional email templates. */
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return ""
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
 export const mailer = {
   sendEmail,
 
   async sendPasswordResetEmail(to: string, resetUrl: string) {
+    const escapedResetUrl = escapeHtml(resetUrl)
     await sendEmail({
       to,
       subject: "Reset your Prosisit Table password",
@@ -71,7 +83,7 @@ export const mailer = {
             Click the button below to choose a new password. This link expires in 1 hour.
           </p>
           <p style="margin: 24px 0;">
-            <a href="${resetUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
+            <a href="${escapedResetUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
               Reset password
             </a>
           </p>
@@ -80,7 +92,7 @@ export const mailer = {
           </p>
           <p style="color: #888; font-size: 13px; line-height: 1.5;">
             Or copy and paste this link into your browser:<br />
-            <a href="${resetUrl}" style="color: #555; word-break: break-all;">${resetUrl}</a>
+            <a href="${escapedResetUrl}" style="color: #555; word-break: break-all;">${escapedResetUrl}</a>
           </p>
         </div>
       `,
@@ -97,6 +109,11 @@ export const mailer = {
     confirmUrl: string
   }) {
     const { to, customerName, restaurantName, reservedFor, partySize, tableName, confirmUrl } = input
+    const safeCustomer = escapeHtml(customerName)
+    const safeRestaurant = escapeHtml(restaurantName)
+    const safeTable = tableName ? escapeHtml(tableName) : null
+    const safeConfirmUrl = escapeHtml(confirmUrl)
+
     const when = reservedFor.toLocaleString(undefined, {
       weekday: "long",
       month: "long",
@@ -111,9 +128,9 @@ export const mailer = {
       subject: `Confirm your reservation at ${restaurantName}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
-          <h2 style="margin-bottom: 8px;">You're almost booked, ${customerName}!</h2>
+          <h2 style="margin-bottom: 8px;">You're almost booked, ${safeCustomer}!</h2>
           <p style="color: #555; line-height: 1.5;">
-            ${restaurantName} has created a reservation for you. Please confirm it below —
+            ${safeRestaurant} has created a reservation for you. Please confirm it below —
             you can also pick your preferred table from the restaurant's floor plan.
           </p>
           <table style="border-collapse: collapse; margin: 16px 0; width: 100%;">
@@ -126,16 +143,16 @@ export const mailer = {
               <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${partySize} ${partySize === 1 ? "guest" : "guests"}</td>
             </tr>
             ${
-              tableName
+              safeTable
                 ? `<tr>
               <td style="padding: 6px 0; color: #888; font-size: 14px;">Table</td>
-              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${tableName}</td>
+              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${safeTable}</td>
             </tr>`
                 : ""
             }
           </table>
           <p style="margin: 24px 0;">
-            <a href="${confirmUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
+            <a href="${safeConfirmUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
               Confirm reservation
             </a>
           </p>
@@ -145,7 +162,7 @@ export const mailer = {
           </p>
           <p style="color: #888; font-size: 13px; line-height: 1.5;">
             Or copy and paste this link into your browser:<br />
-            <a href="${confirmUrl}" style="color: #555; word-break: break-all;">${confirmUrl}</a>
+            <a href="${safeConfirmUrl}" style="color: #555; word-break: break-all;">${safeConfirmUrl}</a>
           </p>
           <p style="color: #888; font-size: 13px; line-height: 1.5;">
             If you didn't expect this reservation, you can ignore this email.

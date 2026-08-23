@@ -379,6 +379,14 @@
         "confirm": "Delete",
         "errorDelete": "Could not delete the reservation. Please try again."
       },
+      "toasts": {
+        "created": "Reservation created successfully",
+        "walkInCreated": "Walk-in seated successfully",
+        "updated": "Reservation updated successfully",
+        "deleted": "Reservation deleted successfully",
+        "statusUpdated": "Reservation status updated to {{status}}",
+        "statusError": "Failed to update reservation status"
+      },
       "empty": "No reservations for this date.",
       "setStatus": "Set status",
       "cancel": "Cancel",

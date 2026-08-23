@@ -379,6 +379,14 @@
         "confirm": "Slet",
         "errorDelete": "Reservationen kunne ikke slettes. Prøv igen."
       },
+      "toasts": {
+        "created": "Reservation oprettet",
+        "walkInCreated": "Walk-in placeret",
+        "updated": "Reservation opdateret",
+        "deleted": "Reservation slettet",
+        "statusUpdated": "Reservationsstatus opdateret til {{status}}",
+        "statusError": "Kunne ikke opdatere reservationsstatus"
+      },
       "empty": "Ingen reservationer for denne dato.",
       "setStatus": "Sæt status",
       "cancel": "Annuller",

@@ -57,10 +57,15 @@ export function usePersistedFormState<T extends Record<string, unknown>>(
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRun = useRef(true)
+  const isClearedRef = useRef(false)
 
   useEffect(() => {
     if (isFirstRun.current) {
       isFirstRun.current = false
+      return
+    }
+    if (isClearedRef.current) {
+      isClearedRef.current = false
       return
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -78,6 +83,11 @@ export function usePersistedFormState<T extends Record<string, unknown>>(
   }, [state, key, debounceMs, excludeKey])
 
   const clearDraft = useCallback(() => {
+    isClearedRef.current = true
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     removeStorage(key)
   }, [key])
 
@@ -102,10 +112,15 @@ export function usePersistedState<T>(
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRun = useRef(true)
+  const isClearedRef = useRef(false)
 
   useEffect(() => {
     if (isFirstRun.current) {
       isFirstRun.current = false
+      return
+    }
+    if (isClearedRef.current) {
+      isClearedRef.current = false
       return
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -119,6 +134,11 @@ export function usePersistedState<T>(
   }, [state])
 
   const clearDraft = useCallback(() => {
+    isClearedRef.current = true
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     removeStorage(key)
   }, [key])
 

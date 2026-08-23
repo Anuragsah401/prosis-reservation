@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -167,6 +168,9 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
       tableId: tableId === LET_CUSTOMER_CHOOSE ? "" : tableId,
       tableName: nextTableName,
       notes: notes.trim() || undefined,
+    })
+    toast.success(t("pages.reservations.toasts.updated", "Reservation updated successfully"), {
+      description: `${trimmedName} · ${party} ${party === 1 ? "guest" : "guests"}`,
     })
     onOpenChange(false)
   }

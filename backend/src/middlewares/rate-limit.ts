@@ -12,3 +12,16 @@ export const authRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many attempts. Please try again later." },
 })
+
+/**
+ * Throttles public endpoints (e.g. reservation confirmation, guest availability lookups)
+ * to prevent automated scraping, spamming, and SMS/email toll fraud.
+ */
+export const publicApiRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  limit: 60,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please slow down and try again later." },
+})
+

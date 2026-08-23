@@ -379,6 +379,14 @@
         "confirm": "Sil",
         "errorDelete": "Rezervasyon silinemedi. Lütfen tekrar deneyin."
       },
+      "toasts": {
+        "created": "Rezervasyon başarıyla oluşturuldu",
+        "walkInCreated": "Randevusuz müşteri yerleştirildi",
+        "updated": "Rezervasyon başarıyla güncellendi",
+        "deleted": "Rezervasyon başarıyla silindi",
+        "statusUpdated": "Rezervasyon durumu {{status}} olarak güncellendi",
+        "statusError": "Rezervasyon durumu güncellenemedi"
+      },
       "empty": "Bu tarih için rezervasyon yok.",
       "setStatus": "Durumu ayarla",
       "cancel": "İptal",

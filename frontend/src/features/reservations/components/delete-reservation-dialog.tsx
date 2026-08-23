@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -50,6 +51,9 @@ export function DeleteReservationDialog({
       setIsDeleting(false)
     }
     onDeleted(reservation.id)
+    toast.success(t("pages.reservations.toasts.deleted", "Reservation deleted successfully"), {
+      description: reservation.customerName,
+    })
     onOpenChange(false)
   }
 

@@ -216,8 +216,13 @@ export const reservationService = {
     })
   },
 
-  async getById(id: string) {
-    const reservation = await prisma.reservation.findUnique({ where: { id } })
+  async getById(id: string, restaurantId?: string) {
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        ...(restaurantId ? { restaurantId } : {}),
+      },
+    })
     return reservation ? toApiShape(reservation) : null
   },
 
@@ -524,9 +529,9 @@ export const reservationService = {
    * Useful when the customer's email on file is wrong or staff needs to send
    * the link to a different address.
    */
-  async resendConfirmationEmail(reservationId: string, toEmail: string) {
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+  async resendConfirmationEmail(reservationId: string, restaurantId: string, toEmail: string) {
+    const reservation = await prisma.reservation.findFirst({
+      where: { id: reservationId, restaurantId },
       include: {
         customer: { select: { name: true } },
         restaurant: { select: { name: true } },
@@ -541,8 +546,7 @@ export const reservationService = {
       throw new Error("This reservation has been cancelled")
     }
 
-    // Get the raw token from the hash - we can't reverse the hash, so we need to generate a new one
-    // Actually, we should store the raw token or generate a new one. For now, generate new token.
+    // Generate a fresh token
     const rawToken = crypto.randomBytes(32).toString("hex")
     const tokenHash = hashConfirmationToken(rawToken)
 
@@ -607,6 +611,7 @@ export const reservationService = {
 
   async update(
     id: string,
+    restaurantId: string,
     data: Partial<{
       tableId: string
       partySize: number
@@ -614,7 +619,7 @@ export const reservationService = {
       notes: string
     }>,
   ) {
-    const existing = await prisma.reservation.findUnique({ where: { id } })
+    const existing = await prisma.reservation.findFirst({ where: { id, restaurantId } })
     if (!existing) {
       throw new Error("Reservation not found")
     }
@@ -642,8 +647,8 @@ export const reservationService = {
    * Updates the reservation status, enforcing valid transitions
    * (e.g. a COMPLETED reservation cannot move back to PENDING).
    */
-  async updateStatus(id: string, apiStatus: string) {
-    const existing = await prisma.reservation.findUnique({ where: { id } })
+  async updateStatus(id: string, restaurantId: string, apiStatus: string) {
+    const existing = await prisma.reservation.findFirst({ where: { id, restaurantId } })
     if (!existing) {
       throw new Error("Reservation not found")
     }
@@ -670,12 +675,12 @@ export const reservationService = {
     return toApiShape(reservation)
   },
 
-  async cancel(id: string) {
-    return this.updateStatus(id, "CANCELLED")
+  async cancel(id: string, restaurantId: string) {
+    return this.updateStatus(id, restaurantId, "CANCELLED")
   },
 
-  async remove(id: string) {
-    const existing = await prisma.reservation.findUnique({ where: { id } })
+  async remove(id: string, restaurantId: string) {
+    const existing = await prisma.reservation.findFirst({ where: { id, restaurantId } })
     if (!existing) {
       throw new Error("Reservation not found")
     }

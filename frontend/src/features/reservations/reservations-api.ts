@@ -185,18 +185,27 @@ export async function createReservationOnServer(
       email: input.customerEmail,
       phone: input.customerPhone,
     })
-  } else if (email && !customer.email) {
-    // Matched on phone alone: record the email now so this guest gets the
-    // richer email confirmation instead of falling back to SMS next time.
-    // An existing, different email is left alone — overwriting it could
-    // silently redirect another guest's confirmations.
-    // Non-fatal: the reservation itself still saves without this.
-    try {
-      customer = await apiClient.patch<ApiCustomer>(`/customers/${customer.id}`, {
-        email: input.customerEmail,
-      })
-    } catch (err) {
-      console.error("[reservations] Failed to backfill customer email:", err)
+  } else {
+    // Customer matched by email or phone.
+    // If the name passed into the reservation differs (e.g. spouse, typo correction,
+    // or different guest using contact details), or if missing email/phone can be backfilled,
+    // update the customer record so the reservation and table display the latest name.
+    const updates: Partial<{ name: string; email: string; phone: string }> = {}
+    if (input.customerName && input.customerName.trim() && customer.name !== input.customerName.trim()) {
+      updates.name = input.customerName.trim()
+    }
+    if (input.customerEmail && !customer.email) {
+      updates.email = input.customerEmail.trim()
+    }
+    if (input.customerPhone && !customer.phone) {
+      updates.phone = input.customerPhone.trim()
+    }
+    if (Object.keys(updates).length > 0) {
+      try {
+        customer = await apiClient.patch<ApiCustomer>(`/customers/${customer.id}`, updates)
+      } catch (err) {
+        console.error("[reservations] Failed to update customer:", err)
+      }
     }
   }
 
@@ -220,8 +229,8 @@ export async function createReservationOnServer(
   return {
     ...toCalendarReservation(created),
     customerId: customer.id,
-    customerName: customer.name,
-    customerPhone: customer.phone ?? "",
-    customerEmail: customer.email ?? undefined,
+    customerName: customer.name ?? input.customerName,
+    customerPhone: customer.phone ?? input.customerPhone ?? "",
+    customerEmail: customer.email ?? input.customerEmail ?? undefined,
   }
 }

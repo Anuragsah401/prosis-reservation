@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express"
 import { reservationService } from "@/modules/reservation/reservation.service"
+import type { AuthenticatedRequest } from "@/modules/auth/auth.middleware"
 import {
   createReservationSchema,
   updateReservationSchema,
@@ -22,9 +23,12 @@ const CONFIRMATION_ERRORS = new Set([
 ])
 
 export const reservationController = {
-  async list(req: Request, res: Response, next: NextFunction) {
+  async list(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = String(req.query.restaurantId)
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
       const result = await reservationService.list(restaurantId)
       res.status(200).json(result)
     } catch (err) {
@@ -32,9 +36,13 @@ export const reservationController = {
     }
   },
 
-  async getById(req: Request, res: Response, next: NextFunction) {
+  async getById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const result = await reservationService.getById(String(req.params.id))
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
+      const result = await reservationService.getById(String(req.params.id), restaurantId)
       if (!result) {
         return res.status(404).json({ error: "Reservation not found" })
       }
@@ -57,9 +65,17 @@ export const reservationController = {
     }
   },
 
-  async create(req: Request, res: Response, next: NextFunction) {
+  async create(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const parsed = createReservationSchema.safeParse(req.body)
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
+      const parsed = createReservationSchema.safeParse({
+        ...req.body,
+        restaurantId,
+        createdById: req.user?.sub,
+      })
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
@@ -73,13 +89,17 @@ export const reservationController = {
     }
   },
 
-  async update(req: Request, res: Response, next: NextFunction) {
+  async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
       const parsed = updateReservationSchema.safeParse(req.body)
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
-      const result = await reservationService.update(String(req.params.id), parsed.data)
+      const result = await reservationService.update(String(req.params.id), restaurantId, parsed.data)
       res.status(200).json(result)
     } catch (err) {
       if (err instanceof Error && err.message === "Reservation not found") {
@@ -89,13 +109,17 @@ export const reservationController = {
     }
   },
 
-  async updateStatus(req: Request, res: Response, next: NextFunction) {
+  async updateStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
       const parsed = updateReservationStatusSchema.safeParse(req.body)
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
-      const result = await reservationService.updateStatus(String(req.params.id), parsed.data.status)
+      const result = await reservationService.updateStatus(String(req.params.id), restaurantId, parsed.data.status)
       res.status(200).json(result)
     } catch (err) {
       if (err instanceof Error && err.message === "Reservation not found") {
@@ -108,9 +132,13 @@ export const reservationController = {
     }
   },
 
-  async cancel(req: Request, res: Response, next: NextFunction) {
+  async cancel(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const result = await reservationService.cancel(String(req.params.id))
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
+      const result = await reservationService.cancel(String(req.params.id), restaurantId)
       res.status(200).json(result)
     } catch (err) {
       if (err instanceof Error && err.message === "Reservation not found") {
@@ -123,9 +151,13 @@ export const reservationController = {
     }
   },
 
-  async remove(req: Request, res: Response, next: NextFunction) {
+  async remove(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      await reservationService.remove(String(req.params.id))
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
+      await reservationService.remove(String(req.params.id), restaurantId)
       res.status(204).send()
     } catch (err) {
       if (err instanceof Error && err.message === "Reservation not found") {
@@ -187,14 +219,18 @@ export const reservationController = {
   },
 
   /** Staff: re-send confirmation email to any email address. */
-  async resendConfirmationEmail(req: Request, res: Response, next: NextFunction) {
+  async resendConfirmationEmail(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
+      const restaurantId = req.user?.restaurantId
+      if (!restaurantId) {
+        return res.status(400).json({ error: "No restaurant associated with this account" })
+      }
       const parsed = resendConfirmationEmailSchema.safeParse(req.body)
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
       const reservationId = String(req.params.id)
-      const result = await reservationService.resendConfirmationEmail(reservationId, parsed.data.email)
+      const result = await reservationService.resendConfirmationEmail(reservationId, restaurantId, parsed.data.email)
       res.status(200).json(result)
     } catch (err) {
       if (err instanceof Error && CONFIRMATION_ERRORS.has(err.message)) {

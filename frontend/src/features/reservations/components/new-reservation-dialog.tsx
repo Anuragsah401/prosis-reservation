@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Check, LayoutGrid, Plus, UserRound } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -219,6 +220,10 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : 90,
       foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
       eventType: eventType === "unspecified" ? undefined : eventType,
+    })
+
+    toast.success(t("pages.reservations.toasts.created", "Reservation created successfully"), {
+      description: `${customerName.trim()} · ${party} ${party === 1 ? "guest" : "guests"} · ${date} ${time}`,
     })
 
     resetForm()

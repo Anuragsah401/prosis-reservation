@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Check, LayoutGrid, UserPlus } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -99,6 +100,9 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
     })
       .then((created) => {
         onCreate(created)
+        toast.success(t("pages.reservations.toasts.walkInCreated", "Walk-in seated successfully"), {
+          description: `${customerName.trim()} · ${party} ${party === 1 ? "guest" : "guests"}`,
+        })
         resetForm()
         setOpen(false)
       })

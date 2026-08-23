@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Search } from "lucide-react"
+import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { ReservationsCalendar } from "@/features/reservations-calendar/reservations-calendar"
 import { MiniMonthCalendar } from "@/features/reservations-calendar/mini-month-calendar"
-import type { CalendarReservation, ReservationStatus } from "@/features/reservations-calendar/calendar-data"
+import {
+  statusLabels,
+  type CalendarReservation,
+  type ReservationStatus,
+} from "@/features/reservations-calendar/calendar-data"
 import { ReservationsToolbar } from "@/features/reservations/components/reservations-toolbar"
 import { ReservationsTable } from "@/features/reservations/components/reservations-table"
 import { statusSortOrder } from "@/features/reservations/reservations-constants"
@@ -47,14 +52,24 @@ export function ReservationsPage() {
 
   async function handleStatusChange(id: string, status: ReservationStatus) {
     const previous = allReservations
+    const target = allReservations.find((r) => r.id === id)
     // Applied optimistically so the table responds immediately, then rolled
     // back if the server rejects the transition.
     setAllReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
     try {
       await updateReservationStatusOnServer(id, status)
+      toast.success(
+        t("pages.reservations.toasts.statusUpdated", "Reservation status updated to {{status}}", {
+          status: statusLabels[status] ?? status,
+        }),
+        {
+          description: target?.customerName,
+        }
+      )
     } catch (err) {
       console.error("[reservations] Failed to update status:", err)
       setAllReservations(previous)
+      toast.error(t("pages.reservations.toasts.statusError", "Failed to update reservation status"))
     }
   }
 

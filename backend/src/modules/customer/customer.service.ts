@@ -2,16 +2,21 @@ import { prisma } from "@/db/client"
 
 export const customerService = {
   async list(restaurantId: string) {
-    return prisma.customer.findMany({ where: { restaurantId } })
+    return prisma.customer.findMany({ where: { restaurantId }, orderBy: { name: "asc" } })
   },
 
-  async getById(id: string) {
-    return prisma.customer.findUnique({ where: { id } })
+  async getById(id: string, restaurantId: string) {
+    return prisma.customer.findFirst({ where: { id, restaurantId } })
   },
 
-  async getReservations(customerId: string) {
+  async getReservations(customerId: string, restaurantId: string) {
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, restaurantId } })
+    if (!customer) {
+      throw new Error("Customer not found")
+    }
+
     const reservations = await prisma.reservation.findMany({
-      where: { customerId },
+      where: { customerId, restaurantId },
       orderBy: { reservedFor: "desc" },
       take: 50,
       include: {
@@ -22,8 +27,6 @@ export const customerService = {
       const { table, ...rest } = r
       return {
         ...rest,
-        // The reservations list renders `name`/`location`, so map the table
-        // columns onto those before the API shape is applied.
         table: table ? { id: table.id, name: table.number, location: table.section } : null,
       }
     })
@@ -42,6 +45,7 @@ export const customerService = {
 
   async update(
     id: string,
+    restaurantId: string,
     data: Partial<{
       name: string
       email: string
@@ -50,10 +54,18 @@ export const customerService = {
       tags: string[]
     }>,
   ) {
+    const existing = await prisma.customer.findFirst({ where: { id, restaurantId } })
+    if (!existing) {
+      throw new Error("Customer not found")
+    }
     return prisma.customer.update({ where: { id }, data })
   },
 
-  async remove(id: string) {
+  async remove(id: string, restaurantId: string) {
+    const existing = await prisma.customer.findFirst({ where: { id, restaurantId } })
+    if (!existing) {
+      throw new Error("Customer not found")
+    }
     return prisma.customer.delete({ where: { id } })
   },
 }
