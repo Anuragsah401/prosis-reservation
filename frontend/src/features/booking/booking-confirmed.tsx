@@ -10,11 +10,9 @@ interface BookingConfirmedProps {
 }
 
 function formatDisplayTime(time: string) {
-  const [hourStr, minute] = time.split(":")
-  const hour = Number(hourStr)
-  const period = hour >= 12 ? "PM" : "AM"
-  const displayHour = hour % 12 === 0 ? 12 : hour % 12
-  return `${displayHour}:${minute} ${period}`
+  if (!time) return ""
+  const [hourStr = "00", minute = "00"] = time.split(":")
+  return `${hourStr.padStart(2, "0")}:${minute.padStart(2, "0")}`
 }
 
 export function BookingConfirmed({ confirmation, restaurantName, onBookAnother }: BookingConfirmedProps) {
@@ -28,7 +26,11 @@ export function BookingConfirmed({ confirmation, restaurantName, onBookAnother }
         </p>
       </div>
 
-      <div className="bg-muted/50 flex w-full max-w-sm flex-col gap-2 rounded-lg border p-4 text-left text-sm">
+      <div className="bg-muted/50 flex w-full max-w-md flex-col gap-3 rounded-lg border p-4 text-left text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Guest</span>
+          <span className="font-medium">{confirmation.name}</span>
+        </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Date</span>
           <span className="font-medium">{confirmation.date}</span>
@@ -38,11 +40,19 @@ export function BookingConfirmed({ confirmation, restaurantName, onBookAnother }
           <span className="font-medium">{formatDisplayTime(confirmation.time)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Guests</span>
-          <span className="font-medium">{confirmation.guests}</span>
+          <span className="text-muted-foreground">Party size</span>
+          <span className="font-medium">{confirmation.guests} guests</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Confirmation</span>
+          <span className="text-muted-foreground">Table</span>
+          <span className="font-medium">
+            {confirmation.table
+              ? `${confirmation.table.number}${confirmation.table.floor ? ` (${confirmation.table.floor})` : ""}`
+              : "Assigned upon arrival"}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Confirmation ID</span>
           <span className="font-mono text-xs">{confirmation.id}</span>
         </div>
         <div className="flex justify-between">
@@ -51,7 +61,7 @@ export function BookingConfirmed({ confirmation, restaurantName, onBookAnother }
         </div>
       </div>
 
-      <Button variant="outline" onClick={onBookAnother}>
+      <Button variant="outline" onClick={onBookAnother} className="mt-2">
         Book another reservation
       </Button>
     </div>

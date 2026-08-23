@@ -10,6 +10,7 @@ reservationRouter.get("/availability", publicApiRateLimiter, reservationControll
 reservationRouter.get("/confirmation", publicApiRateLimiter, reservationController.getConfirmationDetails)
 reservationRouter.post("/confirm", publicApiRateLimiter, reservationController.confirm)
 reservationRouter.post("/cancel-by-token", publicApiRateLimiter, reservationController.cancelByToken)
+reservationRouter.post("/public-book", publicApiRateLimiter, reservationController.publicBook)
 
 // Staff-facing endpoints (protected by JWT authentication)
 reservationRouter.get("/", requireAuth, reservationController.list)

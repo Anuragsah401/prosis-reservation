@@ -68,6 +68,7 @@ function App() {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={<Navigate to="/settings?section=profile" replace />} />
           <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
       </Route>

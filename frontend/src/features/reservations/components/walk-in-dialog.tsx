@@ -35,7 +35,7 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
     customerName: "",
     customerPhone: "",
     customerEmail: "",
-    tableId: tableOptions[0]?.id ?? "",
+    tableId: "",
     partySize: "2",
   })
   const { customerName, customerPhone, customerEmail, tableId, partySize } = draft
@@ -59,7 +59,7 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
       customerName: "",
       customerPhone: "",
       customerEmail: "",
-      tableId: tableOptions[0]?.id ?? "",
+      tableId: "",
       partySize: "2",
     })
     clearDraft()
@@ -232,6 +232,7 @@ export function WalkInDialog({ onCreate }: WalkInDialogProps) {
         onOpenChange={setPickerOpen}
         selectedTableId={tableId || null}
         partySize={Number(partySize) || 1}
+        reservedFor={new Date().toISOString()}
         onConfirm={(chosenId, chosenTable) => {
           setTableId(chosenId)
           if (chosenTable) setPickedTable(chosenTable)

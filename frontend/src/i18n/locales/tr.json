@@ -424,6 +424,8 @@
         "errorPartySize": "Kişi sayısı en az 1 olmalıdır.",
         "errorSave": "Rezervasyon kaydedilemedi. Lütfen tekrar deneyin.",
         "errorTableChoice": "Lütfen bir masa seçin veya kararı müşteriye bırakın.",
+        "errorPastTime": "Geçmiş bir tarih veya saat seçilemez.",
+        "errorOperatingHours": "Saat açılış saatleri içinde olmalıdır ({{open}} - {{close}}).",
         "letCustomerChoose": "Müşteri seçsin",
         "letCustomerChooseHint": "Misafir, onay sayfasında masayı seçer.",
         "chooseFromFloorPlan": "Kat planından seç",
@@ -531,7 +533,15 @@
         "email": "E-posta",
         "phone": "Telefon",
         "address": "Adres",
-        "timezone": "Saat dilimi"
+        "timezone": "Saat dilimi",
+        "openingHours": "Çalışma Saatleri",
+        "openingTime": "Açılış saati",
+        "closingTime": "Kapanış saati",
+        "bookingPage": "Genel Rezervasyon Bağlantısı",
+        "viewBookingPage": "Aç",
+        "saveSuccess": "Restoran profili başarıyla güncellendi",
+        "saveError": "Restoran profili güncellenemedi",
+        "nameRequired": "Restoran adı zorunludur"
       },
       "reservationsSection": {
         "title": "Rezervasyon Ayarları",

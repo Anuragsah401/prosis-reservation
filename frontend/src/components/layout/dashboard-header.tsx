@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { Menu } from "lucide-react"
+import { Menu, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { NotificationBell } from "@/features/notifications/notification-bell"
 import { authClient } from "@/features/auth/auth-client"
+import { useRestaurant } from "@/features/restaurant/restaurant-context"
 
 function getInitials(name?: string | null) {
   if (!name) return "U"
@@ -31,6 +32,7 @@ export function DashboardHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
   const user = authClient.getUser()
+  const { profile } = useRestaurant()
 
   function handleLogout() {
     authClient.logout()
@@ -47,8 +49,11 @@ export function DashboardHeader() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
-          <SheetHeader className="border-b">
-            <SheetTitle>{t("common.appName")}</SheetTitle>
+          <SheetHeader className="border-b px-4 py-3">
+            <SheetTitle className="flex items-center gap-2 text-base font-semibold">
+              <Store className="text-primary size-4" />
+              <span className="truncate">{profile?.name || t("common.appName")}</span>
+            </SheetTitle>
           </SheetHeader>
           <div className="py-2">
             <SidebarNav onNavigate={() => setMobileOpen(false)} />
@@ -56,7 +61,15 @@ export function DashboardHeader() {
         </SheetContent>
       </Sheet>
 
-      <span className="font-semibold md:hidden">{t("common.appName")}</span>
+      {/* Restaurant Name in Nav Bar */}
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20">
+          <Store className="size-4" />
+        </div>
+        <span className="truncate text-sm font-semibold tracking-tight sm:text-base">
+          {profile?.name || t("common.appName")}
+        </span>
+      </div>
 
       <div className="ml-auto flex items-center gap-2">
         <LanguageSwitcher />
@@ -70,11 +83,22 @@ export function DashboardHeader() {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{user?.name ?? t("dashboardHeader.myAccount")}</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.name ?? t("dashboardHeader.myAccount")}</p>
+                {profile?.name && (
+                  <p className="text-muted-foreground truncate text-xs leading-none">{profile.name}</p>
+                )}
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>{t("dashboardHeader.profile")}</DropdownMenuItem>
-            <DropdownMenuItem>{t("dashboardHeader.settings")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/settings?section=profile")}>
+              {t("dashboardHeader.profile")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
+              {t("dashboardHeader.settings")}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={handleLogout}>
               {t("dashboardHeader.logout")}

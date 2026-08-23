@@ -94,8 +94,8 @@ export interface UpdateReservationChanges {
   /** New ISO start datetime. */
   start?: string
   partySize?: number
-  /** New table assignment. Omit to leave the current assignment untouched. */
-  tableId?: string
+  /** New table assignment. Pass null to unassign. Omit to leave untouched. */
+  tableId?: string | null
   /** Display name of the newly assigned table (not sent to the backend). */
   tableName?: string
   notes?: string

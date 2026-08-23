@@ -10,10 +10,52 @@ function toApiShape<T extends { number: string; section: string | null }>(table:
   return { ...rest, name: number, location: section }
 }
 
+const ACTIVE_STATUSES: Array<"PENDING" | "CONFIRMED" | "SEATED"> = ["PENDING", "CONFIRMED", "SEATED"]
+const RESERVATION_HOLD_MINUTES = 90
+
 export const tableService = {
-  async list(restaurantId: string) {
-    const tables = await prisma.table.findMany({ where: { restaurantId } })
-    return tables.map(toApiShape)
+  async list(restaurantId: string, options?: { date?: string; reservedFor?: string } | string | Date) {
+    let windowStart: Date
+    let windowEnd: Date
+
+    if (typeof options === "object" && options !== null && !(options instanceof Date) && options.reservedFor) {
+      const target = new Date(options.reservedFor)
+      windowStart = new Date(target.getTime() - RESERVATION_HOLD_MINUTES * 60_000)
+      windowEnd = new Date(target.getTime() + RESERVATION_HOLD_MINUTES * 60_000)
+    } else {
+      const rawDate = typeof options === "object" && options !== null && !(options instanceof Date) ? options.date : options
+      const baseDate = rawDate ? new Date(rawDate) : new Date()
+      windowStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0)
+      windowEnd = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 23, 59, 59, 999)
+    }
+
+    const tables = await prisma.table.findMany({
+      where: { restaurantId },
+      include: {
+        reservations: {
+          where: {
+            status: { in: ACTIVE_STATUSES },
+            reservedFor: { gte: windowStart, lte: windowEnd },
+          },
+          select: { status: true },
+        },
+      },
+      orderBy: [{ floor: "asc" }, { number: "asc" }],
+    })
+
+    return tables.map((t) => {
+      let status = t.status
+      if (t.status !== "MAINTENANCE") {
+        const activeInWindow = t.reservations ?? []
+        status = activeInWindow.some((r) => r.status === "SEATED")
+          ? "OCCUPIED"
+          : activeInWindow.length > 0
+            ? "RESERVED"
+            : "AVAILABLE"
+      }
+      const { reservations: _res, ...rest } = t
+      return toApiShape({ ...rest, status })
+    })
   },
 
   async listFloors(restaurantId: string) {
@@ -26,9 +68,46 @@ export const tableService = {
     return rows.map((r) => r.floor)
   },
 
-  async getById(id: string) {
-    const table = await prisma.table.findUnique({ where: { id } })
-    return table ? toApiShape(table) : null
+  async getById(id: string, options?: { date?: string; reservedFor?: string } | string | Date) {
+    let windowStart: Date
+    let windowEnd: Date
+
+    if (typeof options === "object" && options !== null && !(options instanceof Date) && options.reservedFor) {
+      const target = new Date(options.reservedFor)
+      windowStart = new Date(target.getTime() - RESERVATION_HOLD_MINUTES * 60_000)
+      windowEnd = new Date(target.getTime() + RESERVATION_HOLD_MINUTES * 60_000)
+    } else {
+      const rawDate = typeof options === "object" && options !== null && !(options instanceof Date) ? options.date : options
+      const baseDate = rawDate ? new Date(rawDate) : new Date()
+      windowStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0)
+      windowEnd = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 23, 59, 59, 999)
+    }
+
+    const table = await prisma.table.findUnique({
+      where: { id },
+      include: {
+        reservations: {
+          where: {
+            status: { in: ACTIVE_STATUSES },
+            reservedFor: { gte: windowStart, lte: windowEnd },
+          },
+          select: { status: true },
+        },
+      },
+    })
+    if (!table) return null
+
+    let status = table.status
+    if (table.status !== "MAINTENANCE") {
+      const activeInWindow = table.reservations ?? []
+      status = activeInWindow.some((r) => r.status === "SEATED")
+        ? "OCCUPIED"
+        : activeInWindow.length > 0
+          ? "RESERVED"
+          : "AVAILABLE"
+    }
+    const { reservations: _res, ...rest } = table
+    return toApiShape({ ...rest, status })
   },
 
   async create(data: {

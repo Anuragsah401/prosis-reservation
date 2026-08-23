@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Check, LayoutGrid, Plus, UserRound } from "lucide-react"
 import { toast } from "sonner"
@@ -24,6 +24,8 @@ import type { CalendarReservation } from "@/features/reservations-calendar/calen
 import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
 import { capitalize, toDateInputValue, useTableOptions, type TableOption } from "../reservations-utils"
 import { createReservationOnServer } from "../reservations-api"
+import { useRestaurant } from "@/features/restaurant/restaurant-context"
+import { minutesToTimeString } from "@/features/restaurant/restaurant-api"
 import { TablePickerDialog } from "./table-picker-dialog"
 
 /**
@@ -126,6 +128,38 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     setError(null)
   }
 
+  const reservedForIso = useMemo(() => {
+    try {
+      const [hour, minute] = (time || "19:00").split(":").map(Number)
+      const parsed = date ? new Date(date) : new Date()
+      if (Number.isFinite(hour) && Number.isFinite(minute)) {
+        parsed.setHours(hour, minute, 0, 0)
+      }
+      return parsed.toISOString()
+    } catch {
+      return new Date().toISOString()
+    }
+  }, [date, time])
+
+  const { profile } = useRestaurant()
+  const openMinutes = profile?.openingTime ?? 660 // default 11:00 (660 min)
+  const closeMinutes = profile?.closingTime ?? 1380 // default 23:00 (1380 min)
+  const openTimeStr = useMemo(() => minutesToTimeString(openMinutes), [openMinutes])
+  const closeTimeStr = useMemo(() => minutesToTimeString(closeMinutes), [closeMinutes])
+
+  const todayStr = useMemo(() => toDateInputValue(new Date()), [])
+  const currentTimeStr = useMemo(() => {
+    const now = new Date()
+    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+  }, [])
+
+  const effectiveMinTime = useMemo(() => {
+    if (date === todayStr) {
+      return currentTimeStr > openTimeStr ? currentTimeStr : openTimeStr
+    }
+    return openTimeStr
+  }, [date, todayStr, currentTimeStr, openTimeStr])
+
   /**
    * Validates the current step before allowing the wizard to move forward.
    * Each step only checks its own fields, so the guest isn't blocked by
@@ -147,6 +181,24 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       const party = Number(partySize)
       if (!Number.isFinite(party) || party < 1) {
         setError(t("pages.reservations.newDialog.errorPartySize"))
+        return false
+      }
+      const [hour, minute] = time.split(":").map(Number)
+      const selectedMinutes = hour * 60 + minute
+      if (selectedMinutes < openMinutes || selectedMinutes > closeMinutes) {
+        setError(
+          t(
+            "pages.reservations.newDialog.errorOperatingHours",
+            "Time must be within opening hours ({{open}} - {{close}}).",
+            { open: openTimeStr, close: closeTimeStr },
+          ),
+        )
+        return false
+      }
+      const start = new Date(date)
+      start.setHours(hour, minute, 0, 0)
+      if (start.getTime() < Date.now() - 60_000) {
+        setError(t("pages.reservations.newDialog.errorPastTime", "Cannot select a date or time in the past."))
         return false
       }
       return true
@@ -175,8 +227,23 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     }
 
     const [hour, minute] = time.split(":").map(Number)
+    const selectedMinutes = hour * 60 + minute
+    if (selectedMinutes < openMinutes || selectedMinutes > closeMinutes) {
+      setError(
+        t(
+          "pages.reservations.newDialog.errorOperatingHours",
+          "Time must be within opening hours ({{open}} - {{close}}).",
+          { open: openTimeStr, close: closeTimeStr },
+        ),
+      )
+      return
+    }
     const start = new Date(date)
     start.setHours(hour, minute, 0, 0)
+    if (start.getTime() < Date.now() - 60_000) {
+      setError(t("pages.reservations.newDialog.errorPastTime", "Cannot select a date or time in the past."))
+      return
+    }
 
     // "Not specified" duration falls back to the default table hold time
     // (90 min) internally, since the calendar/timeline views need a numeric
@@ -335,17 +402,31 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
                   <Input
                     id="new-res-date"
                     type="date"
+                    min={todayStr}
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={(e) => {
+                      setDate(e.target.value)
+                      setError(null)
+                    }}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="new-res-time">{t("pages.reservations.newDialog.time")}</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="new-res-time">{t("pages.reservations.newDialog.time")}</Label>
+                    <span className="text-muted-foreground text-xs font-normal">
+                      {openTimeStr} - {closeTimeStr}
+                    </span>
+                  </div>
                   <Input
                     id="new-res-time"
                     type="time"
+                    min={effectiveMinTime}
+                    max={closeTimeStr}
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
+                    onChange={(e) => {
+                      setTime(e.target.value)
+                      setError(null)
+                    }}
                   />
                 </div>
               </div>
@@ -561,6 +642,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
         onOpenChange={setPickerOpen}
         selectedTableId={tableId === LET_CUSTOMER_CHOOSE ? null : tableId}
         partySize={Number(partySize) || 1}
+        reservedFor={reservedForIso}
         onConfirm={(chosenId, chosenTable) => {
           setTableId(chosenId)
           if (chosenTable) setPickedTable(chosenTable)

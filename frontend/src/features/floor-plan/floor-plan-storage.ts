@@ -69,11 +69,15 @@ interface ApiTable {
  * callers can fall back to whatever is cached locally rather than showing an
  * empty canvas.
  */
-export async function fetchFloorPlanFromServer(): Promise<FloorPlanTable[] | null> {
+export async function fetchFloorPlanFromServer(reservedFor?: string): Promise<FloorPlanTable[] | null> {
   const restaurantId = getCurrentRestaurantId()
   if (!restaurantId) return null
   try {
-    const tables = await apiClient.get<ApiTable[]>(`/tables?restaurantId=${restaurantId}`)
+    const qs = new URLSearchParams({ restaurantId })
+    if (reservedFor) {
+      qs.set("reservedFor", reservedFor)
+    }
+    const tables = await apiClient.get<ApiTable[]>(`/tables?${qs.toString()}`)
     return tables.map((t) => ({
       id: t.id,
       name: t.name,

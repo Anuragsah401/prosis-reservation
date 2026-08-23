@@ -439,7 +439,9 @@
         "errorRequired": "Please fill in all required fields.",
         "errorPartySize": "Party size must be at least 1.",
         "errorSave": "Could not save the reservation. Please try again.",
-        "errorTableChoice": "Please choose a table or let the customer decide."
+        "errorTableChoice": "Please choose a table or let the customer decide.",
+        "errorPastTime": "Cannot select a date or time in the past.",
+        "errorOperatingHours": "Time must be within opening hours ({{open}} - {{close}})."
       },
       "walkInDialog": {
         "title": "Walk-in customer",
@@ -532,7 +534,15 @@
         "email": "Email",
         "phone": "Phone",
         "address": "Address",
-        "timezone": "Timezone"
+        "timezone": "Timezone",
+        "openingHours": "Service Hours",
+        "openingTime": "Opening time",
+        "closingTime": "Closing time",
+        "bookingPage": "Public Booking Link",
+        "viewBookingPage": "Open",
+        "saveSuccess": "Restaurant profile updated successfully",
+        "saveError": "Failed to update restaurant profile",
+        "nameRequired": "Restaurant name is required"
       },
       "reservationsSection": {
         "title": "Reservation Settings",

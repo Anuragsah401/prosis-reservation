@@ -78,7 +78,7 @@ export function ReservationsTable({
                     <TableCell className="font-medium">{r.customerName}</TableCell>
                     <TableCell className="text-muted-foreground">{r.customerPhone}</TableCell>
                     <TableCell>
-                      {new Date(r.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      {new Date(r.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
                     </TableCell>
                     <TableCell>{r.partySize}</TableCell>
                     <TableCell>

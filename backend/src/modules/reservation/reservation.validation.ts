@@ -26,7 +26,7 @@ export const createReservationSchema = z.object({
 })
 
 export const updateReservationSchema = z.object({
-  tableId: z.string().min(1).optional(),
+  tableId: z.string().min(1).nullable().optional(),
   partySize: z.coerce.number().int().positive().optional(),
   reservedFor: z.coerce.date().optional(),
   notes: z.string().optional(),
@@ -54,4 +54,15 @@ export const cancelReservationByTokenSchema = z.object({
 
 export const resendConfirmationEmailSchema = z.object({
   email: z.string().email("Invalid email address"),
+})
+
+export const publicBookSchema = z.object({
+  restaurantId: z.string().min(1, "restaurantId is required"),
+  customerName: z.string().min(1, "customerName is required"),
+  customerEmail: z.string().email("A valid customerEmail is required"),
+  customerPhone: z.string().optional(),
+  partySize: z.coerce.number().int().positive("partySize must be a positive integer"),
+  reservedFor: z.coerce.date({ error: "reservedFor must be a valid date" }),
+  tableId: z.string().optional(),
+  notes: z.string().optional(),
 })

@@ -161,7 +161,7 @@ export function DashboardPage() {
                   <div>
                     <p className="font-medium">{r.customer?.name ?? t("pages.dashboard.guest")}</p>
                     <p className="text-muted-foreground text-xs">
-                      {new Date(r.reservedFor).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      {new Date(r.reservedFor).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
                       {" \u00b7 "}{t("pages.dashboard.partyOf")} {r.partySize}
                       {r.table ? ` \u00b7 ${t("pages.dashboard.table")} ${r.table.name}` : ""}
                     </p>

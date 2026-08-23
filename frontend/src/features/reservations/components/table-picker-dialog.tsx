@@ -23,6 +23,8 @@ interface TablePickerDialogProps {
   selectedTableId: string | null
   /** Used to dim tables too small for the party. */
   partySize: number
+  /** The ISO timestamp the reservation is for, used to check time conflicts. */
+  reservedFor?: string
   /** Called with the chosen table id and details when staff confirms the selection. */
   onConfirm: (tableId: string, table?: TableOption) => void
 }
@@ -42,6 +44,7 @@ export function TablePickerDialog({
   onOpenChange,
   selectedTableId,
   partySize,
+  reservedFor,
   onConfirm,
 }: TablePickerDialogProps) {
   const { t } = useTranslation()
@@ -55,7 +58,7 @@ export function TablePickerDialog({
   useEffect(() => {
     let cancelled = false
     void Promise.resolve().then(async () => {
-      const next = await loadViewerTables(partySize)
+      const next = await loadViewerTables(partySize, reservedFor)
       if (cancelled) return
       setTables(next)
       setLoading(false)
@@ -63,7 +66,7 @@ export function TablePickerDialog({
     return () => {
       cancelled = true
     }
-  }, [partySize])
+  }, [partySize, reservedFor])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

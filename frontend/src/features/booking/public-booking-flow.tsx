@@ -1,21 +1,46 @@
-import { useMemo, useState } from "react"
-import { CalendarDays, MapPin, Users } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  Users,
+  ChevronRight,
+  ChevronLeft,
+  Loader2,
+  CheckCircle2,
+  Sparkles,
+  Layers,
+  AlertCircle,
+  Check,
+} from "lucide-react"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { getMockRestaurant, generateTimeSlots, getBookedSlots } from "@/features/booking/booking-data"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { generateTimeSlots, formatDisplayTime } from "@/features/booking/booking-data"
 import { GuestSelector } from "@/features/booking/guest-selector"
 import { TimeSlotGrid } from "@/features/booking/time-slot-grid"
-import { BookingForm, type BookingContactDetails } from "@/features/booking/booking-form"
 import { BookingConfirmed } from "@/features/booking/booking-confirmed"
-import { submitBooking, type BookingConfirmation } from "@/features/booking/booking-storage"
+import { FloorPlanViewer, type FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
+import {
+  fetchPublicRestaurant,
+  fetchPublicTablesForBooking,
+  submitBooking,
+  type PublicRestaurant,
+  type BookingConfirmation,
+} from "@/features/booking/booking-storage"
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
@@ -25,35 +50,200 @@ interface PublicBookingFlowProps {
   restaurantId: string
 }
 
-export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
-  const restaurant = useMemo(() => getMockRestaurant(restaurantId), [restaurantId])
+function getTableDisplayName(table?: { name?: string; number?: string; floor?: string } | null): string {
+  if (!table) return "Restaurant's choice"
+  const rawName = table.name || table.number || "Table"
+  const formattedName = rawName.toLowerCase().startsWith("table") ? rawName : `Table ${rawName}`
+  return table.floor ? `${formattedName} (${table.floor})` : formattedName
+}
 
+export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
+  const [restaurant, setRestaurant] = useState<PublicRestaurant | null>(null)
+  const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(true)
+  const [restaurantError, setRestaurantError] = useState<string | null>(null)
+
+  // Multi-step state: 1 = Date & Time, 2 = Table Selection, 3 = Guest Details, 4 = Confirmed
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+
+  // Step 1 values
   const [date, setDate] = useState(todayIso())
   const [guests, setGuests] = useState(2)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+
+  // Step 2 values
+  const [tableChoiceMode, setTableChoiceMode] = useState<"AUTO" | "CHOOSE">("AUTO")
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
+  const [floorPlanTables, setFloorPlanTables] = useState<FloorPlanViewerTable[]>([])
+  const [isLoadingTables, setIsLoadingTables] = useState(false)
+
+  // Step 3 values
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [notes, setNotes] = useState("")
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Confirmation state
   const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null)
 
-  const slots = useMemo(() => generateTimeSlots(), [])
-  const bookedSlots = useMemo(() => getBookedSlots(date), [date])
+  // Fetch restaurant details on load
+  useEffect(() => {
+    let cancelled = false
+    setIsLoadingRestaurant(true)
+    setRestaurantError(null)
+
+    fetchPublicRestaurant(restaurantId)
+      .then((data) => {
+        if (!cancelled) setRestaurant(data)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setRestaurantError(err instanceof Error ? err.message : "Failed to load restaurant.")
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingRestaurant(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [restaurantId])
+
+  // Computed ISO timestamp for the reservation
+  const reservedForIso = useMemo(() => {
+    if (!selectedTime) return ""
+    return new Date(`${date}T${selectedTime}:00`).toISOString()
+  }, [date, selectedTime])
+
+  // Available slots computed dynamically from restaurant's opening/closing times
+  const slots = useMemo(() => {
+    const opening = restaurant?.openingTime ?? 660 // 11:00
+    const closing = restaurant?.closingTime ?? 1380 // 23:00
+    return generateTimeSlots(opening, closing, 30)
+  }, [restaurant?.openingTime, restaurant?.closingTime])
+
+  // Disabled past slots if date is today
+  const disabledSlots = useMemo(() => {
+    const disabled = new Set<string>()
+    if (date === todayIso()) {
+      const now = new Date()
+      const currentMinutes = now.getHours() * 60 + now.getMinutes() + 15 // 15 min buffer
+      slots.forEach((s) => {
+        const [h, m] = s.split(":").map(Number)
+        if (h * 60 + m < currentMinutes) {
+          disabled.add(s)
+        }
+      })
+    }
+    return disabled
+  }, [date, slots])
+
+  // Load floor plan tables when moving to step 2 or when date/time/guests changes
+  useEffect(() => {
+    if (step === 2 && reservedForIso) {
+      let cancelled = false
+      setIsLoadingTables(true)
+
+      fetchPublicTablesForBooking(restaurantId, reservedForIso, guests)
+        .then((tables) => {
+          if (!cancelled) {
+            setFloorPlanTables(tables)
+            // If the previously selected table is not available, deselect it
+            if (selectedTableId) {
+              const current = tables.find((t) => t.id === selectedTableId)
+              if (!current || !current.available) {
+                setSelectedTableId(null)
+              }
+            }
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setFloorPlanTables([])
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoadingTables(false)
+        })
+
+      return () => {
+        cancelled = true
+      }
+    }
+  }, [step, restaurantId, reservedForIso, guests, selectedTableId])
+
+  const selectedTableObj = useMemo(() => {
+    if (!selectedTableId) return null
+    return floorPlanTables.find((t) => t.id === selectedTableId) ?? null
+  }, [selectedTableId, floorPlanTables])
 
   function handleDateChange(nextDate: string) {
     setDate(nextDate)
     setSelectedTime(null)
+    setSelectedTableId(null)
   }
 
-  async function handleFormSubmit(details: BookingContactDetails) {
+  function handleGuestsChange(nextGuests: number) {
+    setGuests(nextGuests)
+    setSelectedTableId(null)
+  }
+
+  function handleTimeSelect(time: string) {
+    setSelectedTime(time)
+    setSelectedTableId(null)
+  }
+
+  function goToStep2() {
     if (!selectedTime) return
+    setStep(2)
+  }
+
+  function goToStep3() {
+    setStep(3)
+  }
+
+  function validateContactForm(): boolean {
+    const errors: Record<string, string> = {}
+    if (!name.trim()) errors.name = "Please enter your full name"
+    if (!email.trim()) {
+      errors.email = "Please enter your email address"
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      errors.email = "Please enter a valid email address"
+    }
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  async function handleFinalSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!validateContactForm() || !selectedTime) return
+
     setIsSubmitting(true)
+    setSubmitError(null)
+
     try {
       const result = await submitBooking({
         restaurantId,
         date,
         time: selectedTime,
         guests,
-        ...details,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        tableId: tableChoiceMode === "CHOOSE" ? selectedTableId || undefined : undefined,
+        notes: notes.trim() || undefined,
       })
+
       setConfirmation(result)
+      setStep(4)
+      toast.success("Reservation requested! A confirmation email has been sent.")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to submit booking. Please try again."
+      setSubmitError(msg)
+      toast.error(msg)
     } finally {
       setIsSubmitting(false)
     }
@@ -62,84 +252,416 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   function handleBookAnother() {
     setConfirmation(null)
     setSelectedTime(null)
+    setSelectedTableId(null)
+    setTableChoiceMode("AUTO")
+    setNotes("")
+    setStep(1)
+  }
+
+  if (isLoadingRestaurant) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] w-full max-w-2xl flex-col items-center justify-center gap-3 p-4">
+        <Loader2 className="text-primary size-8 animate-spin" />
+        <p className="text-muted-foreground text-sm">Loading restaurant details…</p>
+      </div>
+    )
+  }
+
+  if (restaurantError || !restaurant) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center gap-4 p-4 text-center">
+        <AlertCircle className="size-12 text-destructive" />
+        <h2 className="text-lg font-semibold">Restaurant Not Found</h2>
+        <p className="text-muted-foreground text-sm">
+          {restaurantError || "This booking link may be invalid or the restaurant is currently not accepting reservations."}
+        </p>
+      </div>
+    )
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:py-12">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:py-12">
+      {/* Restaurant Title Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{restaurant.name}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{restaurant.name}</h1>
         {restaurant.address && (
           <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
-            <MapPin className="size-3.5" />
+            <MapPin className="size-3.5 shrink-0" />
             {restaurant.address}
           </p>
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{confirmation ? "Booking confirmed" : "Reserve a table"}</CardTitle>
-          {!confirmation && (
-            <CardDescription>Pick a date, party size, and time to get started.</CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          {confirmation ? (
+      {/* Step indicator: filled+checked once done, ring when active, muted when still ahead */}
+      {step !== 4 && (
+        <div className="flex items-center gap-2 px-1">
+          {[
+            { s: 1, label: "Date & Time" },
+            { s: 2, label: "Choose Table" },
+            { s: 3, label: "Your Details" },
+          ].map(({ s, label }) => (
+            <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium transition-colors",
+                  s < step && "border-primary bg-primary text-primary-foreground",
+                  s === step && "border-primary text-primary font-semibold ring-2 ring-primary/20 bg-primary/5",
+                  s > step && "border-border bg-muted text-muted-foreground",
+                )}
+              >
+                {s < step ? <Check className="size-3.5" /> : s}
+              </div>
+              <span
+                className={cn(
+                  "text-xs text-center line-clamp-1",
+                  s === step ? "text-foreground font-medium" : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* STEP 1: DATE, GUESTS & TIME */}
+      {step === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Date, Guests & Time</CardTitle>
+            <CardDescription>
+              Service hours: {formatDisplayTime(slots[0] || "11:00")} – {formatDisplayTime(slots[slots.length - 1] || "22:30")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="booking-date" className="flex items-center gap-1.5 font-medium">
+                  <CalendarDays className="size-4 text-primary" />
+                  Date
+                </Label>
+                <Input
+                  id="booking-date"
+                  type="date"
+                  value={date}
+                  min={todayIso()}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="cursor-pointer"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label className="flex items-center gap-1.5 font-medium">
+                  <Users className="size-4 text-primary" />
+                  Number of Guests
+                </Label>
+                <GuestSelector value={guests} onChange={handleGuestsChange} max={8} />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex flex-col gap-3">
+              <Label className="flex items-center gap-1.5 font-medium">
+                <Clock className="size-4 text-primary" />
+                Available Times
+              </Label>
+              <TimeSlotGrid
+                slots={slots}
+                disabledSlots={disabledSlots}
+                selected={selectedTime}
+                onSelect={handleTimeSelect}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="justify-end border-t pt-4">
+            <Button onClick={goToStep2} disabled={!selectedTime} className="gap-2">
+              <span>Next: Choose Table</span>
+              <ChevronRight className="size-4" />
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* STEP 2: TABLE SELECTION (WITH INTERACTIVE FLOOR PLAN) */}
+      {step === 2 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Table Preference</CardTitle>
+            <CardDescription>
+              Reservation for {guests} guests on {date} at {selectedTime && formatDisplayTime(selectedTime)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5">
+            {/* Table mode options */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTableChoiceMode("AUTO")
+                  setSelectedTableId(null)
+                }}
+                className={cn(
+                  "flex flex-col items-start gap-1.5 rounded-lg border p-4 text-left transition-all",
+                  tableChoiceMode === "AUTO"
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                    : "border-muted hover:border-border bg-card",
+                )}
+              >
+                <div className="flex items-center gap-2 font-medium">
+                  <Sparkles className="size-4 text-primary" />
+                  <span>Restaurant&apos;s Choice</span>
+                  {tableChoiceMode === "AUTO" && <Check className="size-4 text-primary ml-auto" />}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  We&apos;ll automatically assign the best available table for your party upon arrival.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTableChoiceMode("CHOOSE")}
+                className={cn(
+                  "flex flex-col items-start gap-1.5 rounded-lg border p-4 text-left transition-all",
+                  tableChoiceMode === "CHOOSE"
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                    : "border-muted hover:border-border bg-card",
+                )}
+              >
+                <div className="flex items-center gap-2 font-medium">
+                  <Layers className="size-4 text-primary" />
+                  <span>Choose from Floor Plan</span>
+                  {tableChoiceMode === "CHOOSE" && <Check className="size-4 text-primary ml-auto" />}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Pick your favorite available table directly on our interactive restaurant layout.
+                </p>
+              </button>
+            </div>
+
+            {/* Embedded Floor Plan Viewer */}
+            {tableChoiceMode === "CHOOSE" && (
+              <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                    <Layers className="size-4 text-primary" />
+                    <span>Restaurant Floor Plan</span>
+                  </h3>
+                  {selectedTableObj ? (
+                    <Badge variant="default" className="gap-1">
+                      Selected: {getTableDisplayName(selectedTableObj)} · {selectedTableObj.capacity} seats
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Click a green available table below
+                    </Badge>
+                  )}
+                </div>
+
+                {isLoadingTables ? (
+                  <div className="flex h-72 items-center justify-center rounded-md border bg-background">
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : floorPlanTables.length === 0 ? (
+                  <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-md border bg-background p-4 text-center">
+                    <AlertCircle className="size-8 text-muted-foreground" />
+                    <p className="text-muted-foreground text-sm">
+                      No tables found on the floor plan for this restaurant. You can continue with Restaurant Choice.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="h-[360px] w-full rounded-md border bg-background overflow-hidden">
+                      <FloorPlanViewer
+                        tables={floorPlanTables}
+                        selectedTableId={selectedTableId}
+                        onSelect={setSelectedTableId}
+                        seatsLabel="seats"
+                        showFullscreen={false}
+                      />
+                    </div>
+
+                    <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <span className="bg-card inline-block size-3 rounded-sm border-2 border-emerald-500/60" />
+                        Available for {guests} guests
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="bg-muted inline-block size-3 rounded-sm border-2 opacity-40" />
+                        Reserved / Too Small
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="border-primary bg-primary/10 inline-block size-3 rounded-sm border-2" />
+                        Selected
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="justify-between border-t pt-4">
+            <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
+              <ChevronLeft className="size-4" />
+              <span>Back</span>
+            </Button>
+            <Button
+              onClick={goToStep3}
+              disabled={tableChoiceMode === "CHOOSE" && !selectedTableId}
+              className="gap-2"
+            >
+              <span>Next: Your Details</span>
+              <ChevronRight className="size-4" />
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* STEP 3: GUEST CONTACT DETAILS & SUBMIT */}
+      {step === 3 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Guest Information</CardTitle>
+            <CardDescription>
+              Please provide your contact details to confirm the reservation.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleFinalSubmit}>
+            <CardContent className="flex flex-col gap-5">
+              {/* Summary Pill */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="size-3.5 text-primary" />
+                  <span className="font-semibold">{date}</span>
+                  <span>at</span>
+                  <span className="font-semibold">{selectedTime && formatDisplayTime(selectedTime)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="size-3.5 text-primary" />
+                  <span>{guests} guests</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Layers className="size-3.5 text-primary" />
+                  <span>
+                    {tableChoiceMode === "CHOOSE" && selectedTableObj
+                      ? getTableDisplayName(selectedTableObj)
+                      : "Restaurant's choice"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="booking-name" className="font-medium">
+                  Full Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="booking-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jane Doe"
+                  required
+                />
+                {formErrors.name && <p className="text-destructive text-xs">{formErrors.name}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="booking-email" className="font-medium">
+                    Email Address <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="booking-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="jane@example.com"
+                    required
+                  />
+                  {formErrors.email && <p className="text-destructive text-xs">{formErrors.email}</p>}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="booking-phone" className="font-medium">
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="booking-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 555 0100"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="booking-notes" className="font-medium">
+                  Special Requests & Dietary Notes (optional)
+                </Label>
+                <Textarea
+                  id="booking-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Allergies, high chairs, birthday celebration, seating requests..."
+                  rows={3}
+                />
+              </div>
+
+              {submitError && (
+                <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                  <AlertCircle className="size-4 shrink-0" />
+                  <span>{submitError}</span>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="justify-between border-t pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(2)}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                <ChevronLeft className="size-4" />
+                <span>Back</span>
+              </Button>
+              <Button type="submit" disabled={isSubmitting} className="gap-2">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Confirming...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="size-4" />
+                    <span>Complete Booking</span>
+                  </>
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      )}
+
+      {/* STEP 4: CONFIRMATION */}
+      {step === 4 && confirmation && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Booking Requested!</CardTitle>
+            <CardDescription>
+              We&apos;ve received your reservation request at {restaurant.name}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <BookingConfirmed
               confirmation={confirmation}
               restaurantName={restaurant.name}
               onBookAnother={handleBookAnother}
             />
-          ) : (
-            <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="booking-date" className="flex items-center gap-1.5">
-                    <CalendarDays className="size-3.5" />
-                    Date
-                  </Label>
-                  <Input
-                    id="booking-date"
-                    type="date"
-                    value={date}
-                    min={todayIso()}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label className="flex items-center gap-1.5">
-                    <Users className="size-3.5" />
-                    Guests
-                  </Label>
-                  <GuestSelector value={guests} onChange={setGuests} />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex flex-col gap-3">
-                <Label>Available times</Label>
-                <TimeSlotGrid
-                  slots={slots}
-                  bookedSlots={bookedSlots}
-                  selected={selectedTime}
-                  onSelect={setSelectedTime}
-                />
-              </div>
-
-              {selectedTime && (
-                <>
-                  <Separator />
-                  <div className="flex flex-col gap-3">
-                    <Label>Your details</Label>
-                    <BookingForm isSubmitting={isSubmitting} onSubmit={handleFormSubmit} />
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
+

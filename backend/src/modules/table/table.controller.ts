@@ -12,7 +12,9 @@ export const tableController = {
   async list(req: Request, res: Response, next: NextFunction) {
     try {
       const restaurantId = String(req.query.restaurantId)
-      const result = await tableService.list(restaurantId)
+      const date = req.query.date ? String(req.query.date) : undefined
+      const reservedFor = req.query.reservedFor ? String(req.query.reservedFor) : undefined
+      const result = await tableService.list(restaurantId, { date, reservedFor })
       res.status(200).json(result)
     } catch (err) {
       next(err)

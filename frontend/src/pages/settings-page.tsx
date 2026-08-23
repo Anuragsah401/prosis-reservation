@@ -1,5 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,6 +25,12 @@ import {
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { supportedLanguages } from "@/i18n"
+import { useRestaurant } from "@/features/restaurant/restaurant-context"
+import {
+  updateRestaurantProfile,
+  minutesToTimeString,
+  timeStringToMinutes,
+} from "@/features/restaurant/restaurant-api"
 import {
   Store,
   CalendarClock,
@@ -31,6 +39,9 @@ import {
   Users,
   CreditCard,
   ShieldCheck,
+  Loader2,
+  ExternalLink,
+  Clock,
 } from "lucide-react"
 
 type SettingsSection =
@@ -54,8 +65,105 @@ function useSectionsList(t: (key: string) => string): { id: SettingsSection; lab
   ]
 }
 
+const COMMON_TIMEZONES = [
+  { value: "UTC", label: "UTC (Coordinated Universal Time)" },
+  { value: "Europe/Copenhagen", label: "Europe/Copenhagen (CET/CEST)" },
+  { value: "Europe/London", label: "Europe/London (GMT/BST)" },
+  { value: "Europe/Berlin", label: "Europe/Berlin (CET/CEST)" },
+  { value: "Europe/Paris", label: "Europe/Paris (CET/CEST)" },
+  { value: "Europe/Istanbul", label: "Europe/Istanbul (TRT)" },
+  { value: "America/New_York", label: "America/New_York (EST/EDT)" },
+  { value: "America/Chicago", label: "America/Chicago (CST/CDT)" },
+  { value: "America/Denver", label: "America/Denver (MST/MDT)" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles (PST/PDT)" },
+  { value: "Asia/Dubai", label: "Asia/Dubai (GST)" },
+  { value: "Asia/Kolkata", label: "Asia/Kolkata (IST)" },
+  { value: "Asia/Tokyo", label: "Asia/Tokyo (JST)" },
+  { value: "Australia/Sydney", label: "Australia/Sydney (AEST/AEDT)" },
+]
+
 function RestaurantProfileSection() {
   const { t, i18n } = useTranslation()
+  const { profile, loading, refresh } = useRestaurant()
+
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [address, setAddress] = useState("")
+  const [timezone, setTimezone] = useState("UTC")
+  const [openingTime, setOpeningTime] = useState("11:00")
+  const [closingTime, setClosingTime] = useState("23:00")
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name ?? "")
+      setEmail(profile.email ?? "")
+      setPhone(profile.phone ?? "")
+      setAddress(profile.address ?? "")
+      setTimezone(profile.timezone ?? "UTC")
+      setOpeningTime(profile.openingTime != null ? minutesToTimeString(profile.openingTime) : "11:00")
+      setClosingTime(profile.closingTime != null ? minutesToTimeString(profile.closingTime) : "23:00")
+      setError(null)
+    }
+  }, [profile])
+
+  function resetToCurrent() {
+    if (profile) {
+      setName(profile.name ?? "")
+      setEmail(profile.email ?? "")
+      setPhone(profile.phone ?? "")
+      setAddress(profile.address ?? "")
+      setTimezone(profile.timezone ?? "UTC")
+      setOpeningTime(profile.openingTime != null ? minutesToTimeString(profile.openingTime) : "11:00")
+      setClosingTime(profile.closingTime != null ? minutesToTimeString(profile.closingTime) : "23:00")
+      setError(null)
+    }
+  }
+
+  async function handleSave(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!profile) return
+
+    if (!name.trim()) {
+      setError(t("pages.settings.profile.nameRequired", "Restaurant name is required"))
+      return
+    }
+
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      await updateRestaurantProfile(profile.id, {
+        name: name.trim(),
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        timezone,
+        openingTime: timeStringToMinutes(openingTime),
+        closingTime: timeStringToMinutes(closingTime),
+      })
+      toast.success(t("pages.settings.profile.saveSuccess", "Restaurant profile updated successfully"))
+      refresh()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t("pages.settings.profile.saveError", "Failed to update restaurant profile")
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (loading && !profile) {
+    return (
+      <Card>
+        <CardContent className="flex h-64 items-center justify-center">
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
@@ -63,63 +171,161 @@ function RestaurantProfileSection() {
         <CardTitle>{t("pages.settings.profile.title")}</CardTitle>
         <CardDescription>{t("pages.settings.profile.description")}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="name">{t("pages.settings.profile.name")}</Label>
-            <Input id="name" placeholder="Prosisit Table" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="slug">{t("pages.settings.profile.slug")}</Label>
-            <Input id="slug" placeholder="prosisit-table" />
-          </div>
-        </div>
+      <form onSubmit={handleSave}>
+        <CardContent className="flex flex-col gap-5">
+          {profile && (
+            <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3.5 py-2.5 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground">{t("pages.settings.profile.bookingPage")}:</span>
+                <span className="text-muted-foreground font-mono">/restaurant/{profile.id}/book</span>
+              </div>
+              <a
+                href={`/restaurant/${profile.id}/book`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1 font-medium"
+              >
+                <span>{t("pages.settings.profile.viewBookingPage")}</span>
+                <ExternalLink className="size-3" />
+              </a>
+            </div>
+          )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">{t("pages.settings.profile.email")}</Label>
-            <Input id="email" type="email" placeholder="hello@restaurant.com" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="restaurant-name">{t("pages.settings.profile.name")}</Label>
+              <Input
+                id="restaurant-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Prosisit Table"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="restaurant-slug">{t("pages.settings.profile.slug")}</Label>
+              <Input
+                id="restaurant-slug"
+                value={profile?.slug ?? ""}
+                disabled
+                className="bg-muted/50 cursor-not-allowed"
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="phone">{t("pages.settings.profile.phone")}</Label>
-            <Input id="phone" type="tel" placeholder="+1 555 0100" />
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="address">{t("pages.settings.profile.address")}</Label>
-          <Input id="address" placeholder="123 Main St, Springfield" />
-        </div>
-
-        <Separator />
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="timezone">{t("pages.settings.profile.timezone")}</Label>
-            <Input id="timezone" placeholder="UTC" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="restaurant-email">{t("pages.settings.profile.email")}</Label>
+              <Input
+                id="restaurant-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="hello@restaurant.com"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="restaurant-phone">{t("pages.settings.profile.phone")}</Label>
+              <Input
+                id="restaurant-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 555 0100"
+              />
+            </div>
           </div>
+
           <div className="flex flex-col gap-2">
-            <Label htmlFor="language">{t("settings.language.label")}</Label>
-            <Select value={i18n.language} onValueChange={(value) => i18n.changeLanguage(value)}>
-              <SelectTrigger id="language" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {supportedLanguages.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.nativeLabel}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-muted-foreground text-xs">{t("settings.language.description")}</p>
+            <Label htmlFor="restaurant-address">{t("pages.settings.profile.address")}</Label>
+            <Input
+              id="restaurant-address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="123 Main St, Springfield"
+            />
           </div>
-        </div>
-      </CardContent>
-      <CardFooter className="justify-end gap-2">
-        <Button variant="outline">{t("pages.settings.cancel")}</Button>
-        <Button>{t("pages.settings.saveChanges")}</Button>
-      </CardFooter>
+
+          <Separator />
+
+          <div>
+            <h4 className="text-sm font-medium mb-3 flex items-center gap-1.5">
+              <Clock className="size-4 text-muted-foreground" />
+              <span>{t("pages.settings.profile.openingHours")}</span>
+            </h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="opening-time">{t("pages.settings.profile.openingTime")}</Label>
+                <Input
+                  id="opening-time"
+                  type="time"
+                  value={openingTime}
+                  onChange={(e) => setOpeningTime(e.target.value)}
+                  step={900}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="closing-time">{t("pages.settings.profile.closingTime")}</Label>
+                <Input
+                  id="closing-time"
+                  type="time"
+                  value={closingTime}
+                  onChange={(e) => setClosingTime(e.target.value)}
+                  step={900}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="timezone">{t("pages.settings.profile.timezone")}</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger id="timezone" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="language">{t("settings.language.label")}</Label>
+              <Select value={i18n.language} onValueChange={(value) => i18n.changeLanguage(value)}>
+                <SelectTrigger id="language" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {supportedLanguages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.nativeLabel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">{t("settings.language.description")}</p>
+            </div>
+          </div>
+
+          {error && <p className="text-destructive text-sm">{error}</p>}
+        </CardContent>
+        <CardFooter className="justify-end gap-2">
+          <Button type="button" variant="outline" onClick={resetToCurrent} disabled={isSaving}>
+            {t("pages.settings.cancel")}
+          </Button>
+          <Button type="submit" disabled={isSaving || !profile}>
+            {isSaving && <Loader2 className="size-4 animate-spin" />}
+            {t("pages.settings.saveChanges")}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   )
 }
@@ -540,7 +746,26 @@ function SecuritySection() {
 
 export function SettingsPage() {
   const { t } = useTranslation()
-  const [activeSection, setActiveSection] = useState<SettingsSection>("profile")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const sectionParam = searchParams.get("section") as SettingsSection | null
+  const isValidSection = (s: string | null): s is SettingsSection =>
+    Boolean(s && ["profile", "reservations", "notifications", "tables", "team", "billing", "security"].includes(s))
+
+  const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
+    isValidSection(sectionParam) ? sectionParam : "profile",
+  )
+
+  useEffect(() => {
+    if (isValidSection(sectionParam) && sectionParam !== activeSection) {
+      setActiveSection(sectionParam)
+    }
+  }, [sectionParam, activeSection])
+
+  function handleSectionChange(sectionId: SettingsSection) {
+    setActiveSection(sectionId)
+    setSearchParams({ section: sectionId }, { replace: true })
+  }
+
   const sectionsList = useSectionsList(t)
 
   return (
@@ -560,7 +785,7 @@ export function SettingsPage() {
               <button
                 key={section.id}
                 type="button"
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => handleSectionChange(section.id)}
                 className={cn(
                   "flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
                   activeSection === section.id

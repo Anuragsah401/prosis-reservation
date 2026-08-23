@@ -87,8 +87,11 @@ export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
  * backend can't be reached (e.g. not logged in) we fall back to the local
  * snapshot, which is also what makes the picker render instantly.
  */
-export async function loadViewerTables(partySize: number): Promise<FloorPlanViewerTable[]> {
-  const serverTables = await fetchFloorPlanFromServer()
+export async function loadViewerTables(
+  partySize: number,
+  reservedFor?: string,
+): Promise<FloorPlanViewerTable[]> {
+  const serverTables = await fetchFloorPlanFromServer(reservedFor)
   if (serverTables !== null) {
     saveFloorPlanTables(
       serverTables.map((t) => ({
@@ -104,6 +107,7 @@ export async function loadViewerTables(partySize: number): Promise<FloorPlanView
 }
 
 function toViewerTable(t: FloorPlanTable, partySize: number): FloorPlanViewerTable {
+  const isAvailableStatus = t.status === "AVAILABLE"
   return {
     id: t.id,
     name: t.name,
@@ -115,7 +119,7 @@ function toViewerTable(t: FloorPlanTable, partySize: number): FloorPlanViewerTab
     width: t.width ?? DEFAULT_TABLE_WIDTH,
     height: t.height ?? DEFAULT_TABLE_HEIGHT,
     rotation: t.rotation ?? 0,
-    available: t.capacity >= partySize,
+    available: isAvailableStatus && t.capacity >= partySize,
   }
 }
 

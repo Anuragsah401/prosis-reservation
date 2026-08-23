@@ -55,8 +55,16 @@ async function syncTableStatus(tableId: string | null) {
   const table = await prisma.table.findUnique({ where: { id: tableId } })
   if (!table || table.status === "MAINTENANCE") return
 
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+
   const active = await prisma.reservation.findMany({
-    where: { tableId, status: { in: ACTIVE_STATUSES } },
+    where: {
+      tableId,
+      status: { in: ACTIVE_STATUSES },
+      reservedFor: { gte: startOfToday, lte: endOfToday },
+    },
     select: { status: true },
   })
 
@@ -251,6 +259,68 @@ export const reservationService = {
     }
   },
 
+  async publicBook(data: {
+    restaurantId: string
+    customerName: string
+    customerEmail: string
+    customerPhone?: string
+    partySize: number
+    reservedFor: Date
+    tableId?: string
+    notes?: string
+  }) {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: data.restaurantId },
+      select: { id: true, name: true, isActive: true },
+    })
+    if (!restaurant || !restaurant.isActive) {
+      throw new Error("Restaurant not found or not accepting bookings")
+    }
+
+    const email = data.customerEmail.toLowerCase().trim()
+    const phone = data.customerPhone?.trim() || null
+
+    let customer = await prisma.customer.findFirst({
+      where: {
+        restaurantId: data.restaurantId,
+        OR: [
+          { email },
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+    })
+
+    if (customer) {
+      customer = await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          name: data.customerName.trim(),
+          email,
+          ...(phone ? { phone } : {}),
+        },
+      })
+    } else {
+      customer = await prisma.customer.create({
+        data: {
+          restaurantId: data.restaurantId,
+          name: data.customerName.trim(),
+          email,
+          phone,
+        },
+      })
+    }
+
+    return this.create({
+      restaurantId: data.restaurantId,
+      customerId: customer.id,
+      tableId: data.tableId,
+      partySize: data.partySize,
+      reservedFor: data.reservedFor,
+      notes: data.notes,
+      isPublicBooking: true,
+    })
+  },
+
   async create(data: {
     restaurantId: string
     customerId: string
@@ -260,10 +330,28 @@ export const reservationService = {
     notes?: string
     createdById?: string
     status?: string
+    isPublicBooking?: boolean
   }) {
     // Frontend sends "__customer_choice__" sentinel when guest picks their own table.
     // Treat it as undefined (no table assigned yet).
     const tableId = data.tableId === "__customer_choice__" ? undefined : data.tableId
+
+    if (data.status !== "CHECKED_IN") {
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { id: data.restaurantId },
+        select: { openingTime: true, closingTime: true },
+      })
+      if (restaurant && restaurant.openingTime !== null && restaurant.closingTime !== null) {
+        const minutes = data.reservedFor.getHours() * 60 + data.reservedFor.getMinutes()
+        if (minutes < restaurant.openingTime || minutes > restaurant.closingTime) {
+          const formatMin = (m: number) =>
+            `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
+          throw new Error(
+            `Reservation time must be within opening hours (${formatMin(restaurant.openingTime)} - ${formatMin(restaurant.closingTime)})`,
+          )
+        }
+      }
+    }
 
     if (tableId) {
       const { available } = await this.checkAvailability({
@@ -297,7 +385,7 @@ export const reservationService = {
       include: {
         customer: { select: { id: true, name: true, email: true, phone: true } },
         restaurant: { select: { name: true } },
-        table: { select: { id: true, number: true, section: true } },
+        table: { select: { id: true, number: true, section: true, floor: true } },
       },
     })
 
@@ -357,22 +445,14 @@ export const reservationService = {
       )
     }
 
-    // Record the event in the staff notification feed — a new reservation for
-    // the bell, or a "walk-in seated" when the guest was seated immediately.
-    if (isWalkIn) {
+    // Record in staff notification feed ONLY for bookings made by customers on
+    // the public booking page. Manual reservations created by logged-in staff
+    // do not generate redundant notifications for themselves.
+    if (data.isPublicBooking || !data.createdById) {
       await notify(reservation.restaurantId, {
         type: "reservation_new",
-        title: "Walk-in seated",
-        message: `${reservation.customer.name} walked in and was seated${
-          reservation.table ? ` at Table ${reservation.table.number}` : ""
-        } for ${reservation.partySize}.`,
-        href: "/reservations",
-      })
-    } else {
-      await notify(reservation.restaurantId, {
-        type: "reservation_new",
-        title: "New reservation",
-        message: `${reservation.customer.name} booked a table for ${reservation.partySize} at ${formatTime(reservation.reservedFor)}.`,
+        title: "Online booking received",
+        message: `${reservation.customer.name} booked a table online for ${reservation.partySize} at ${formatTime(reservation.reservedFor)}.`,
         href: "/reservations",
       })
     }
@@ -385,7 +465,7 @@ export const reservationService = {
       customer: reservation.customer
         ? { id: reservation.customer.id, name: reservation.customer.name, email: reservation.customer.email, phone: reservation.customer.phone }
         : null,
-      table: table ? { id: table.id, name: table.number, location: table.section } : null,
+      table: table ? { id: table.id, name: table.number, number: table.number, floor: table.floor, location: table.section } : null,
     })
   },
 
@@ -613,7 +693,7 @@ export const reservationService = {
     id: string,
     restaurantId: string,
     data: Partial<{
-      tableId: string
+      tableId: string | null
       partySize: number
       reservedFor: Date
       notes: string
@@ -624,13 +704,47 @@ export const reservationService = {
       throw new Error("Reservation not found")
     }
 
+    if (data.reservedFor) {
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { id: restaurantId },
+        select: { openingTime: true, closingTime: true },
+      })
+      if (restaurant && restaurant.openingTime !== null && restaurant.closingTime !== null) {
+        const minutes = data.reservedFor.getHours() * 60 + data.reservedFor.getMinutes()
+        if (minutes < restaurant.openingTime || minutes > restaurant.closingTime) {
+          const formatMin = (m: number) =>
+            `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
+          throw new Error(
+            `Reservation time must be within opening hours (${formatMin(restaurant.openingTime)} - ${formatMin(restaurant.closingTime)})`,
+          )
+        }
+      }
+    }
+
+    // If changing table, check availability
+    if (data.tableId && data.tableId !== existing.tableId) {
+      const reservedFor = data.reservedFor ?? existing.reservedFor
+      const { available } = await this.checkAvailability({
+        restaurantId,
+        tableId: data.tableId,
+        reservedFor,
+      })
+      if (!available) {
+        throw new Error("Table is not available at the requested time")
+      }
+    }
+
     const reservation = await prisma.reservation.update({
       where: { id },
       data: data as Prisma.ReservationUpdateInput,
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        table: { select: { id: true, number: true, section: true, floor: true } },
+      },
     })
     // Reassigning to another table releases the old one and books the new one.
-    await syncTableStatus(existing.tableId)
-    await syncTableStatus(reservation.tableId)
+    if (existing.tableId) await syncTableStatus(existing.tableId)
+    if (reservation.tableId) await syncTableStatus(reservation.tableId)
     const ctx = await getNotificationContext(reservation.id)
     if (ctx) {
       await notify(reservation.restaurantId, {
@@ -640,7 +754,11 @@ export const reservationService = {
         href: "/reservations",
       })
     }
-    return toApiShape(reservation)
+    const { table, ...rest } = reservation
+    return toApiShape({
+      ...rest,
+      table: table ? { id: table.id, name: table.number, number: table.number, floor: table.floor, location: table.section } : null,
+    })
   },
 
   /**

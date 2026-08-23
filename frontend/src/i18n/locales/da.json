@@ -424,6 +424,8 @@
         "errorPartySize": "Selskabsstørrelsen skal være mindst 1.",
         "errorSave": "Reservationen kunne ikke gemmes. Prøv igen.",
         "errorTableChoice": "Vælg venligst et bord, eller lad kunden beslutte.",
+        "errorPastTime": "Kan ikke vælge en dato eller et tidspunkt i fortiden.",
+        "errorOperatingHours": "Tidspunktet skal være inden for åbningstiden ({{open}} - {{close}}).",
         "letCustomerChoose": "Lad kunden vælge",
         "letCustomerChooseHint": "Gæsten vælger et bord på bekræftelsessiden.",
         "chooseFromFloorPlan": "Vælg fra pladstegningen",
@@ -531,7 +533,15 @@
         "email": "E-mail",
         "phone": "Telefon",
         "address": "Adresse",
-        "timezone": "Tidszone"
+        "timezone": "Tidszone",
+        "openingHours": "Åbningstider",
+        "openingTime": "Åbningstid",
+        "closingTime": "Lukketid",
+        "bookingPage": "Offentligt bookinglink",
+        "viewBookingPage": "Åbn",
+        "saveSuccess": "Restaurantprofil opdateret",
+        "saveError": "Kunne ikke opdatere restaurantprofil",
+        "nameRequired": "Restaurantnavn er påkrævet"
       },
       "reservationsSection": {
         "title": "Reservationsindstillinger",

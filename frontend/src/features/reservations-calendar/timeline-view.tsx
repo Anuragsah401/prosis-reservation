@@ -183,7 +183,7 @@ export function TimelineView({
                         borderColor: colors.border,
                         color: colors.text,
                       }}
-                      title={`${r.customerName} · ${r.partySize} guests · ${start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+                      title={`${r.customerName} · ${r.partySize} guests · ${start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}`}
                     >
                       <span className="truncate font-medium">{r.customerName}</span>
                       <span className="truncate opacity-80">{r.partySize} guests</span>

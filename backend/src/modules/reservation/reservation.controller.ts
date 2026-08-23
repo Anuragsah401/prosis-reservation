@@ -9,6 +9,7 @@ import {
   confirmReservationSchema,
   cancelReservationByTokenSchema,
   resendConfirmationEmailSchema,
+  publicBookSchema,
 } from "@/modules/reservation/reservation.validation"
 
 // Errors from the public confirmation flow that are safe to expose to guests.
@@ -61,6 +62,30 @@ export const reservationController = {
       const result = await reservationService.checkAvailability(parsed.data)
       res.status(200).json(result)
     } catch (err) {
+      next(err)
+    }
+  },
+
+  async publicBook(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = publicBookSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
+      }
+      const result = await reservationService.publicBook(parsed.data)
+      res.status(201).json(result)
+    } catch (err) {
+      if (err instanceof Error) {
+        if (
+          err.message === "Restaurant not found or not accepting bookings" ||
+          err.message === "Selected table is not available" ||
+          err.message === "Selected table cannot accommodate this party size" ||
+          err.message === "Selected table is not available at the requested time" ||
+          err.message === "Table is not available at the requested time"
+        ) {
+          return res.status(409).json({ error: err.message })
+        }
+      }
       next(err)
     }
   },

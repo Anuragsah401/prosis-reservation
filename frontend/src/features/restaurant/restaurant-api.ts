@@ -22,6 +22,22 @@ export async function fetchRestaurantProfile(): Promise<RestaurantProfile> {
   return apiClient.get<RestaurantProfile>("/restaurants/profile")
 }
 
+/** Updates the restaurant's profile. */
+export async function updateRestaurantProfile(
+  id: string,
+  data: Partial<{
+    name: string
+    email: string | null
+    phone: string | null
+    address: string | null
+    timezone: string
+    openingTime: number
+    closingTime: number
+  }>,
+): Promise<RestaurantProfile> {
+  return apiClient.patch<RestaurantProfile>(`/restaurants/${id}`, data)
+}
+
 /**
  * Converts minutes-from-midnight (e.g. 660 = 11:00) to hours for the calendar
  * grid (e.g. 11).
