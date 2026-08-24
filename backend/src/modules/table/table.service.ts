@@ -269,7 +269,21 @@ export const tableService = {
       rotation: number
     }>,
   ) {
-    const names = tables.map((t) => t.name)
+    // Ensure each table/facility has a unique name/number per restaurant
+    const uniqueTables: typeof tables = []
+    const usedNames = new Set<string>()
+    for (const t of tables) {
+      let name = t.name.trim() || "Item"
+      let count = 1
+      while (usedNames.has(name)) {
+        count++
+        name = `${t.name.trim()} (${count})`
+      }
+      usedNames.add(name)
+      uniqueTables.push({ ...t, name })
+    }
+
+    const names = uniqueTables.map((t) => t.name)
 
     const synced = await prisma.$transaction(async (tx) => {
       // Remove tables deleted from the plan (skip any with reservations
@@ -284,7 +298,7 @@ export const tableService = {
       }
 
       const results = []
-      for (const t of tables) {
+      for (const t of uniqueTables) {
         results.push(
           await tx.table.upsert({
             where: { restaurantId_number: { restaurantId, number: t.name } },

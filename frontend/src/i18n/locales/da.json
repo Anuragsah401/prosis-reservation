@@ -1,15 +1,15 @@
 {
   "common": {
-    "appName": "Prosisit Table",
-    "appNameShort": "Prosisit"
+    "appName": "Seat Booking",
+    "appNameShort": "Seat Booking"
   },
   "nav": {
     "dashboard": "Oversigt",
     "tables": "Borde",
-    "floorPlan": "Pladstegning",
+    "floorPlan": "Bordplan",
     "reservations": "Reservationer",
     "customers": "Kunder",
-    "analytics": "Analyse",
+    "analytics": "Statistik",
     "settings": "Indstillinger"
   },
   "header": {
@@ -26,17 +26,17 @@
   "landing": {
     "landingNav": {
       "features": "Funktioner",
-      "howItWorks": "Sådan fungerer det",
+      "howItWorks": "Sådan virker det",
       "pricing": "Priser",
       "reviews": "Anmeldelser"
     },
-    "badge": "Den samlede platform til reservationer",
-    "heroTitle": "Kør en mere gnidningsfri service, fra booking til sidste bord er tømt.",
-    "heroSubtitle": "Prosisit Table giver restauranter en overskuelig pladstegning, en reservationskalender i realtid og et kunde-CRM — så dit team altid ved, hvem der kommer, og hvor de sidder.",
-    "heroCtaPrimary": "Kom gratis i gang",
-    "heroCtaSecondary": "Se hvordan det fungerer",
+    "badge": "Den komplette reservationsplatform",
+    "heroTitle": "Få en mere smidig service — fra booking til sidste bord er ryddet.",
+    "heroSubtitle": "Seat Booking giver restauranter en overskuelig pladstegning, en reservationskalender i realtid og et kunde-CRM — så dit team altid ved, hvem der kommer, og hvor de sidder.",
+    "heroCtaPrimary": "Kom i gang gratis",
+    "heroCtaSecondary": "Se hvordan det virker",
     "demo": {
-      "url": "app.prosisittable.com/reservations",
+      "url": "app.seatbooking.com/reservations",
       "tonightsCovers": "Aftenens gæster",
       "reservations": "Reservationer",
       "tablesOccupied": "Optagne borde"
@@ -78,8 +78,8 @@
     "testimonials": {
       "title": "Elsket af restaurantteams",
       "items": [
-        { "quote": "Prosisit Table halverede vores udeblivelsesrate, og pladstegningen betyder, at værterne altid ved, hvad der er ledigt.", "name": "Maria Chen", "role": "Direktør, Lumen Bistro" },
-        { "quote": "Skiftet fra regneark til Prosisit Table sparede vores personale mange timer hver uge.", "name": "Daniel Ortiz", "role": "Ejer, The Copper Fork" },
+        { "quote": "Seat Booking halverede vores udeblivelsesrate, og pladstegningen betyder, at værterne altid ved, hvad der er ledigt.", "name": "Maria Chen", "role": "Direktør, Lumen Bistro" },
+        { "quote": "Skiftet fra regneark til Seat Booking sparede vores personale mange timer hver uge.", "name": "Daniel Ortiz", "role": "Ejer, The Copper Fork" },
         { "quote": "Analyse-dashboardet giver os endelig rigtige tal på bordvendinger og travle aftener.", "name": "Priya Nair", "role": "Driftschef, Nair & Co." }
       ]
     },
@@ -116,7 +116,7 @@
     },
     "ctaBanner": {
       "title": "Klar til at strømline din service?",
-      "subtitle": "Deltag sammen med restauranter, der bruger Prosisit Table til at administrere borde, reservationer og gæster — alt sammen ét sted.",
+      "subtitle": "Deltag sammen med restauranter, der bruger Seat Booking til at administrere borde, reservationer og gæster — alt sammen ét sted.",
       "button": "Kom gratis i gang"
     },
     "footer": {
@@ -139,7 +139,7 @@
     },
     "signup": {
       "title": "Opret din konto",
-      "subtitle": "Opsæt din restaurant på Prosisit Table.",
+      "subtitle": "Opsæt din restaurant på Seat Booking.",
       "haveAccount": "Har du allerede en konto?",
       "signIn": "Log ind",
       "backHome": "← Tilbage til forsiden",
@@ -314,6 +314,19 @@
       "bookAnother": "Reserver et andet bord",
       "toastSuccess": "Reservation anmodet! En bekræftelses-e-mail er sendt."
     }
+  },
+  "notFoundPage": {
+    "badge": "404 Fejl",
+    "title": "Siden blev ikke fundet",
+    "description": "Beklager, vi kunne ikke finde den side, du leder efter. Den kan være blevet flyttet, slettet eller har aldrig eksisteret.",
+    "goToDashboard": "Gå til oversigt",
+    "goHome": "Tilbage til forsiden",
+    "goBack": "Gå tilbage",
+    "lookingFor": "Her er nogle nyttige links i stedet:",
+    "linkDashboard": "Oversigt",
+    "linkReservations": "Reservationer",
+    "linkTables": "Borde og bordplan",
+    "linkLogin": "Log ind"
   },
   "settings": {
     "language": {
@@ -553,6 +566,7 @@
       "exitFullscreen": "Afslut fuld skærm",
       "addFloor": "Tilføj etage",
       "addTable": "Tilføj bord",
+      "addFacility": "Tilføj facilitet / område",
       "selectHint": "Vælg et bord for at ændre størrelse, form ({{shapes}}), rotere eller slette.",
       "addDialog": {
         "title": "Tilføj et bord",
@@ -569,6 +583,35 @@
         "status": "Status",
         "cancel": "Annuller",
         "addTable": "Tilføj bord"
+      },
+      "addFacilityDialog": {
+        "title": "Tilføj facilitet eller element",
+        "description": "Tilføj arkitektoniske elementer som bar, toiletter, indgange og udgange til {{floor}}.",
+        "type": "Type facilitet",
+        "name": "Brugerdefineret navn",
+        "namePlaceholder": "f.eks. Hovedbar, Gæste-toilet",
+        "cancel": "Annuller",
+        "add": "Tilføj til bordplan"
+      },
+      "addFloorDialog": {
+        "title": "Tilføj ny etage / område",
+        "description": "Opret en særskilt etage eller spiseområde til din restaurantlayout.",
+        "floorName": "Etagenavn",
+        "floorNamePlaceholder": "f.eks. Terrasse, Tagterrasse, 1. sal",
+        "suggestions": "Forslag",
+        "errorNameRequired": "Indtast venligst et etagenavn.",
+        "errorNameExists": "En etage med dette navn findes allerede.",
+        "cancel": "Annuller",
+        "createFloor": "Opret etage"
+      },
+      "deleteFloor": "Slet etage",
+      "deleteFloorDialog": {
+        "title": "Slet etage",
+        "description": "Er du sikker på, at du vil slette \"{{floor}}\"? Alle {{count}} borde og faciliteter på denne etage slettes permanent.",
+        "descriptionEmpty": "Er du sikker på, at du vil slette \"{{floor}}\"?",
+        "cancel": "Annuller",
+        "confirm": "Slet etage",
+        "cannotDeleteLast": "Du kan ikke slette den eneste tilbageværende etage."
       }
     },
     "analytics": {

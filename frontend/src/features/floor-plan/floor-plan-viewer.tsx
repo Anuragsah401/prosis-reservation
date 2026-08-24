@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { Check, Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
+import { Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { TableGraphic } from "@/features/floor-plan/table-graphic"
+import { FacilityGraphic } from "@/features/floor-plan/facility-graphic"
+import type { FacilityType } from "@/features/floor-plan/floor-plan-data"
 
 export interface FloorPlanViewerTable {
   id: string
@@ -16,6 +19,8 @@ export interface FloorPlanViewerTable {
   height: number
   rotation: number
   available: boolean
+  elementType?: "TABLE" | "FACILITY"
+  facilityType?: FacilityType
 }
 
 interface FloorPlanViewerProps {
@@ -178,22 +183,24 @@ export function FloorPlanViewer({
           fullscreen ? "min-h-0 flex-1 rounded-md" : "rounded-lg",
         )}
       >
-        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
           <button
             type="button"
             onClick={() => zoomBy(0.2)}
-            className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
+            className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
             aria-label="Zoom in"
+            title="Zoom in"
           >
-            <ZoomIn className="size-3.5" />
+            <ZoomIn className="size-4 text-foreground" />
           </button>
           <button
             type="button"
             onClick={() => zoomBy(-0.2)}
-            className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
+            className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
             aria-label="Zoom out"
+            title="Zoom out"
           >
-            <ZoomOut className="size-3.5" />
+            <ZoomOut className="size-4 text-foreground" />
           </button>
           <button
             type="button"
@@ -201,10 +208,11 @@ export function FloorPlanViewer({
               setZoom(1)
               setPan({ x: 0, y: 0 })
             }}
-            className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
+            className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
             aria-label="Reset view"
+            title="Reset view"
           >
-            <RotateCcw className="size-3.5" />
+            <RotateCcw className="size-4 text-foreground" />
           </button>
           {showFullscreen !== false && (
             <button
@@ -216,10 +224,11 @@ export function FloorPlanViewer({
                 setZoom(1)
                 setPan({ x: 0, y: 0 })
               }}
-              className="bg-card hover:bg-accent flex size-7 items-center justify-center rounded-md border shadow-sm"
+              className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
               aria-label={fullscreen ? "Exit full screen" : "View full screen"}
+              title={fullscreen ? "Exit full screen" : "View full screen"}
             >
-              {fullscreen ? <Minimize className="size-3.5" /> : <Maximize className="size-3.5" />}
+              {fullscreen ? <Minimize className="size-4 text-foreground" /> : <Maximize className="size-4 text-foreground" />}
             </button>
           )}
         </div>
@@ -314,9 +323,54 @@ export function FloorPlanViewer({
             }}
           >
             {floorTables.map((tb) => {
+              const isFacility =
+                tb.elementType === "FACILITY" ||
+                Boolean(tb.facilityType) ||
+                tb.section?.startsWith("FACILITY:")
+              
+              const facilityType = (
+                tb.facilityType ||
+                (tb.section?.startsWith("FACILITY:") ? tb.section.replace("FACILITY:", "") : undefined) ||
+                (tb.name.toLowerCase().includes("bar") ? "BAR" :
+                 tb.name.toLowerCase().includes("restroom") || tb.name.toLowerCase().includes("toilet") || tb.name.toLowerCase().includes("wc") ? "RESTROOM" :
+                 tb.name.toLowerCase().includes("entrance") || tb.name.toLowerCase().includes("entry") ? "ENTRANCE" :
+                 tb.name.toLowerCase().includes("exit") ? "EXIT" :
+                 tb.name.toLowerCase().includes("kitchen") ? "KITCHEN" :
+                 tb.name.toLowerCase().includes("host") ? "HOST_STAND" :
+                 tb.name.toLowerCase().includes("wall") || tb.name.toLowerCase().includes("divider") ? "WALL" :
+                 tb.name.toLowerCase().includes("plant") ? "PLANT" : "BAR")
+              ) as FacilityType
+
+              const w = tb.width || (tb.shape === "CIRCLE" || tb.shape === "SQUARE" ? 100 : 140)
+              const h = tb.height || (tb.shape === "CIRCLE" || tb.shape === "SQUARE" ? 100 : 90)
+
+              if (isFacility) {
+                return (
+                  <div
+                    key={tb.id}
+                    className="absolute pointer-events-none select-none z-5"
+                    style={{
+                      left: tb.positionX!,
+                      top: tb.positionY!,
+                      width: w,
+                      height: h,
+                      transform: `rotate(${tb.rotation || 0}deg)`,
+                    }}
+                  >
+                    <FacilityGraphic
+                      type={facilityType}
+                      name={tb.name}
+                      width={w}
+                      height={h}
+                    />
+                  </div>
+                )
+              }
+
               const isSelected = selectedTableId === tb.id
               const isCurrent = currentTableId === tb.id
               const selectable = tb.available || isCurrent
+
               return (
                 <button
                   key={tb.id}
@@ -325,30 +379,29 @@ export function FloorPlanViewer({
                   disabled={!selectable}
                   onClick={() => onSelect(isSelected ? null : tb.id)}
                   className={cn(
-                    "absolute flex flex-col items-center justify-center gap-0.5 border-2 p-1 text-center shadow-sm transition-all",
-                    tb.shape === "CIRCLE" ? "rounded-full" : "rounded-lg",
-                    selectable
-                      ? "bg-card cursor-pointer border-emerald-500/60 hover:border-emerald-500"
-                      : "bg-muted cursor-not-allowed border-border opacity-40",
-                    isSelected && "border-primary ring-primary/40 bg-primary/10 ring-2",
+                    "absolute p-0 border-0 bg-transparent text-left focus:outline-hidden z-10",
+                    selectable ? "cursor-pointer" : "cursor-not-allowed",
                   )}
                   style={{
                     left: tb.positionX!,
                     top: tb.positionY!,
-                    width: tb.width || DEFAULT_W,
-                    height: tb.height || DEFAULT_H,
+                    width: w,
+                    height: h,
                     transform: `rotate(${tb.rotation || 0}deg)`,
                   }}
                 >
-                  {isSelected && (
-                    <span className="bg-primary text-primary-foreground absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full">
-                      <Check className="size-3" />
-                    </span>
-                  )}
-                  <span className="text-xs leading-none font-semibold">{tb.name}</span>
-                  <span className="text-muted-foreground text-[10px] leading-none">
-                    {tb.capacity} {seatsLabel}
-                  </span>
+                  <TableGraphic
+                    name={tb.name}
+                    capacity={tb.capacity}
+                    shape={tb.shape}
+                    status={selectable ? "AVAILABLE" : "MAINTENANCE"}
+                    width={w}
+                    height={h}
+                    location={tb.section || undefined}
+                    seatsLabel={seatsLabel}
+                    isSelected={isSelected}
+                    isSelectable={selectable}
+                  />
                 </button>
               )
             })}

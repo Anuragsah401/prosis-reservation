@@ -16,6 +16,7 @@ import { SignupPage } from '@/pages/signup-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { ResetPasswordPage } from '@/pages/reset-password-page'
 import { ReservationConfirmPage } from '@/pages/reservation-confirm-page'
+import { NotFoundPage } from '@/pages/not-found-page'
 import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
 import { Toaster } from '@/components/ui/sonner'
 
@@ -72,7 +73,7 @@ function App() {
           <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
     </RestaurantProvider>
   )

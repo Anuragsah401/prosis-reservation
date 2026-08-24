@@ -6,7 +6,7 @@ export const tableShapeEnum = z.enum(["RECTANGLE", "SQUARE", "CIRCLE"])
 export const createTableSchema = z.object({
   restaurantId: z.string().min(1, "restaurantId is required"),
   name: z.string().min(1, "name is required"),
-  capacity: z.coerce.number().int().positive("capacity must be a positive integer"),
+  capacity: z.coerce.number().int().min(0, "capacity must be non-negative"),
   location: z.string().optional(),
   status: tableStatusEnum.optional(),
   floor: z.string().optional(),
@@ -20,7 +20,7 @@ export const createTableSchema = z.object({
 
 export const updateTableSchema = z.object({
   name: z.string().min(1).optional(),
-  capacity: z.coerce.number().int().positive().optional(),
+  capacity: z.coerce.number().int().min(0).optional(),
   location: z.string().optional(),
   status: tableStatusEnum.optional(),
   floor: z.string().optional(),
@@ -55,7 +55,7 @@ export const syncFloorPlanSchema = z.object({
   tables: z.array(
     z.object({
       name: z.string().min(1),
-      capacity: z.coerce.number().int().positive(),
+      capacity: z.coerce.number().int().min(0),
       location: z.string().nullish(),
       floor: z.string().min(1),
       shape: tableShapeEnum,
@@ -67,4 +67,5 @@ export const syncFloorPlanSchema = z.object({
     }),
   ),
 })
+
 

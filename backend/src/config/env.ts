@@ -29,7 +29,7 @@ const envSchema = z
     // so local dev works without a real account.
     RESEND_API_KEY: z.string().optional(),
     // Must be a verified sender on your Resend domain/account in production.
-    EMAIL_FROM: z.string().default("Prosisit Table <onboarding@resend.dev>"),
+    EMAIL_FROM: z.string().default("Seat Booking <onboarding@resend.dev>"),
     // Twilio (https://twilio.com) is used to send transactional SMS — currently
     // the reservation confirmation for customers who have no email on file.
     // All three are optional in development: when any is missing, messages are

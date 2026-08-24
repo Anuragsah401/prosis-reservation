@@ -68,11 +68,10 @@ export function LandingPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold">
-              PT
+              SB
             </span>
             <span className="truncate text-base font-semibold tracking-tight sm:text-lg">
-              <span className="hidden xs:inline">Prosisit Table</span>
-              <span className="xs:hidden">Prosisit</span>
+              <span>{t("common.appName", "Seat Booking")}</span>
             </span>
           </div>
           <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
@@ -404,12 +403,12 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
           <div className="flex items-center gap-2">
             <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-md text-xs font-bold">
-              PT
+              SB
             </span>
-            <span className="text-sm font-semibold">Prosisit Table</span>
+            <span className="text-sm font-semibold">{t("common.appName", "Seat Booking")}</span>
           </div>
           <p className="text-muted-foreground text-xs">
-            © {new Date().getFullYear()} Prosisit Table. {t("landing.footer.rights")}
+            © {new Date().getFullYear()} {t("common.appName", "Seat Booking")}. {t("landing.footer.rights")}
           </p>
         </div>
       </footer>

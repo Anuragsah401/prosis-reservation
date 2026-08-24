@@ -1,4 +1,4 @@
-# Prosisit Table
+# Seat Booking
 
 Multi-tenant SaaS restaurant table reservation platform.
 

@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "Prosisit Table",
-    "appNameShort": "Prosisit"
+    "appName": "Seat Booking",
+    "appNameShort": "Seat Booking"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -32,11 +32,11 @@
     },
     "badge": "The all-in-one reservations platform",
     "heroTitle": "Run a smoother service, from booking to the last table turned.",
-    "heroSubtitle": "Prosisit Table gives restaurants a beautiful floor plan, a real-time reservations calendar, and a customer CRM — so your team always knows who's coming and where they're sitting.",
+    "heroSubtitle": "Seat Booking gives restaurants a beautiful floor plan, a real-time reservations calendar, and a customer CRM — so your team always knows who's coming and where they're sitting.",
     "heroCtaPrimary": "Get started free",
     "heroCtaSecondary": "See how it works",
     "demo": {
-      "url": "app.prosisittable.com/reservations",
+      "url": "app.seatbooking.com/reservations",
       "tonightsCovers": "Tonight's covers",
       "reservations": "Reservations",
       "tablesOccupied": "Tables occupied"
@@ -78,8 +78,8 @@
     "testimonials": {
       "title": "Loved by restaurant teams",
       "items": [
-        { "quote": "Prosisit Table cut our no-show rate in half and the floor plan view means hosts always know what's free.", "name": "Maria Chen", "role": "GM, Lumen Bistro" },
-        { "quote": "Switching from spreadsheets to Prosisit Table saved our front-of-house team hours every single week.", "name": "Daniel Ortiz", "role": "Owner, The Copper Fork" },
+        { "quote": "Seat Booking cut our no-show rate in half and the floor plan view means hosts always know what's free.", "name": "Maria Chen", "role": "GM, Lumen Bistro" },
+        { "quote": "Switching from spreadsheets to Seat Booking saved our front-of-house team hours every single week.", "name": "Daniel Ortiz", "role": "Owner, The Copper Fork" },
         { "quote": "The analytics dashboard finally gives us real numbers on turn times and busy nights.", "name": "Priya Nair", "role": "Operations Lead, Nair & Co." }
       ]
     },
@@ -116,7 +116,7 @@
     },
     "ctaBanner": {
       "title": "Ready to streamline your service?",
-      "subtitle": "Join restaurants using Prosisit Table to manage tables, reservations, and guests — all in one place.",
+      "subtitle": "Join restaurants using Seat Booking to manage tables, reservations, and guests — all in one place.",
       "button": "Get started free"
     },
     "footer": {
@@ -139,7 +139,7 @@
     },
     "signup": {
       "title": "Create your account",
-      "subtitle": "Set up your restaurant on Prosisit Table.",
+      "subtitle": "Set up your restaurant on Seat Booking.",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
       "backHome": "← Back to home",
@@ -314,6 +314,19 @@
       "bookAnother": "Book another reservation",
       "toastSuccess": "Reservation requested! A confirmation email has been sent."
     }
+  },
+  "notFoundPage": {
+    "badge": "404 Error",
+    "title": "Page not found",
+    "description": "Sorry, we couldn't find the page you're looking for. It might have been moved, deleted, or never existed in the first place.",
+    "goToDashboard": "Go to Dashboard",
+    "goHome": "Back to Home",
+    "goBack": "Go Back",
+    "lookingFor": "Here are some helpful links instead:",
+    "linkDashboard": "Dashboard",
+    "linkReservations": "Reservations",
+    "linkTables": "Tables & Floor Plan",
+    "linkLogin": "Sign In"
   },
   "settings": {
     "language": {
@@ -553,6 +566,7 @@
       "exitFullscreen": "Exit full screen",
       "addFloor": "Add floor",
       "addTable": "Add table",
+      "addFacility": "Add Facility / Area",
       "selectHint": "Select a table to resize, change shape ({{shapes}}), rotate, or delete.",
       "addDialog": {
         "title": "Add a table",
@@ -569,6 +583,35 @@
         "status": "Status",
         "cancel": "Cancel",
         "addTable": "Add table"
+      },
+      "addFacilityDialog": {
+        "title": "Add Facility or Landmark",
+        "description": "Add architectural landmarks like bars, restrooms, entrances, and exits to {{floor}}.",
+        "type": "Facility Type",
+        "name": "Custom Name",
+        "namePlaceholder": "e.g. Main Bar, Guest WC",
+        "cancel": "Cancel",
+        "add": "Add to Floor Plan"
+      },
+      "addFloorDialog": {
+        "title": "Add New Floor / Area",
+        "description": "Create a distinct floor or dining section for your restaurant layout.",
+        "floorName": "Floor Name",
+        "floorNamePlaceholder": "e.g. Patio, Rooftop Terrace, 2nd Floor",
+        "suggestions": "Suggestions",
+        "errorNameRequired": "Please enter a floor name.",
+        "errorNameExists": "A floor with this name already exists.",
+        "cancel": "Cancel",
+        "createFloor": "Create Floor"
+      },
+      "deleteFloor": "Delete floor",
+      "deleteFloorDialog": {
+        "title": "Delete Floor",
+        "description": "Are you sure you want to delete \"{{floor}}\"? All {{count}} tables and facility items on this floor will be permanently removed.",
+        "descriptionEmpty": "Are you sure you want to delete \"{{floor}}\"?",
+        "cancel": "Cancel",
+        "confirm": "Delete Floor",
+        "cannotDeleteLast": "You cannot delete the only remaining floor."
       }
     },
     "analytics": {

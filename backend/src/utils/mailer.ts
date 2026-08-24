@@ -74,12 +74,12 @@ export const mailer = {
     const escapedResetUrl = escapeHtml(resetUrl)
     await sendEmail({
       to,
-      subject: "Reset your Prosisit Table password",
+      subject: "Reset your Seat Booking password",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
           <h2 style="margin-bottom: 8px;">Reset your password</h2>
           <p style="color: #555; line-height: 1.5;">
-            We received a request to reset the password for your Prosisit Table account.
+            We received a request to reset the password for your Seat Booking account.
             Click the button below to choose a new password. This link expires in 1 hour.
           </p>
           <p style="margin: 24px 0;">

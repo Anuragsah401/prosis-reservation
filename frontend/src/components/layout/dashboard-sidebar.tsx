@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { SidebarNav } from "@/components/layout/sidebar-nav"
 import { Button } from "@/components/ui/button"
@@ -6,6 +7,7 @@ import { useSidebarCollapsed } from "@/components/layout/use-sidebar-collapsed"
 import { cn } from "@/lib/utils"
 
 export function DashboardSidebar() {
+  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useSidebarCollapsed()
 
   return (
@@ -29,14 +31,14 @@ export function DashboardSidebar() {
                 className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold"
                 aria-label="Expand sidebar"
               >
-                PT
+                SB
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Prosisit Table — expand sidebar</TooltipContent>
+            <TooltipContent side="right">{t("common.appName", "Seat Booking")} — expand sidebar</TooltipContent>
           </Tooltip>
         ) : (
           <>
-            <span className="text-lg font-semibold">Prosisit Table</span>
+            <span className="text-lg font-semibold">{t("common.appName", "Seat Booking")}</span>
             <Button
               variant="ghost"
               size="icon"

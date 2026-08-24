@@ -198,7 +198,7 @@ function RestaurantProfileSection() {
                 id="restaurant-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Prosisit Table"
+                placeholder="e.g. Seat Booking"
                 required
               />
             </div>

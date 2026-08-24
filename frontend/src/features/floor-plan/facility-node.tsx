@@ -1,33 +1,37 @@
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react"
-import { RotateCw, Square, RectangleHorizontal, Circle, Trash2 } from "lucide-react"
+import { RotateCw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import type { TableShape, TableStatus } from "@/features/floor-plan/floor-plan-data"
-import { TableGraphic } from "@/features/floor-plan/table-graphic"
+import type { FacilityType } from "@/features/floor-plan/floor-plan-data"
+import { FacilityGraphic } from "@/features/floor-plan/facility-graphic"
 
-export interface TableNodeData extends Record<string, unknown> {
+export interface FacilityNodeData extends Record<string, unknown> {
   name: string
-  capacity: number
-  location?: string
-  status: TableStatus
-  shape: TableShape
+  facilityType: FacilityType
   rotation: number
   width?: number
   height?: number
-  onCycleShape: (id: string) => void
   onRotate: (id: string) => void
   onDelete: (id: string) => void
 }
 
-export function TableNode({ id, data, selected, width, height }: NodeProps & { data: TableNodeData; width?: number; height?: number }) {
-  const nodeW = width || (data.width as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : 140)
-  const nodeH = height || (data.height as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : 90)
+export function FacilityNode({
+  id,
+  data,
+  selected,
+  width,
+  height,
+}: NodeProps & { data: FacilityNodeData; width?: number; height?: number }) {
+  const nodeW = width || (data.width as number) || 120
+  const nodeH = height || (data.height as number) || 60
 
   return (
     <>
       <NodeResizer
         isVisible={selected}
-        minWidth={60}
-        minHeight={60}
+        minWidth={40}
+        minHeight={20}
+        keepAspectRatio={data.facilityType === "PLANT"}
+        lineClassName="!border-primary"
         handleClassName="!size-2.5 !rounded-full !border-2 !border-primary !bg-background"
       />
       <div
@@ -35,15 +39,11 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
         style={{ transform: `rotate(${data.rotation}deg)` }}
       >
         <Handle type="target" position={Position.Top} className="opacity-0" />
-        <TableGraphic
+        <FacilityGraphic
+          type={data.facilityType}
           name={data.name}
-          capacity={data.capacity}
-          shape={data.shape}
-          status={data.status}
           width={nodeW}
           height={nodeH}
-          location={data.location}
-          showStatusBadge
           isSelected={selected}
         />
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
@@ -51,17 +51,6 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
 
       {selected && (
         <div className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            title="Cycle shape"
-            onClick={() => data.onCycleShape(id)}
-          >
-            {data.shape === "RECTANGLE" && <RectangleHorizontal className="size-4" />}
-            {data.shape === "SQUARE" && <Square className="size-4" />}
-            {data.shape === "CIRCLE" && <Circle className="size-4" />}
-          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -75,7 +64,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
             variant="ghost"
             size="icon"
             className="text-destructive hover:bg-destructive/10 size-7"
-            title="Delete table"
+            title="Delete element"
             onClick={() => data.onDelete(id)}
           >
             <Trash2 className="size-4" />
@@ -85,5 +74,4 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
     </>
   )
 }
-
 

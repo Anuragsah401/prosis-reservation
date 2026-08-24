@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "Prosisit Table",
-    "appNameShort": "Prosisit"
+    "appName": "Seat Booking",
+    "appNameShort": "Seat Booking"
   },
   "nav": {
     "dashboard": "Panel",
@@ -14,8 +14,8 @@
   },
   "header": {
     "signIn": "Giriş yap",
-    "getStarted": "Hemen başla",
-    "signUp": "Kaydol"
+    "getStarted": "Başlayın",
+    "signUp": "Kayıt ol"
   },
   "dashboardHeader": {
     "myAccount": "Hesabım",
@@ -26,17 +26,17 @@
   "landing": {
     "landingNav": {
       "features": "Özellikler",
-      "howItWorks": "Nasıl çalışır",
+      "howItWorks": "Nasıl Çalışır",
       "pricing": "Fiyatlandırma",
       "reviews": "Yorumlar"
     },
     "badge": "Hepsi bir arada rezervasyon platformu",
-    "heroTitle": "Rezervasyondan son masanın kapanışına kadar daha akıcı bir hizmet sunun.",
-    "heroSubtitle": "Prosisit Table, restoranlara şık bir kat planı, gerçek zamanlı rezervasyon takvimi ve müşteri CRM'i sunar — böylece ekibiniz kimin geldiğini ve nerede oturduğunu her zaman bilir.",
-    "heroCtaPrimary": "Ücretsiz başla",
-    "heroCtaSecondary": "Nasıl çalıştığını gör",
+    "heroTitle": "Rezervasyondan son masaya kadar daha akıcı bir hizmet sunun.",
+    "heroSubtitle": "Seat Booking, restoranlara şık bir kat planı, gerçek zamanlı rezervasyon takvimi ve müşteri CRM'i sunar — böylece ekibiniz kimin geldiğini ve nerede oturduğunu her zaman bilir.",
+    "heroCtaPrimary": "Ücretsiz başlayın",
+    "heroCtaSecondary": "Nasıl çalıştığını görün",
     "demo": {
-      "url": "app.prosisittable.com/reservations",
+      "url": "app.seatbooking.com/reservations",
       "tonightsCovers": "Bu akşamki kişi sayısı",
       "reservations": "Rezervasyonlar",
       "tablesOccupied": "Dolu masalar"
@@ -78,8 +78,8 @@
     "testimonials": {
       "title": "Restoran ekipleri tarafından seviliyor",
       "items": [
-        { "quote": "Prosisit Table, gelmeme oranımızı yarıya indirdi ve kat planı görünümü sayesinde görevliler her zaman hangi masanın boş olduğunu biliyor.", "name": "Maria Chen", "role": "Genel Müdür, Lumen Bistro" },
-        { "quote": "Excel tablolarından Prosisit Table'a geçmek, ön büro ekibimize her hafta saatler kazandırdı.", "name": "Daniel Ortiz", "role": "Sahibi, The Copper Fork" },
+        { "quote": "Seat Booking, gelmeme oranımızı yarıya indirdi ve kat planı görünümü sayesinde görevliler her zaman hangi masanın boş olduğunu biliyor.", "name": "Maria Chen", "role": "Genel Müdür, Lumen Bistro" },
+        { "quote": "Excel tablolarından Seat Booking'a geçmek, ön büro ekibimize her hafta saatler kazandırdı.", "name": "Daniel Ortiz", "role": "Sahibi, The Copper Fork" },
         { "quote": "Analitik paneli sonunda bize masa devir hızları ve yoğun geceler hakkında gerçek rakamlar veriyor.", "name": "Priya Nair", "role": "Operasyon Lideri, Nair & Co." }
       ]
     },
@@ -116,7 +116,7 @@
     },
     "ctaBanner": {
       "title": "Hizmetinizi kolaylaştırmaya hazır mısınız?",
-      "subtitle": "Masaları, rezervasyonları ve misafirleri tek bir yerden yönetmek için Prosisit Table kullanan restoranlara katılın.",
+      "subtitle": "Masaları, rezervasyonları ve misafirleri tek bir yerden yönetmek için Seat Booking kullanan restoranlara katılın.",
       "button": "Ücretsiz başla"
     },
     "footer": {
@@ -139,7 +139,7 @@
     },
     "signup": {
       "title": "Hesabınızı oluşturun",
-      "subtitle": "Restoranınızı Prosisit Table üzerinde kurun.",
+      "subtitle": "Restoranınızı Seat Booking üzerinde kurun.",
       "haveAccount": "Zaten bir hesabınız var mı?",
       "signIn": "Giriş yap",
       "backHome": "← Ana sayfaya dön",
@@ -314,6 +314,19 @@
       "bookAnother": "Başka bir rezervasyon yap",
       "toastSuccess": "Rezervasyon talebi alındı! Bir onay e-postası gönderildi."
     }
+  },
+  "notFoundPage": {
+    "badge": "404 Hatası",
+    "title": "Sayfa Bulunamadı",
+    "description": "Üzgünüz, aradığınız sayfayı bulamadık. Sayfa taşınmış, silinmiş veya hiç var olmamış olabilir.",
+    "goToDashboard": "Panele Git",
+    "goHome": "Ana Sayfaya Dön",
+    "goBack": "Geri Dön",
+    "lookingFor": "Bunun yerine şu faydalı bağlantıları deneyebilirsiniz:",
+    "linkDashboard": "Panel",
+    "linkReservations": "Rezervasyonlar",
+    "linkTables": "Masalar ve Kat Planı",
+    "linkLogin": "Giriş Yap"
   },
   "settings": {
     "language": {
@@ -553,6 +566,7 @@
       "exitFullscreen": "Tam ekrandan çık",
       "addFloor": "Kat ekle",
       "addTable": "Masa ekle",
+      "addFacility": "Tesis / Alan Ekle",
       "selectHint": "Yeniden boyutlandırmak, şekil değiştirmek ({{shapes}}), döndürmek veya silmek için bir masa seçin.",
       "addDialog": {
         "title": "Masa ekle",
@@ -569,6 +583,35 @@
         "status": "Durum",
         "cancel": "İptal",
         "addTable": "Masa ekle"
+      },
+      "addFacilityDialog": {
+        "title": "Tesis veya Mimari Öğe Ekle",
+        "description": "{{floor}} tuvaline bar, tuvalet, giriş ve acil çıkış gibi mimari simgeler ekleyin.",
+        "type": "Tesis Türü",
+        "name": "Özel Ad",
+        "namePlaceholder": "örn. Ana Bar, Müşteri WC",
+        "cancel": "İptal",
+        "add": "Kat Planına Ekle"
+      },
+      "addFloorDialog": {
+        "title": "Yeni Kat / Alan Ekle",
+        "description": "Restoran düzeniniz için ayrı bir kat veya yemek alanı oluşturun.",
+        "floorName": "Kat Adı",
+        "floorNamePlaceholder": "örn. Veranda, Teras, 2. Kat",
+        "suggestions": "Öneriler",
+        "errorNameRequired": "Lütfen bir kat adı girin.",
+        "errorNameExists": "Bu ada sahip bir kat zaten mevcut.",
+        "cancel": "İptal",
+        "createFloor": "Kat Oluştur"
+      },
+      "deleteFloor": "Katı sil",
+      "deleteFloorDialog": {
+        "title": "Katı Sil",
+        "description": "\"{{floor}}\" katını silmek istediğinizden emin misiniz? Bu kattaki {{count}} masa ve tesis öğesi kalıcı olarak kaldırılacaktır.",
+        "descriptionEmpty": "\"{{floor}}\" katını silmek istediğinizden emin misiniz?",
+        "cancel": "İptal",
+        "confirm": "Katı Sil",
+        "cannotDeleteLast": "Kalan tek katı silemezsiniz."
       }
     },
     "analytics": {

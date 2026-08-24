@@ -1,4 +1,4 @@
-You are building a SaaS restaurant reservation management system called "Prosisit Table".
+You are building a SaaS restaurant reservation management system called "Seat Booking".
 
 Goal:
 Build a scalable multi-tenant restaurant table reservation platform.
