@@ -46,3 +46,18 @@ export const FOOD_CATEGORY_VALUES = [
   "glutenFree",
   "dessert",
 ] as const
+
+export type FoodCategoryValue = (typeof FOOD_CATEGORY_VALUES)[number]
+
+/** Event types staff can tag a reservation with. */
+export const EVENT_TYPES = [
+  "unspecified",
+  "birthday",
+  "meeting",
+  "anniversary",
+  "business",
+  "other",
+] as const
+
+export type EventTypeValue = (typeof EVENT_TYPES)[number]
+

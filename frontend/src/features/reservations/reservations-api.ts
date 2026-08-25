@@ -37,6 +37,8 @@ interface ApiReservation {
   table: { id: string; name: string; location: string | null } | null
 }
 
+import { parseReservationNotes } from "./reservations-utils"
+
 /** Fallback duration, in minutes, for reservations (the API doesn't store one). */
 const DEFAULT_DURATION_MINUTES = 90
 
@@ -46,6 +48,7 @@ const DEFAULT_DURATION_MINUTES = 90
  * don't need to change alongside the data source.
  */
 function toCalendarReservation(r: ApiReservation): CalendarReservation {
+  const parsed = parseReservationNotes(r.notes)
   return {
     id: r.id,
     customerId: r.customer?.id ?? undefined,
@@ -59,6 +62,9 @@ function toCalendarReservation(r: ApiReservation): CalendarReservation {
     durationMinutes: DEFAULT_DURATION_MINUTES,
     status: r.status,
     notes: r.notes ?? undefined,
+    specialRequests: parsed.specialRequests,
+    foodCategories: parsed.foodCategories.length > 0 ? parsed.foodCategories : undefined,
+    eventType: parsed.eventType,
   }
 }
 

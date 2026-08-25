@@ -1,4 +1,5 @@
 import { prisma } from "@/db/client"
+import { realtimeService } from "@/modules/realtime/realtime.service"
 
 export interface CreateNotificationInput {
   type: string
@@ -15,7 +16,9 @@ export const notificationService = {
    * back the reservation operation it describes.
    */
   async create(restaurantId: string, data: CreateNotificationInput) {
-    return prisma.notification.create({ data: { restaurantId, ...data } })
+    const notification = await prisma.notification.create({ data: { restaurantId, ...data } })
+    realtimeService.broadcastToRestaurant(restaurantId, "NOTIFICATION_NEW", notification)
+    return notification
   },
 
   /** Newest-first feed for the bell / notifications page. */
@@ -30,15 +33,21 @@ export const notificationService = {
   /** Marks one notification read, scoped to the restaurant so a tenant can't
    * touch another's rows. */
   async markRead(id: string, restaurantId: string) {
-    return prisma.notification.updateMany({ where: { id, restaurantId }, data: { read: true } })
+    const res = await prisma.notification.updateMany({ where: { id, restaurantId }, data: { read: true } })
+    realtimeService.broadcastToRestaurant(restaurantId, "NOTIFICATION_READ", { id, read: true })
+    return res
   },
 
   async markAllRead(restaurantId: string) {
-    return prisma.notification.updateMany({ where: { restaurantId }, data: { read: true } })
+    const res = await prisma.notification.updateMany({ where: { restaurantId }, data: { read: true } })
+    realtimeService.broadcastToRestaurant(restaurantId, "NOTIFICATION_READ", { all: true, read: true })
+    return res
   },
 
   /** Deletes (dismisses) one notification, scoped to the restaurant. */
   async remove(id: string, restaurantId: string) {
-    return prisma.notification.deleteMany({ where: { id, restaurantId } })
+    const res = await prisma.notification.deleteMany({ where: { id, restaurantId } })
+    realtimeService.broadcastToRestaurant(restaurantId, "NOTIFICATION_READ", { id, dismissed: true })
+    return res
   },
 }

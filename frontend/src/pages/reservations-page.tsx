@@ -15,6 +15,7 @@ import { ReservationsTable } from "@/features/reservations/components/reservatio
 import { statusSortOrder } from "@/features/reservations/reservations-constants"
 import { isSameDay } from "@/features/reservations/reservations-utils"
 import { fetchReservations, updateReservationStatusOnServer } from "@/features/reservations/reservations-api"
+import { useRealtimeListener } from "@/features/realtime"
 
 export function ReservationsPage() {
   const { t } = useTranslation()
@@ -25,8 +26,8 @@ export function ReservationsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const loadReservations = useCallback(async () => {
-    setIsLoading(true)
+  const loadReservations = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
     setLoadError(null)
     try {
       setAllReservations(await fetchReservations())
@@ -34,9 +35,26 @@ export function ReservationsPage() {
       console.error("[reservations] Failed to load reservations:", err)
       setLoadError(t("pages.reservations.loadError"))
     } finally {
-      setIsLoading(false)
+      if (showLoading) setIsLoading(false)
     }
   }, [t])
+
+  // Real-time live sync for reservations
+  useRealtimeListener("RESERVATION_CREATED", () => {
+    void loadReservations(false)
+  })
+
+  useRealtimeListener("RESERVATION_UPDATED", () => {
+    void loadReservations(false)
+  })
+
+  useRealtimeListener("RESERVATION_STATUS_CHANGED", () => {
+    void loadReservations(false)
+  })
+
+  useRealtimeListener("RESERVATION_DELETED", () => {
+    void loadReservations(false)
+  })
 
   useEffect(() => {
     // Kicked off in a microtask so the initial fetch isn't dispatched

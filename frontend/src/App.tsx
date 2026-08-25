@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth, RedirectIfAuthenticated } from '@/features/auth/require-auth'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { DashboardPage } from '@/pages/dashboard-page'
-import { TablesPage } from '@/pages/tables-page'
 import { FloorPlanPage } from '@/pages/floor-plan-page'
 import { ReservationsPage } from '@/pages/reservations-page'
 import { CustomersPage } from '@/pages/customers-page'
@@ -18,13 +17,15 @@ import { ResetPasswordPage } from '@/pages/reset-password-page'
 import { ReservationConfirmPage } from '@/pages/reservation-confirm-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
+import { RealtimeProvider } from '@/features/realtime'
 import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   return (
     <RestaurantProvider>
-      <Toaster />
-      <Routes>
+      <RealtimeProvider>
+        <Toaster />
+        <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
@@ -63,7 +64,6 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/tables" element={<TablesPage />} />
           <Route path="/floor-plan" element={<FloorPlanPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/customers" element={<CustomersPage />} />
@@ -75,6 +75,7 @@ function App() {
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+      </RealtimeProvider>
     </RestaurantProvider>
   )
 }

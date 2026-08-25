@@ -35,6 +35,8 @@ export interface CalendarReservation {
   durationMinutes: number
   status: ReservationStatus
   notes?: string
+  /** Special request notes from the customer / staff. */
+  specialRequests?: string
   /** Preferred food categories/cuisines requested by the customer, if any. */
   foodCategories?: string[]
   /** The type of event this reservation is for (birthday, meeting, ...). */

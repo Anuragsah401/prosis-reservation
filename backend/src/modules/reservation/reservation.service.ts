@@ -5,6 +5,7 @@ import { mailer } from "@/utils/mailer"
 import { sms } from "@/utils/sms"
 import { notificationService } from "@/modules/notification/notification.service"
 import type { CreateNotificationInput } from "@/modules/notification/notification.service"
+import { realtimeService } from "@/modules/realtime/realtime.service"
 import type { Prisma, ReservationStatus, TableStatus } from "@prisma/client"
 
 // Default duration a table is considered occupied by a single reservation,
@@ -76,6 +77,7 @@ async function syncTableStatus(tableId: string | null) {
 
   if (table.status !== nextStatus) {
     await prisma.table.update({ where: { id: tableId }, data: { status: nextStatus } })
+    realtimeService.broadcastToRestaurant(table.restaurantId, "TABLE_UPDATED", { tableId, status: nextStatus })
   }
 }
 
@@ -105,8 +107,14 @@ async function getNotificationContext(reservationId: string): Promise<Notificati
   })
 }
 
-function formatTime(date: Date) {
-  return date.toLocaleString(undefined, { hour: "numeric", minute: "2-digit" })
+function formatReservationDateTime(date: Date) {
+  return date.toLocaleString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
 }
 
 /** Best-effort: a notification failure must never roll back the reservation
@@ -127,7 +135,7 @@ function statusNotification(
   status: ReservationStatus,
   ctx: NotificationContext,
 ): CreateNotificationInput | null {
-  const when = formatTime(ctx.reservedFor)
+  const when = formatReservationDateTime(ctx.reservedFor)
   const tableName = ctx.table ? `Table ${ctx.table.number}` : null
   switch (status) {
     case "SEATED":
@@ -141,28 +149,28 @@ function statusNotification(
       return {
         type: "reservation_updated",
         title: "Reservation completed",
-        message: `${ctx.customer.name}'s ${when} booking was completed.`,
+        message: `${ctx.customer.name}'s booking for ${when} was completed.`,
         href: "/reservations",
       }
     case "NO_SHOW":
       return {
         type: "reservation_updated",
         title: "No-show",
-        message: `${ctx.customer.name} did not show up for their ${when} booking.`,
+        message: `${ctx.customer.name} did not show up for their booking on ${when}.`,
         href: "/reservations",
       }
     case "CANCELLED":
       return {
         type: "reservation_cancelled",
         title: "Reservation cancelled",
-        message: `${ctx.customer.name} cancelled their ${when} booking.`,
+        message: `${ctx.customer.name} cancelled their booking for ${when}.`,
         href: "/reservations",
       }
     case "CONFIRMED":
       return {
         type: "reservation_confirmed",
         title: "Reservation confirmed",
-        message: `${ctx.customer.name} confirmed their ${when} booking.`,
+        message: `${ctx.customer.name} confirmed their booking for ${when}${tableName ? ` (${tableName})` : ""}.`,
         href: "/reservations",
       }
     default:
@@ -449,16 +457,18 @@ export const reservationService = {
     // the public booking page. Manual reservations created by logged-in staff
     // do not generate redundant notifications for themselves.
     if (data.isPublicBooking || !data.createdById) {
+      const when = formatReservationDateTime(reservation.reservedFor)
+      const tableName = reservation.table ? `Table ${reservation.table.number}` : null
       await notify(reservation.restaurantId, {
         type: "reservation_new",
         title: "Online booking received",
-        message: `${reservation.customer.name} booked a table online for ${reservation.partySize} at ${formatTime(reservation.reservedFor)}.`,
+        message: `${reservation.customer.name} booked online for ${reservation.partySize} guests on ${when}${tableName ? ` (${tableName})` : ""}.`,
         href: "/reservations",
       })
     }
 
     const { restaurant: _r, table, ...rest } = reservation
-    return toApiShape({
+    const result = toApiShape({
       ...rest,
       // Match the list endpoint's shape so the frontend renders the customer
       // name and table correctly from the create response without a refetch.
@@ -467,6 +477,8 @@ export const reservationService = {
         : null,
       table: table ? { id: table.id, name: table.number, number: table.number, floor: table.floor, location: table.section } : null,
     })
+    realtimeService.broadcastToRestaurant(data.restaurantId, "RESERVATION_CREATED", result)
+    return result
   },
 
   /**
@@ -601,7 +613,9 @@ export const reservationService = {
     await syncTableStatus(reservation.tableId)
     await syncTableStatus(updated.tableId)
     await notifyStatusChange(updated.id, updated.restaurantId, "CONFIRMED")
-    return toApiShape(updated)
+    const result = toApiShape(updated)
+    realtimeService.broadcastToRestaurant(updated.restaurantId, "RESERVATION_STATUS_CHANGED", result)
+    return result
   },
 
   /**
@@ -686,7 +700,9 @@ export const reservationService = {
     })
     await syncTableStatus(reservation.tableId)
     await notifyStatusChange(updated.id, updated.restaurantId, "CANCELLED")
-    return toApiShape(updated)
+    const result = toApiShape(updated)
+    realtimeService.broadcastToRestaurant(updated.restaurantId, "RESERVATION_STATUS_CHANGED", result)
+    return result
   },
 
   async update(
@@ -747,18 +763,21 @@ export const reservationService = {
     if (reservation.tableId) await syncTableStatus(reservation.tableId)
     const ctx = await getNotificationContext(reservation.id)
     if (ctx) {
+      const when = formatReservationDateTime(ctx.reservedFor)
       await notify(reservation.restaurantId, {
         type: "reservation_updated",
         title: "Reservation updated",
-        message: `${ctx.customer.name}'s ${formatTime(ctx.reservedFor)} booking was updated.`,
+        message: `${ctx.customer.name}'s booking was updated to ${when}.`,
         href: "/reservations",
       })
     }
     const { table, ...rest } = reservation
-    return toApiShape({
+    const result = toApiShape({
       ...rest,
       table: table ? { id: table.id, name: table.number, number: table.number, floor: table.floor, location: table.section } : null,
     })
+    realtimeService.broadcastToRestaurant(restaurantId, "RESERVATION_UPDATED", result)
+    return result
   },
 
   /**
@@ -786,11 +805,20 @@ export const reservationService = {
     const reservation = await prisma.reservation.update({
       where: { id },
       data: { status: nextStatus },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        table: { select: { id: true, number: true, section: true, floor: true } },
+      },
     })
     // Seating occupies the table; cancelling/completing/no-showing frees it.
     await syncTableStatus(reservation.tableId)
     await notifyStatusChange(reservation.id, reservation.restaurantId, nextStatus)
-    return toApiShape(reservation)
+    const result = toApiShape({
+      ...reservation,
+      table: reservation.table ? { id: reservation.table.id, name: reservation.table.number, number: reservation.table.number, floor: reservation.table.floor, location: reservation.table.section } : null,
+    })
+    realtimeService.broadcastToRestaurant(restaurantId, "RESERVATION_STATUS_CHANGED", result)
+    return result
   },
 
   async cancel(id: string, restaurantId: string) {
@@ -807,13 +835,15 @@ export const reservationService = {
     const deleted = await prisma.reservation.delete({ where: { id } })
     await syncTableStatus(existing.tableId)
     if (ctx) {
+      const when = formatReservationDateTime(ctx.reservedFor)
       await notify(existing.restaurantId, {
         type: "reservation_updated",
         title: "Reservation deleted",
-        message: `${ctx.customer.name}'s ${formatTime(ctx.reservedFor)} booking was deleted.`,
+        message: `${ctx.customer.name}'s booking for ${when} was deleted.`,
         href: "/reservations",
       })
     }
+    realtimeService.broadcastToRestaurant(restaurantId, "RESERVATION_DELETED", { id })
     return deleted
   },
 }

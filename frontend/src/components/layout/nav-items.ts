@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  UtensilsCrossed,
   CalendarCheck,
   Users,
   Settings,
@@ -18,7 +17,6 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: "Dashboard", titleKey: "nav.dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { title: "Tables", titleKey: "nav.tables", to: "/tables", icon: UtensilsCrossed },
   { title: "Floor Plan", titleKey: "nav.floorPlan", to: "/floor-plan", icon: LayoutGrid },
   { title: "Reservations", titleKey: "nav.reservations", to: "/reservations", icon: CalendarCheck },
   { title: "Customers", titleKey: "nav.customers", to: "/customers", icon: Users },

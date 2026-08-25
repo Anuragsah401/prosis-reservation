@@ -71,7 +71,10 @@ export function FloorPlanViewer({
   const [dragging, setDragging] = useState(false)
   const [pinching, setPinching] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const dragStart = useRef({ x: 0, y: 0 })
+  const dragStartPos = useRef({ clientX: 0, clientY: 0, panX: 0, panY: 0 })
+  const hasDragged = useRef(false)
+  const isPointerActive = useRef(false)
+  const pointerDownTableId = useRef<string | null>(null)
   // Active pointers, so two fingers can be distinguished from one for pinch.
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const pinchStart = useRef<{ distance: number; zoom: number } | null>(null)
@@ -183,7 +186,10 @@ export function FloorPlanViewer({
           fullscreen ? "min-h-0 flex-1 rounded-md" : "rounded-lg",
         )}
       >
-        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5">
+        <div
+          className="absolute top-2 right-2 z-10 flex flex-col gap-1.5"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             onClick={() => zoomBy(0.2)}
@@ -256,14 +262,16 @@ export function FloorPlanViewer({
               }
               setPinching(true)
               setDragging(false)
+              hasDragged.current = true
+              isPointerActive.current = false
               return
             }
 
-            // Only start panning from the background, not from a table.
-            if ((e.target as HTMLElement).closest("[data-table]")) return
-            setDragging(true)
-            dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
-            ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+            const targetEl = (e.target as HTMLElement).closest<HTMLElement>("[data-table-id]")
+            pointerDownTableId.current = targetEl?.dataset.tableId ?? null
+            hasDragged.current = false
+            isPointerActive.current = true
+            dragStartPos.current = { clientX: e.clientX, clientY: e.clientY, panX: pan.x, panY: pan.y }
           }}
           onPointerMove={(e) => {
             if (pointers.current.has(e.pointerId)) {
@@ -278,30 +286,61 @@ export function FloorPlanViewer({
               return
             }
 
-            if (!dragging) return
-            setPan({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y })
+            if (!isPointerActive.current) return
+            const dx = e.clientX - dragStartPos.current.clientX
+            const dy = e.clientY - dragStartPos.current.clientY
+            if (Math.hypot(dx, dy) > 4) {
+              if (!hasDragged.current) {
+                hasDragged.current = true
+                setDragging(true)
+                try {
+                  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+                } catch {
+                  // ignore pointer capture errors on older browsers
+                }
+              }
+              setPan({ x: dragStartPos.current.panX + dx, y: dragStartPos.current.panY + dy })
+            }
           }}
           onPointerUp={(e) => {
+            if ((e.currentTarget as HTMLElement).hasPointerCapture?.(e.pointerId)) {
+              try {
+                ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+              } catch {
+                // ignore
+              }
+            }
+
             pointers.current.delete(e.pointerId)
+            isPointerActive.current = false
+            pointerDownTableId.current = null
+            setDragging(false)
             if (pointers.current.size < 2) {
               pinchStart.current = null
               setPinching(false)
             }
-            if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
-              ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-            }
-            setDragging(false)
+
+            // Reset hasDragged on next tick so the click event on the button (which fires immediately after pointerup) can inspect it
+            setTimeout(() => {
+              hasDragged.current = false
+            }, 50)
           }}
           onPointerCancel={(e) => {
+            if ((e.currentTarget as HTMLElement).hasPointerCapture?.(e.pointerId)) {
+              try {
+                ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+              } catch {
+                // ignore
+              }
+            }
             pointers.current.delete(e.pointerId)
+            isPointerActive.current = false
+            pointerDownTableId.current = null
+            setDragging(false)
             if (pointers.current.size < 2) {
               pinchStart.current = null
               setPinching(false)
             }
-            if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
-              ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-            }
-            setDragging(false)
           }}
         >
           <div
@@ -376,8 +415,16 @@ export function FloorPlanViewer({
                   key={tb.id}
                   type="button"
                   data-table
-                  disabled={!selectable}
-                  onClick={() => onSelect(isSelected ? null : tb.id)}
+                  data-table-id={tb.id}
+                  aria-disabled={!selectable}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (hasDragged.current) return
+                    if (selectable) {
+                      onSelect(isSelected ? null : tb.id)
+                    }
+                  }}
                   className={cn(
                     "absolute p-0 border-0 bg-transparent text-left focus:outline-hidden z-10",
                     selectable ? "cursor-pointer" : "cursor-not-allowed",

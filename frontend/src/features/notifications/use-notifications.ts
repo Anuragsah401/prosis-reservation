@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
+import { Bell } from "lucide-react"
 import { getCurrentRestaurantId } from "@/lib/api-client"
 import type { AppNotification } from "@/features/notifications/notification-data"
 import {
@@ -8,13 +10,12 @@ import {
   dismissNotification,
 } from "@/features/notifications/notification-service"
 import { subscribeToNotificationRefresh } from "@/features/notifications/notification-events"
+import { useRealtimeListener } from "@/features/realtime"
 
 /**
- * How often the feed refetches from the backend. Catches changes made by
- * other staff or by guests confirming/cancelling on the public page. Your own
- * actions refresh instantly via the notification event bus instead.
+ * Fallback poll interval. Real-time events push instantly via Server-Sent Events.
  */
-const POLL_INTERVAL_MS = 30_000
+const POLL_INTERVAL_MS = 60_000
 
 export interface UseNotificationsResult {
   notifications: AppNotification[]
@@ -29,8 +30,8 @@ export interface UseNotificationsResult {
 /**
  * Central hook for the notification bell — fetches from the backend (scoped
  * to the signed-in user's restaurant), exposes read/dismiss actions, keeps an
- * unread count for the badge, refetches on the poll interval, and refreshes
- * immediately when a reservation mutation emits a refresh event.
+ * unread count for the badge, subscribes to real-time events, and refetches on
+ * the poll interval.
  */
 export function useNotifications(restaurantId?: string): UseNotificationsResult {
   // `getCurrentRestaurantId()` can return null (no signed-in restaurant); the
@@ -54,6 +55,55 @@ export function useNotifications(restaurantId?: string): UseNotificationsResult 
       setIsLoading(false)
     }
   }, [effectiveRestaurantId])
+
+  // Real-time notification updates
+  useRealtimeListener("NOTIFICATION_NEW", (event) => {
+    if (event.payload) {
+      setNotifications((current) => {
+        const exists = current.some((n) => n.id === event.payload.id)
+        if (exists) return current
+        return [event.payload, ...current]
+      })
+    } else {
+      void refresh()
+    }
+  })
+
+  useRealtimeListener("NOTIFICATION_READ", (event) => {
+    if (event.payload?.all) {
+      setNotifications((current) => current.map((n) => ({ ...n, read: true })))
+    } else if (event.payload?.id) {
+      if (event.payload.dismissed) {
+        setNotifications((current) => current.filter((n) => n.id !== event.payload.id))
+      } else {
+        setNotifications((current) =>
+          current.map((n) => (n.id === event.payload.id ? { ...n, read: true } : n)),
+        )
+      }
+    } else {
+      void refresh()
+    }
+  })
+
+  useRealtimeListener("RESERVATION_CREATED", (event) => {
+    void refresh()
+    if (event.payload?.customer?.name) {
+      const rawDate = event.payload.reservedFor || event.payload.start
+      const dateStr = rawDate
+        ? ` on ${new Date(rawDate).toLocaleString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}`
+        : ""
+      toast("New Reservation Received", {
+        description: `${event.payload.customer.name} booked for ${event.payload.partySize} guests${dateStr}.`,
+        icon: React.createElement(Bell, { className: "size-4 text-primary" }),
+      })
+    }
+  })
 
   useEffect(() => {
     void refresh()

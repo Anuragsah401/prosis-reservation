@@ -58,11 +58,12 @@ export function useTableOptions(): TableOption[] {
  * placed have no geometry, so the viewer falls back to arranging them in a
  * grid. Tables too small for the party are dimmed and not selectable.
  */
-export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
+export function buildViewerTables(_partySize: number): FloorPlanViewerTable[] {
   const summaries = loadFloorPlanTables() ?? []
   const positions = loadPositions()
   return summaries.map((t) => {
     const p = positions[t.id] ?? {}
+    const isFacility = t.elementType === "FACILITY" || t.capacity === 0
     return {
       id: t.id,
       name: t.name,
@@ -74,7 +75,9 @@ export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
       width: p.width ?? DEFAULT_TABLE_WIDTH,
       height: p.height ?? DEFAULT_TABLE_HEIGHT,
       rotation: p.rotation ?? 0,
-      available: t.capacity >= partySize,
+      available: !isFacility,
+      elementType: isFacility ? "FACILITY" : "TABLE",
+      facilityType: t.facilityType,
     }
   })
 }
@@ -99,6 +102,8 @@ export async function loadViewerTables(
         name: t.name,
         floor: t.floor || "Main Floor",
         capacity: t.capacity,
+        elementType: t.elementType,
+        facilityType: t.facilityType,
       }))
     )
     return serverTables.map((t) => toViewerTable(t, partySize))
@@ -106,8 +111,9 @@ export async function loadViewerTables(
   return buildViewerTables(partySize)
 }
 
-function toViewerTable(t: FloorPlanTable, partySize: number): FloorPlanViewerTable {
-  const isAvailableStatus = t.status === "AVAILABLE"
+function toViewerTable(t: FloorPlanTable, _partySize: number): FloorPlanViewerTable {
+  const isFacility = t.elementType === "FACILITY" || t.capacity === 0
+  const isMaintenance = t.status === "MAINTENANCE"
   return {
     id: t.id,
     name: t.name,
@@ -119,7 +125,9 @@ function toViewerTable(t: FloorPlanTable, partySize: number): FloorPlanViewerTab
     width: t.width ?? DEFAULT_TABLE_WIDTH,
     height: t.height ?? DEFAULT_TABLE_HEIGHT,
     rotation: t.rotation ?? 0,
-    available: isAvailableStatus && t.capacity >= partySize,
+    available: !isFacility && !isMaintenance,
+    elementType: isFacility ? "FACILITY" : "TABLE",
+    facilityType: t.facilityType,
   }
 }
 
@@ -137,3 +145,71 @@ export function toDateInputValue(d: Date) {
 export function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
+
+export interface ParsedReservationNotes {
+  eventType?: string
+  foodCategories: string[]
+  specialRequests?: string
+}
+
+/**
+ * Parses raw reservation notes string into structured properties:
+ * - eventType (e.g. birthday, meeting)
+ * - foodCategories (e.g. vegetarian, glutenFree)
+ * - specialRequests (custom note text)
+ */
+export function parseReservationNotes(notesStr?: string | null): ParsedReservationNotes {
+  let eventType: string | undefined = undefined
+  let foodCategories: string[] = []
+  const customNotes: string[] = []
+
+  if (!notesStr) {
+    return { eventType, foodCategories, specialRequests: undefined }
+  }
+
+  const parts = notesStr.split(";").map((p) => p.trim()).filter(Boolean)
+  for (const part of parts) {
+    const lower = part.toLowerCase()
+    if (lower.startsWith("event:")) {
+      const val = part.slice(6).trim()
+      if (val && val.toLowerCase() !== "unspecified") {
+        eventType = val.toLowerCase()
+      }
+    } else if (lower.startsWith("food preferences:") || lower.startsWith("food category:") || lower.startsWith("food:")) {
+      const colonIdx = part.indexOf(":")
+      const cats = part.slice(colonIdx + 1).split(",").map((c) => c.trim()).filter(Boolean)
+      foodCategories = cats
+    } else {
+      customNotes.push(part)
+    }
+  }
+
+  return {
+    eventType,
+    foodCategories,
+    specialRequests: customNotes.join("; ") || undefined,
+  }
+}
+
+/**
+ * Bundles structured reservation event, food categories, and special request
+ * into a single unified notes string.
+ */
+export function buildReservationNotes(input: {
+  eventType?: string
+  foodCategories?: string[]
+  specialRequests?: string
+}): string | undefined {
+  const parts: string[] = []
+  if (input.eventType && input.eventType !== "unspecified") {
+    parts.push(`Event: ${input.eventType}`)
+  }
+  if (input.foodCategories && input.foodCategories.length > 0) {
+    parts.push(`Food preferences: ${input.foodCategories.join(", ")}`)
+  }
+  if (input.specialRequests && input.specialRequests.trim()) {
+    parts.push(input.specialRequests.trim())
+  }
+  return parts.length > 0 ? parts.join("; ") : undefined
+}
+

@@ -1,4 +1,5 @@
 import { prisma } from "@/db/client"
+import { realtimeService } from "@/modules/realtime/realtime.service"
 import type { Prisma } from "@prisma/client"
 
 // Public API uses `name`/`location`; the underlying Prisma model stores these
@@ -244,7 +245,14 @@ export const tableService = {
         }),
       ),
     )
-    return updated.map(toApiShape)
+    const res = updated.map(toApiShape)
+    if (tables.length > 0) {
+      const firstTable = await prisma.table.findUnique({ where: { id: tables[0].id }, select: { restaurantId: true } })
+      if (firstTable?.restaurantId) {
+        realtimeService.broadcastToRestaurant(firstTable.restaurantId, "TABLE_UPDATED", res)
+      }
+    }
+    return res
   },
 
   /**
@@ -332,7 +340,9 @@ export const tableService = {
       return results
     })
 
-    return synced.map(toApiShape)
+    const res = synced.map(toApiShape)
+    realtimeService.broadcastToRestaurant(restaurantId, "TABLE_UPDATED", res)
+    return res
   },
 }
 

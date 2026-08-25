@@ -446,6 +446,11 @@
       "colTime": "Saat",
       "colParty": "Kişi",
       "colTable": "Masa",
+      "colEvent": "Etkinlik",
+      "colFoodCategory": "Yemek Kategorisi",
+      "colSpecialRequest": "Özel İstek",
+      "colDetails": "Etkinlikler & Notlar",
+      "colEventsNotes": "Etkinlikler & Notlar",
       "colStatus": "Durum",
       "colComment": "Yorum",
       "unassigned": "Atanmamış",
@@ -532,7 +537,9 @@
         "eventMeeting": "Toplantı",
         "eventAnniversary": "Yıl dönümü",
         "eventBusiness": "İş",
-        "eventOther": "Diğer"
+        "eventOther": "Diğer",
+        "specialRequests": "Özel İstek",
+        "specialRequestsPlaceholder": "örn. Doğum günü pastası, pencere kenarı, mama sandalyesi..."
       },
       "walkInDialog": {
         "title": "Yürüyerek gelen müşteri",

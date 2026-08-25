@@ -446,6 +446,11 @@
       "colTime": "Tid",
       "colParty": "Selskab",
       "colTable": "Bord",
+      "colEvent": "Begivenhed",
+      "colFoodCategory": "Madkategori",
+      "colSpecialRequest": "Særlig anmodning",
+      "colDetails": "Begivenheder & Noter",
+      "colEventsNotes": "Begivenheder & Noter",
       "colStatus": "Status",
       "colComment": "Kommentar",
       "unassigned": "Ikke tildelt",
@@ -532,7 +537,9 @@
         "eventMeeting": "Møde",
         "eventAnniversary": "Jubilæum",
         "eventBusiness": "Erhverv",
-        "eventOther": "Andet"
+        "eventOther": "Andet",
+        "specialRequests": "Særlig anmodning",
+        "specialRequestsPlaceholder": "f.eks. Fødselsdagskage, vinduesplads, højstol..."
       },
       "walkInDialog": {
         "title": "Walk-in kunde",

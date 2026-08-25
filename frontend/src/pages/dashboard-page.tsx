@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { CalendarCheck, UtensilsCrossed, Users, Loader2 } from "lucide-react"
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { apiClient, ApiError, getCurrentRestaurantId } from "@/lib/api-client"
+import { useRealtimeListener } from "@/features/realtime"
 
 interface ApiTable {
   id: string
@@ -48,44 +49,57 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let active = true
+  const loadDashboardData = useCallback(async (showLoading = true) => {
     const restaurantId = getCurrentRestaurantId()
     if (!restaurantId) {
-      Promise.resolve().then(() => {
-        if (active) {
-          setError(t("pages.dashboard.noRestaurant"))
-          setLoading(false)
-        }
-      })
-      return () => {
-        active = false
-      }
+      setError(t("pages.dashboard.noRestaurant"))
+      setLoading(false)
+      return
     }
 
+    if (showLoading) setLoading(true)
+    setError(null)
     const qs = `restaurantId=${encodeURIComponent(restaurantId)}`
-    Promise.all([
-      apiClient.get<ApiTable[]>(`/tables?${qs}`),
-      apiClient.get<ApiCustomer[]>(`/customers?${qs}`),
-      apiClient.get<ApiReservation[]>(`/reservations?${qs}`),
-    ])
-      .then(([tablesRes, customersRes, reservationsRes]) => {
-        if (!active) return
-        setTables(tablesRes)
-        setCustomers(customersRes)
-        setReservations(reservationsRes)
-      })
-      .catch((err) => {
-        if (active) setError(err instanceof ApiError ? err.message : t("pages.dashboard.loadError"))
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
+    try {
+      const [tablesRes, customersRes, reservationsRes] = await Promise.all([
+        apiClient.get<ApiTable[]>(`/tables?${qs}`),
+        apiClient.get<ApiCustomer[]>(`/customers?${qs}`),
+        apiClient.get<ApiReservation[]>(`/reservations?${qs}`),
+      ])
+      setTables(tablesRes)
+      setCustomers(customersRes)
+      setReservations(reservationsRes)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("pages.dashboard.loadError"))
+    } finally {
+      if (showLoading) setLoading(false)
     }
   }, [t])
+
+  // Real-time live sync for dashboard
+  useRealtimeListener("RESERVATION_CREATED", () => {
+    void loadDashboardData(false)
+  })
+
+  useRealtimeListener("RESERVATION_UPDATED", () => {
+    void loadDashboardData(false)
+  })
+
+  useRealtimeListener("RESERVATION_STATUS_CHANGED", () => {
+    void loadDashboardData(false)
+  })
+
+  useRealtimeListener("RESERVATION_DELETED", () => {
+    void loadDashboardData(false)
+  })
+
+  useRealtimeListener("TABLE_UPDATED", () => {
+    void loadDashboardData(false)
+  })
+
+  useEffect(() => {
+    void loadDashboardData(true)
+  }, [loadDashboardData])
 
   const todaysReservations = useMemo(() => {
     const today = new Date()

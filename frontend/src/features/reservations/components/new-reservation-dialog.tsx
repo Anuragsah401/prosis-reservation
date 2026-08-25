@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { PhoneInput } from "@/components/ui/phone-input"
+import { Textarea } from "@/components/ui/textarea"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import {
   Dialog,
@@ -21,8 +22,8 @@ import {
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
-import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
-import { capitalize, toDateInputValue, useTableOptions, type TableOption } from "../reservations-utils"
+import { FOOD_CATEGORY_VALUES, EVENT_TYPES } from "../reservations-constants"
+import { capitalize, toDateInputValue, useTableOptions, buildReservationNotes, type TableOption } from "../reservations-utils"
 import { createReservationOnServer } from "../reservations-api"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
 import { minutesToTimeString } from "@/features/restaurant/restaurant-api"
@@ -35,9 +36,6 @@ import { TablePickerDialog } from "./table-picker-dialog"
  * with "nothing selected yet".
  */
 export const LET_CUSTOMER_CHOOSE = "__customer_choice__"
-
-/** Event types staff can tag a reservation with. Stored in the notes field. */
-const EVENT_TYPES = ["unspecified", "birthday", "meeting", "anniversary", "business", "other"] as const
 
 interface NewReservationDialogProps {
   defaultDate: Date
@@ -64,6 +62,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     durationMinutes: "unspecified",
     foodCategories: [] as string[],
     eventType: "unspecified",
+    specialRequests: "",
   })
   const {
     customerName,
@@ -76,6 +75,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     durationMinutes,
     foodCategories,
     eventType,
+    specialRequests,
   } = draft
   const setCustomerName = (v: string) => setDraft((d) => ({ ...d, customerName: v }))
   const setCustomerPhone = (v: string) => setDraft((d) => ({ ...d, customerPhone: v }))
@@ -86,6 +86,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
   const setPartySize = (v: string) => setDraft((d) => ({ ...d, partySize: v }))
   const setDurationMinutes = (v: string) => setDraft((d) => ({ ...d, durationMinutes: v }))
   const setEventType = (v: string) => setDraft((d) => ({ ...d, eventType: v }))
+  const setSpecialRequests = (v: string) => setDraft((d) => ({ ...d, specialRequests: v }))
   const toggleFoodCategory = (value: string) =>
     setDraft((d) => ({
       ...d,
@@ -122,6 +123,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       durationMinutes: "unspecified",
       foodCategories: [] as string[],
       eventType: "unspecified",
+      specialRequests: "",
     })
     clearDraft()
     setPickedTable(null)
@@ -250,11 +252,13 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
     // duration to render — the customer simply wasn't asked for an exact one.
     const duration = durationMinutes === "unspecified" ? 90 : Number(durationMinutes)
 
-    // Structured picks (event type, food categories) are persisted in the
+    // Structured picks (event type, food categories, special requests) are persisted in the
     // notes field so they survive without a schema change.
-    const noteParts: string[] = []
-    if (eventType && eventType !== "unspecified") noteParts.push(`Event: ${eventType}`)
-    if (foodCategories.length > 0) noteParts.push(`Food preferences: ${foodCategories.join(", ")}`)
+    const formattedNotes = buildReservationNotes({
+      eventType,
+      foodCategories,
+      specialRequests,
+    })
 
     // Persist to the backend first. Only once the row is safely stored do we
     // add it to the list and close the dialog — otherwise a failed save would
@@ -272,7 +276,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
         // leaves the reservation unassigned and unlocks the floor-plan
         // picker on the confirmation page.
         tableId: tableId && tableId !== LET_CUSTOMER_CHOOSE ? tableId : undefined,
-        notes: noteParts.length > 0 ? noteParts.join("; ") : undefined,
+        notes: formattedNotes,
       })
     } catch (err) {
       console.error("[reservations] Failed to save reservation:", err)
@@ -287,6 +291,7 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       durationMinutes: Number.isFinite(duration) && duration > 0 ? duration : 90,
       foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
       eventType: eventType === "unspecified" ? undefined : eventType,
+      specialRequests: specialRequests.trim() || undefined,
     })
 
     toast.success(t("pages.reservations.toasts.created", "Reservation created successfully"), {
@@ -588,6 +593,25 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
                     })}
                   </PopoverContent>
                 </Popover>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="new-res-special-requests">
+                  {t("pages.reservations.newDialog.specialRequests", "Special Request")}{" "}
+                  <span className="text-muted-foreground font-normal">
+                    {t("pages.reservations.newDialog.optional")}
+                  </span>
+                </Label>
+                <Textarea
+                  id="new-res-special-requests"
+                  rows={2}
+                  placeholder={t(
+                    "pages.reservations.newDialog.specialRequestsPlaceholder",
+                    "e.g. Birthday cake, window seat, high chair, allergies...",
+                  )}
+                  value={specialRequests}
+                  onChange={(e) => setSpecialRequests(e.target.value)}
+                />
               </div>
             </>
           )}

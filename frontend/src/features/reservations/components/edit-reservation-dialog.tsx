@@ -20,8 +20,15 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
-import { FOOD_CATEGORY_VALUES } from "../reservations-constants"
-import { capitalize, toDateInputValue, useTableOptions, type TableOption } from "../reservations-utils"
+import { FOOD_CATEGORY_VALUES, EVENT_TYPES } from "../reservations-constants"
+import {
+  capitalize,
+  toDateInputValue,
+  useTableOptions,
+  parseReservationNotes,
+  buildReservationNotes,
+  type TableOption,
+} from "../reservations-utils"
 import {
   updateCustomerOnServer,
   updateReservationOnServer,
@@ -30,9 +37,6 @@ import {
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
 import { minutesToTimeString } from "@/features/restaurant/restaurant-api"
 import { TablePickerDialog } from "./table-picker-dialog"
-
-/** Event types staff can tag a reservation with. Stored in the notes field. */
-const EVENT_TYPES = ["unspecified", "birthday", "meeting", "anniversary", "business", "other"] as const
 
 interface EditReservationDialogProps {
   reservation: CalendarReservation
@@ -44,35 +48,6 @@ interface EditReservationDialogProps {
 function toTimeInputValue(iso: string): string {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
-}
-
-function parseReservationNotes(notesStr?: string) {
-  let eventType = "unspecified"
-  let foodCategories: string[] = []
-  const customNotes: string[] = []
-
-  if (!notesStr) {
-    return { eventType, foodCategories, specialRequests: "" }
-  }
-
-  const parts = notesStr.split(";").map((p) => p.trim()).filter(Boolean)
-  for (const part of parts) {
-    if (part.toLowerCase().startsWith("event:")) {
-      const val = part.slice(6).trim().toLowerCase()
-      eventType = val || "unspecified"
-    } else if (part.toLowerCase().startsWith("food preferences:")) {
-      const cats = part.slice(17).split(",").map((c) => c.trim().toLowerCase()).filter(Boolean)
-      foodCategories = cats
-    } else {
-      customNotes.push(part)
-    }
-  }
-
-  return {
-    eventType,
-    foodCategories,
-    specialRequests: customNotes.join("; "),
-  }
 }
 
 /**
@@ -242,11 +217,11 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
 
     const duration = durationMinutes === "unspecified" ? 90 : Number(durationMinutes)
 
-    const noteParts: string[] = []
-    if (eventType && eventType !== "unspecified") noteParts.push(`Event: ${eventType}`)
-    if (foodCategories.length > 0) noteParts.push(`Food preferences: ${foodCategories.join(", ")}`)
-    if (notes.trim()) noteParts.push(notes.trim())
-    const finalNotes = noteParts.length > 0 ? noteParts.join("; ") : undefined
+    const finalNotes = buildReservationNotes({
+      eventType,
+      foodCategories,
+      specialRequests: notes,
+    })
 
     // Guest contact edits live on the shared customer record.
     if (reservation.customerId) {
@@ -310,6 +285,7 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
       tableId: tableId || "",
       tableName: nextTableName,
       notes: finalNotes,
+      specialRequests: notes.trim() || undefined,
       eventType: eventType === "unspecified" ? undefined : eventType,
       foodCategories: foodCategories.length > 0 ? foodCategories : undefined,
     })
@@ -575,7 +551,7 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="edit-res-notes">
-                  {t("pages.reservations.editDialog.notes")}{" "}
+                  {t("pages.reservations.newDialog.specialRequests", "Special Request")}{" "}
                   <span className="text-muted-foreground font-normal">
                     {t("pages.reservations.newDialog.optional")}
                   </span>
@@ -583,7 +559,10 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
                 <Textarea
                   id="edit-res-notes"
                   rows={2}
-                  placeholder={t("pages.reservations.editDialog.notesPlaceholder")}
+                  placeholder={t(
+                    "pages.reservations.newDialog.specialRequestsPlaceholder",
+                    "e.g. Birthday cake, window seat, high chair, allergies...",
+                  )}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
