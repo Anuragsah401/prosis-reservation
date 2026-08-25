@@ -29,13 +29,18 @@ export const realtimeController = {
       return res.status(401).json({ error: "Invalid or expired token" })
     }
 
+    if (!user.restaurantId) {
+      return res.status(403).json({ error: "No restaurant associated with this account" })
+    }
+
     const requestedRestaurantId =
       typeof req.query.restaurantId === "string" && req.query.restaurantId
         ? req.query.restaurantId
         : user.restaurantId
 
-    if (!requestedRestaurantId) {
-      return res.status(400).json({ error: "restaurantId is required" })
+    // Prevent cross-tenant real-time data snooping (IDOR / BOLA)
+    if (requestedRestaurantId !== user.restaurantId) {
+      return res.status(403).json({ error: "You are not authorized to subscribe to this restaurant's realtime stream" })
     }
 
     // Set Server-Sent Events headers

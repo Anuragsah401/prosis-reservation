@@ -171,4 +171,91 @@ export const mailer = {
       `,
     })
   },
+
+  async sendWelcomeEmail(input: {
+    to: string
+    name: string
+    restaurantName?: string | null
+    restaurantId?: string | null
+  }) {
+    const { to, name, restaurantName, restaurantId } = input
+    const safeName = escapeHtml(name)
+    const safeRestaurant = restaurantName ? escapeHtml(restaurantName) : null
+    const dashboardUrl = `${env.APP_URL}/dashboard`
+    const escapedDashboardUrl = escapeHtml(dashboardUrl)
+    const bookingUrl = restaurantId ? `${env.APP_URL}/restaurant/${restaurantId}/book` : null
+    const escapedBookingUrl = bookingUrl ? escapeHtml(bookingUrl) : null
+
+    await sendEmail({
+      to,
+      subject: `Welcome to Seat Booking, ${safeName}! 🎉`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; color: #18181b; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+          <div style="background: #18181b; padding: 24px 28px; text-align: left;">
+            <div style="display: inline-block; background: #27272a; color: #ffffff; width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+              SB
+            </div>
+            <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">
+              Welcome to Seat Booking!
+            </h1>
+          </div>
+
+          <div style="padding: 28px;">
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 0; color: #27272a;">
+              Hi <strong>${safeName}</strong>,
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; color: #52525b;">
+              Thank you for creating an account with <strong>Seat Booking</strong>!
+              ${
+                safeRestaurant
+                  ? `Your restaurant <strong>${safeRestaurant}</strong> is all set up and ready to start taking reservations.`
+                  : "Your account is ready to manage table bookings and seating floor plans."
+              }
+            </p>
+
+            <div style="background: #f4f4f5; border-radius: 8px; padding: 20px; margin: 24px 0;">
+              <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a;">
+                Quick Start Checklist
+              </h3>
+              <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #3f3f46; line-height: 1.8;">
+                <li><strong>Design your 2D Floor Plan:</strong> Build realistic venue layouts with custom tables, shapes, and seating capacities.</li>
+                <li><strong>Manage Table Bookings:</strong> View live reservations, take phone bookings, and assign walk-ins with real-time status updates.</li>
+                <li><strong>Track Preferences:</strong> Save guest dietary notes (Vegetarian, Gluten-Free) and special celebration requests.</li>
+                ${
+                  escapedBookingUrl
+                    ? `<li><strong>Share your Public Booking Link:</strong> Let guests book tables 24/7 directly from your website or social media.</li>`
+                    : ""
+                }
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 32px 0 24px;">
+              <a href="${escapedDashboardUrl}" style="background: #18181b; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);">
+                Open Your Dashboard →
+              </a>
+            </div>
+
+            ${
+              escapedBookingUrl
+                ? `
+            <div style="border-top: 1px solid #e4e4e7; padding-top: 20px; margin-top: 24px;">
+              <p style="font-size: 13px; font-weight: 600; color: #71717a; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">
+                Your Public Booking Link:
+              </p>
+              <a href="${escapedBookingUrl}" style="font-size: 13px; color: #2563eb; word-break: break-all; text-decoration: none;">
+                ${escapedBookingUrl}
+              </a>
+            </div>
+            `
+                : ""
+            }
+
+            <p style="color: #a1a1aa; font-size: 12px; line-height: 1.5; margin-top: 28px; border-top: 1px solid #f4f4f5; padding-top: 16px;">
+              Need help getting started? Simply reply to this email or visit your dashboard settings.
+            </p>
+          </div>
+        </div>
+      `,
+    })
+  },
 }

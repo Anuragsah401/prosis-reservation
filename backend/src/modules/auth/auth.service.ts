@@ -101,6 +101,19 @@ export const authService = {
         roleId: user.roleId,
       })
 
+      // Send welcome email asynchronously without blocking registration response
+      mailer
+        .sendWelcomeEmail({
+          to: user.email,
+          name: user.name,
+          restaurantName: data.restaurantName,
+          restaurantId: user.restaurantId,
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error("[auth] Failed to send welcome email:", err)
+        })
+
       return { user: toSafeUser(user), token }
     }
 
@@ -121,6 +134,18 @@ export const authService = {
       restaurantId: user.restaurantId,
       roleId: user.roleId,
     })
+
+    // Send welcome email to staff member
+    mailer
+      .sendWelcomeEmail({
+        to: user.email,
+        name: user.name,
+        restaurantId: user.restaurantId,
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("[auth] Failed to send staff welcome email:", err)
+      })
 
     return { user: toSafeUser(user), token }
   },
