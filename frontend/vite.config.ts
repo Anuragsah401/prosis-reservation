@@ -11,4 +11,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('@fullcalendar')) return 'vendor-calendar'
+          if (id.includes('@xyflow')) return 'vendor-flow'
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts'
+          if (id.includes('@radix-ui') || id.includes('lucide-react')) return 'vendor-ui'
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 })

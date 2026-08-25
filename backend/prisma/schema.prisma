@@ -157,6 +157,9 @@ model Reservation {
   @@index([tableId])
   @@index([customerId])
   @@index([reservedFor])
+  @@index([restaurantId, reservedFor])
+  @@index([restaurantId, tableId, reservedFor])
+  @@index([restaurantId, status])
   @@map("reservations")
 }
 
