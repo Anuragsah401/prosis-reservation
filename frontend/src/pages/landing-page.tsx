@@ -25,6 +25,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { SEOHead, generateSoftwareAppSchema, generateFaqSchema } from "@/components/seo"
 
 const featureIcons = [LayoutGrid, CalendarClock, Users, BarChart3]
 
@@ -61,8 +62,17 @@ export function LandingPage() {
   const testimonials = t("landing.testimonials.items", { returnObjects: true }) as TestimonialItem[]
   const plans = t("landing.pricing.plans", { returnObjects: true }) as PlanItem[]
 
+  const softwareSchema = generateSoftwareAppSchema()
+  const faqSchema = generateFaqSchema()
+
   return (
     <div className="bg-background text-foreground min-h-screen">
+      <SEOHead
+        title="Restaurant Table Reservation & Floor Plan System"
+        description="Streamline table reservations, design custom 2D floor plans, manage guest walk-ins, and boost dining capacity with Seat Booking."
+        canonicalPath="/"
+        jsonLd={[softwareSchema, faqSchema]}
+      />
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6">
@@ -112,7 +122,7 @@ export function LandingPage() {
                 <SheetHeader className="border-b">
                   <SheetTitle className="flex items-center gap-2">
                     <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-md text-xs font-bold">
-                      PT
+                      SB
                     </span>
                     {t("common.appName")}
                   </SheetTitle>

@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { FloorPlanViewer, type FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 import { API_URL } from "@/lib/config"
+import { SEOHead } from "@/components/seo"
 
 interface ConfirmationDetails {
   reservation: {
@@ -118,6 +119,11 @@ export function ReservationConfirmPage() {
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
+      <SEOHead
+        title={reservation ? `Confirm Booking at ${reservation.restaurantName}` : "Reservation Confirmation"}
+        description="Review and confirm your table reservation details."
+        robots="noindex, follow"
+      />
       <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
 
       <div className="absolute top-4 right-4 flex items-center gap-1">
@@ -129,7 +135,7 @@ export function ReservationConfirmPage() {
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex items-center gap-2">
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
-              PT
+              SB
             </span>
             <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>

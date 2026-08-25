@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { authClient, AuthError } from "@/features/auth/auth-client"
+import { SEOHead } from "@/components/seo"
 
 export function ForgotPasswordPage() {
   const { t } = useTranslation()
@@ -42,6 +43,11 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
+      <SEOHead
+        title="Reset Password | Seat Booking"
+        description="Reset your account password for Seat Booking."
+        canonicalPath="/forgot-password"
+      />
       <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
 
       <div className="absolute top-4 right-4 flex items-center gap-1">
@@ -53,7 +59,7 @@ export function ForgotPasswordPage() {
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex items-center gap-2">
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
-              PT
+              SB
             </span>
             <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>

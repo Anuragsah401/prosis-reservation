@@ -35,6 +35,7 @@ import { GuestSelector } from "@/features/booking/guest-selector"
 import { TimeSlotGrid } from "@/features/booking/time-slot-grid"
 import { BookingConfirmed } from "@/features/booking/booking-confirmed"
 import { FloorPlanViewer, type FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
+import { SEOHead, generateRestaurantSchema } from "@/components/seo"
 import {
   fetchPublicRestaurant,
   fetchPublicTablesForBooking,
@@ -287,8 +288,22 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
     { s: 3, label: t("publicBooking.steps.yourDetails", "Your Details") },
   ]
 
+  const restaurantSchema = generateRestaurantSchema({
+    name: restaurant.name,
+    address: restaurant.address,
+    phone: restaurant.phone,
+    url: typeof window !== "undefined" ? window.location.href : undefined,
+  })
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:py-12">
+      <SEOHead
+        title={`Reserve a Table at ${restaurant.name}`}
+        description={`Book your table online at ${restaurant.name}${restaurant.address ? ` in ${restaurant.address}` : ""}. Instant confirmation, seating layout selection, and special requests.`}
+        canonicalPath={`/restaurant/${restaurant.id}/book`}
+        ogType="restaurant.restaurant"
+        jsonLd={restaurantSchema}
+      />
       {/* Restaurant Title Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{restaurant.name}</h1>

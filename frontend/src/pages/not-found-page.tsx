@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { authClient } from "@/features/auth/auth-client"
+import { SEOHead } from "@/components/seo"
 
 export function NotFoundPage() {
   const { t } = useTranslation()
@@ -22,6 +23,11 @@ export function NotFoundPage() {
 
   return (
     <div className="bg-background relative flex min-h-svh flex-col">
+      <SEOHead
+        title="404 - Page Not Found | Seat Booking"
+        description="The page you are looking for does not exist or has been moved."
+        robots="noindex, follow"
+      />
       {/* Top Navigation Bar */}
       <header className="border-border/40 bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 flex h-14 items-center justify-between border-b px-4 backdrop-blur sm:px-8">
         <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2.5 font-semibold">

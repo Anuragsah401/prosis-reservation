@@ -1,0 +1,17 @@
+{
+  "name": "Seat Booking - Restaurant Table Reservation System",
+  "short_name": "SeatBooking",
+  "description": "Modern online restaurant table reservation and interactive floor plan management system.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

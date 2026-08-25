@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { authClient, AuthError } from "@/features/auth/auth-client"
 import { usePersistedState } from "@/hooks/use-form-persistence"
+import { SEOHead } from "@/components/seo"
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -46,6 +47,11 @@ export function LoginPage() {
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
+      <SEOHead
+        title="Sign In | Seat Booking"
+        description="Sign in to your Seat Booking restaurant management portal to access real-time reservations, floor plans, and dining analytics."
+        canonicalPath="/login"
+      />
       <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
 
       <div className="absolute top-4 right-4 flex items-center gap-1">
@@ -57,7 +63,7 @@ export function LoginPage() {
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex items-center gap-2">
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
-              PT
+              SB
             </span>
             <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>

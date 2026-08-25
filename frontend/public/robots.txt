@@ -1,0 +1,23 @@
+# Robots.txt for Seat Booking Platform
+User-agent: *
+Allow: /
+Allow: /restaurant/
+Allow: /reservation/confirm
+Allow: /login
+Allow: /signup
+Allow: /forgot-password
+Allow: /reset-password
+
+# Disallow private application & admin dashboard routes
+Disallow: /dashboard
+Disallow: /floor-plan
+Disallow: /reservations
+Disallow: /customers
+Disallow: /analytics
+Disallow: /settings
+Disallow: /profile
+Disallow: /notifications
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://seatbooking.com/sitemap.xml

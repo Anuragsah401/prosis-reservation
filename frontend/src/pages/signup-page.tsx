@@ -28,6 +28,7 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 import { authClient, AuthError } from "@/features/auth/auth-client"
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
+import { SEOHead } from "@/components/seo"
 
 const steps = [
   { titleKey: "auth.signup.stepYourAccount", icon: User },
@@ -173,6 +174,11 @@ export function SignupPage() {
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
+      <SEOHead
+        title="Get Started | Create Restaurant Account"
+        description="Sign up for Seat Booking. Create your restaurant account, build interactive floor plans, and start accepting online table reservations in minutes."
+        canonicalPath="/signup"
+      />
       <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
 
       <div className="absolute top-4 right-4 flex items-center gap-1">
@@ -184,7 +190,7 @@ export function SignupPage() {
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <Link to="/" className="flex items-center gap-2">
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
-              PT
+              SB
             </span>
             <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>
