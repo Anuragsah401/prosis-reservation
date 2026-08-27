@@ -66,7 +66,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  restaurant           Restaurant?          @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  restaurant           Restaurant?          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   role                 Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
   createdReservations  Reservation[]        @relation("ReservationCreatedBy")
   passwordResetTokens  PasswordResetToken[]

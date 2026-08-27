@@ -151,13 +151,17 @@ export const authService = {
   },
 
   async login(data: LoginInput) {
-    const user = await prisma.user.findUnique({ where: { email: data.email } })
+    const user = await prisma.user.findUnique({
+      where: { email: data.email },
+      include: { restaurant: true },
+    })
     // Compare against a dummy hash when the user doesn't exist so the
     // response time doesn't leak whether an email is registered.
     const hashToCompare = user?.passwordHash ?? "$2a$12$invalidsaltinvalidsaltinvalidsaltinvalidsaltinvalidsa"
     const isValid = await bcrypt.compare(data.password, hashToCompare)
 
-    if (!user || !user.isActive || !isValid) {
+    // User must exist, be active, match password, and belong to an existing active restaurant
+    if (!user || !user.isActive || !isValid || !user.restaurant || !user.restaurant.isActive) {
       throw new Error("Invalid credentials")
     }
 
@@ -172,8 +176,14 @@ export const authService = {
   },
 
   async me(userId: string) {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    return user ? toSafeUser(user) : null
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { restaurant: true },
+    })
+    if (!user || !user.isActive || !user.restaurant || !user.restaurant.isActive) {
+      return null
+    }
+    return toSafeUser(user)
   },
 
   /**

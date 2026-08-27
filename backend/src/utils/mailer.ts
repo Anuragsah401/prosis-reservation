@@ -125,48 +125,88 @@ export const mailer = {
 
     await sendEmail({
       to,
-      subject: `Confirm your reservation at ${restaurantName}`,
+      subject: `🍽️ Confirm your reservation at ${restaurantName}`,
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
-          <h2 style="margin-bottom: 8px;">You're almost booked, ${safeCustomer}!</h2>
-          <p style="color: #555; line-height: 1.5;">
-            ${safeRestaurant} has created a reservation for you. Please confirm it below —
-            you can also pick your preferred table from the restaurant's floor plan.
-          </p>
-          <table style="border-collapse: collapse; margin: 16px 0; width: 100%;">
-            <tr>
-              <td style="padding: 6px 0; color: #888; font-size: 14px;">Date &amp; time</td>
-              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${when}</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px 0; color: #888; font-size: 14px;">Party size</td>
-              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${partySize} ${partySize === 1 ? "guest" : "guests"}</td>
-            </tr>
-            ${
-              safeTable
-                ? `<tr>
-              <td style="padding: 6px 0; color: #888; font-size: 14px;">Table</td>
-              <td style="padding: 6px 0; font-weight: 600; font-size: 14px; text-align: right;">${safeTable}</td>
-            </tr>`
-                : ""
-            }
-          </table>
-          <p style="margin: 24px 0;">
-            <a href="${safeConfirmUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
-              Confirm reservation
-            </a>
-          </p>
-          <p style="color: #888; font-size: 13px; line-height: 1.5;">
-            On the confirmation page you can optionally choose a different table from the
-            restaurant's floor plan before confirming.
-          </p>
-          <p style="color: #888; font-size: 13px; line-height: 1.5;">
-            Or copy and paste this link into your browser:<br />
-            <a href="${safeConfirmUrl}" style="color: #555; word-break: break-all;">${safeConfirmUrl}</a>
-          </p>
-          <p style="color: #888; font-size: 13px; line-height: 1.5;">
-            If you didn't expect this reservation, you can ignore this email.
-          </p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; color: #18181b; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
+          <!-- Header Banner -->
+          <div style="background: #18181b; padding: 24px 28px; text-align: left;">
+            <div style="display: inline-block; background: #27272a; color: #ffffff; width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 8px;">
+              SB
+            </div>
+            <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">
+              🍽️ Reservation Confirmation
+            </h1>
+          </div>
+
+          <!-- Body Content -->
+          <div style="padding: 28px;">
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 0; color: #18181b;">
+              👋 Hi <strong>${safeCustomer}</strong>,
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; color: #52525b;">
+              ✨ <strong>${safeRestaurant}</strong> has created a reservation for you. Please confirm your booking details below:
+            </p>
+
+            <!-- Details Card -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; margin: 20px 0;">
+              <table style="border-collapse: collapse; width: 100%;">
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; vertical-align: middle;">
+                    📅 <strong>Date &amp; Time</strong>
+                  </td>
+                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; vertical-align: middle;">
+                    ${when}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                    👥 <strong>Party Size</strong>
+                  </td>
+                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                    ${partySize} ${partySize === 1 ? "Guest" : "Guests"}
+                  </td>
+                </tr>
+                ${
+                  safeTable
+                    ? `<tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                    🪑 <strong>Table</strong>
+                  </td>
+                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                    ${safeTable}
+                  </td>
+                </tr>`
+                    : ""
+                }
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                    📍 <strong>Restaurant</strong>
+                  </td>
+                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                    ${safeRestaurant}
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${safeConfirmUrl}" style="background: #18181b; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                ✅ Confirm Reservation →
+              </a>
+            </div>
+
+            <!-- Interactive Floor Plan Note -->
+            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px 16px; margin: 20px 0;">
+              <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">
+                🗺️ <strong>Table Selection:</strong> On the confirmation page, you can preview the restaurant layout and choose your preferred seating.
+              </p>
+            </div>
+
+            <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+              ℹ️ If you did not expect this reservation, you can safely ignore this email.
+            </p>
+          </div>
         </div>
       `,
     })
@@ -188,61 +228,90 @@ export const mailer = {
 
     await sendEmail({
       to,
-      subject: `Welcome to Seat Booking, ${safeName}! 🎉`,
+      subject: `🎉 Welcome to Seat Booking, ${safeName}!`,
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; color: #18181b; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; color: #18181b; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
+          <!-- Header Banner -->
           <div style="background: #18181b; padding: 24px 28px; text-align: left;">
-            <div style="display: inline-block; background: #27272a; color: #ffffff; width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+            <div style="display: inline-block; background: #27272a; color: #ffffff; width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 8px;">
               SB
             </div>
             <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">
-              Welcome to Seat Booking!
+              ✨ Welcome to Seat Booking!
             </h1>
           </div>
 
+          <!-- Body Content -->
           <div style="padding: 28px;">
-            <p style="font-size: 16px; line-height: 1.6; margin-top: 0; color: #27272a;">
-              Hi <strong>${safeName}</strong>,
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 0; color: #18181b;">
+              👋 Hi <strong>${safeName}</strong>,
             </p>
             <p style="font-size: 15px; line-height: 1.6; color: #52525b;">
-              Thank you for creating an account with <strong>Seat Booking</strong>!
+              🎉 Thank you for joining <strong>Seat Booking</strong>!
               ${
                 safeRestaurant
-                  ? `Your restaurant <strong>${safeRestaurant}</strong> is all set up and ready to start taking reservations.`
-                  : "Your account is ready to manage table bookings and seating floor plans."
+                  ? `Your restaurant <strong>${safeRestaurant}</strong> is set up and ready to accept table reservations.`
+                  : "Your account is ready to manage table bookings, floor plans, and dining capacity."
               }
             </p>
 
-            <div style="background: #f4f4f5; border-radius: 8px; padding: 20px; margin: 24px 0;">
-              <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a;">
-                Quick Start Checklist
+            <!-- Quick Start Feature Cards -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 24px 0;">
+              <h3 style="margin-top: 0; margin-bottom: 14px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b;">
+                🚀 Quick Start Checklist
               </h3>
-              <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #3f3f46; line-height: 1.8;">
-                <li><strong>Design your 2D Floor Plan:</strong> Build realistic venue layouts with custom tables, shapes, and seating capacities.</li>
-                <li><strong>Manage Table Bookings:</strong> View live reservations, take phone bookings, and assign walk-ins with real-time status updates.</li>
-                <li><strong>Track Preferences:</strong> Save guest dietary notes (Vegetarian, Gluten-Free) and special celebration requests.</li>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="margin-bottom: 10px;">
+                  <span style="font-size: 16px; margin-right: 6px;">🗺️</span>
+                  <strong style="font-size: 14px; color: #0f172a;">2D Floor Plan Designer:</strong>
+                  <div style="font-size: 13px; color: #475569; margin-top: 2px; padding-left: 26px;">
+                    Build custom table layouts, shapes, and seating capacities.
+                  </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                  <span style="font-size: 16px; margin-right: 6px;">📅</span>
+                  <strong style="font-size: 14px; color: #0f172a;">Real-Time Table Management:</strong>
+                  <div style="font-size: 13px; color: #475569; margin-top: 2px; padding-left: 26px;">
+                    Track live reservations, take phone bookings, and manage walk-ins.
+                  </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                  <span style="font-size: 16px; margin-right: 6px;">🥗</span>
+                  <strong style="font-size: 14px; color: #0f172a;">Guest Preferences &amp; Dietary:</strong>
+                  <div style="font-size: 13px; color: #475569; margin-top: 2px; padding-left: 26px;">
+                    Record dietary tags (Vegetarian, Gluten-Free) and celebration requests (🎂 Birthday, 🥂 Anniversary).
+                  </div>
+                </div>
                 ${
                   escapedBookingUrl
-                    ? `<li><strong>Share your Public Booking Link:</strong> Let guests book tables 24/7 directly from your website or social media.</li>`
+                    ? `<div>
+                  <span style="font-size: 16px; margin-right: 6px;">🔗</span>
+                  <strong style="font-size: 14px; color: #0f172a;">24/7 Online Booking Link:</strong>
+                  <div style="font-size: 13px; color: #475569; margin-top: 2px; padding-left: 26px;">
+                    Accept reservations directly from your website, Instagram, and Google.
+                  </div>
+                </div>`
                     : ""
                 }
-              </ul>
+              </div>
             </div>
 
-            <div style="text-align: center; margin: 32px 0 24px;">
-              <a href="${escapedDashboardUrl}" style="background: #18181b; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);">
-                Open Your Dashboard →
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0 24px;">
+              <a href="${escapedDashboardUrl}" style="background: #18181b; color: #ffffff; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                🚀 Open Your Dashboard →
               </a>
             </div>
 
             ${
               escapedBookingUrl
                 ? `
-            <div style="border-top: 1px solid #e4e4e7; padding-top: 20px; margin-top: 24px;">
-              <p style="font-size: 13px; font-weight: 600; color: #71717a; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">
-                Your Public Booking Link:
+            <!-- Public Booking Link Box -->
+            <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 16px; margin-top: 20px;">
+              <p style="font-size: 12px; font-weight: 700; color: #475569; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.05em;">
+                🌐 Your Public Guest Booking Link:
               </p>
-              <a href="${escapedBookingUrl}" style="font-size: 13px; color: #2563eb; word-break: break-all; text-decoration: none;">
+              <a href="${escapedBookingUrl}" style="font-size: 13px; color: #2563eb; font-weight: 500; word-break: break-all; text-decoration: none;">
                 ${escapedBookingUrl}
               </a>
             </div>
@@ -250,8 +319,9 @@ export const mailer = {
                 : ""
             }
 
-            <p style="color: #a1a1aa; font-size: 12px; line-height: 1.5; margin-top: 28px; border-top: 1px solid #f4f4f5; padding-top: 16px;">
-              Need help getting started? Simply reply to this email or visit your dashboard settings.
+            <!-- Footer Help -->
+            <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin-top: 28px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+              💬 Need help or have questions? Simply reply to this email anytime — we're here to help!
             </p>
           </div>
         </div>

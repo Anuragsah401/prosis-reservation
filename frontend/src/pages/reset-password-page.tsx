@@ -57,13 +57,15 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="bg-background relative flex min-h-screen items-center justify-center px-4 py-12 overflow-hidden animate-page-fade">
       <SEOHead
         title="Set New Password | Seat Booking"
         description="Set a new password for your Seat Booking account."
         robots="noindex, follow"
       />
-      <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b to-transparent" />
+      {/* Animated Background Aura & Grid */}
+      <div className="animate-pulse-glow pointer-events-none absolute -top-32 left-1/2 -z-10 h-[450px] w-[600px] -translate-x-1/2 rounded-full bg-linear-to-tr from-primary/20 via-sky-500/15 to-emerald-500/20 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-40 dark:bg-[radial-gradient(#27272a_1px,transparent_1px)]" />
 
       <div className="absolute top-4 right-4 flex items-center gap-1">
         <LanguageSwitcher />
@@ -72,19 +74,19 @@ export function ResetPasswordPage() {
 
       <div className="relative w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-sm font-bold">
+          <Link to="/" className="flex items-center gap-2 group">
+            <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl text-sm font-bold shadow-md group-hover:scale-110 transition-transform">
               SB
             </span>
             <span className="text-lg font-semibold tracking-tight">{t("common.appName")}</span>
           </Link>
         </div>
 
-        <Card>
-          <CardContent className="flex flex-col gap-6">
+        <Card className="card-hover-effect shadow-xl border-2">
+          <CardContent className="flex flex-col gap-6 pt-6">
             {success ? (
               <div className="flex flex-col items-center gap-2 py-2 text-center">
-                <h1 className="text-xl font-semibold tracking-tight">
+                <h1 className="text-xl font-bold tracking-tight">
                   {t("auth.resetPassword.successTitle")}
                 </h1>
                 <p className="text-muted-foreground text-sm">{t("auth.resetPassword.successSubtitle")}</p>
@@ -92,7 +94,7 @@ export function ResetPasswordPage() {
             ) : (
               <>
                 <div className="flex flex-col gap-1 text-center">
-                  <h1 className="text-xl font-semibold tracking-tight">{t("auth.resetPassword.title")}</h1>
+                  <h1 className="text-xl font-bold tracking-tight">{t("auth.resetPassword.title")}</h1>
                   <p className="text-muted-foreground text-sm">{t("auth.resetPassword.subtitle")}</p>
                 </div>
 
@@ -111,14 +113,14 @@ export function ResetPasswordPage() {
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         autoComplete="new-password"
-                        className="pr-9"
+                        className="pr-9 transition-all focus:ring-2 focus:ring-primary/20"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
-                        className="text-muted-foreground absolute top-1/2 right-2.5 -translate-y-1/2"
+                        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -133,6 +135,7 @@ export function ResetPasswordPage() {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       autoComplete="new-password"
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
@@ -140,7 +143,7 @@ export function ResetPasswordPage() {
 
                   {error && <p className="text-destructive text-sm">{error}</p>}
 
-                  <Button type="submit" className="mt-1 w-full" disabled={loading || !token}>
+                  <Button type="submit" className="mt-1 w-full font-semibold shadow-md hover:scale-102 transition-all" disabled={loading || !token}>
                     {loading && <Loader2 className="size-4 animate-spin" />}
                     {t("auth.resetPassword.submit")}
                   </Button>
@@ -149,7 +152,7 @@ export function ResetPasswordPage() {
             )}
 
             <p className="text-muted-foreground text-center text-sm">
-              <Link to="/login" className="text-foreground font-medium hover:underline">
+              <Link to="/login" className="text-primary font-medium hover:underline">
                 {t("auth.forgotPassword.backToLogin")}
               </Link>
             </p>

@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
 import { RealtimeProvider } from '@/features/realtime'
 import { Toaster } from '@/components/ui/sonner'
+import { ChatWidget } from '@/components/chat/chat-widget'
 import { Loader2 } from 'lucide-react'
 
 // Route-level lazy loading for performance & instant initial page loads
@@ -89,6 +90,7 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        <ChatWidget />
       </RealtimeProvider>
     </RestaurantProvider>
   )

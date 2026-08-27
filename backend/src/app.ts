@@ -12,6 +12,7 @@ import { customerRouter } from "@/modules/customer/customer.routes"
 import { notificationRouter } from "@/modules/notification/notification.routes"
 import { analyticsRouter } from "@/modules/analytics/analytics.routes"
 import { realtimeRouter } from "@/modules/realtime/realtime.routes"
+import { chatRouter } from "@/modules/chat/chat.routes"
 
 export const app = express()
 
@@ -43,6 +44,7 @@ app.use("/api/customers", customerRouter)
 app.use("/api/notifications", notificationRouter)
 app.use("/api/analytics", analyticsRouter)
 app.use("/api/realtime", realtimeRouter)
+app.use("/api/chat", chatRouter)
 
 // 404 handler
 app.use((_req, res) => {
