@@ -53,6 +53,12 @@ function WhatsAppIcon({ className = "size-4" }: { className?: string }) {
 
 export function ChatWidget() {
   const location = useLocation()
+
+  // Only show chat interface on the landing page
+  if (location.pathname !== "/") {
+    return null
+  }
+
   const [isOpen, setIsOpen] = useState(false)
   const [hasUnread, setHasUnread] = useState(true)
   const [activeTab, setActiveTab] = useState<"ai" | "whatsapp">("ai")

@@ -26,10 +26,12 @@ import {
 import { cn } from "@/lib/utils"
 import { supportedLanguages } from "@/i18n"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
+import { authClient } from "@/features/auth/auth-client"
 import {
   updateRestaurantProfile,
   minutesToTimeString,
   timeStringToMinutes,
+  type RestaurantProfile,
 } from "@/features/restaurant/restaurant-api"
 import {
   Store,
@@ -85,46 +87,56 @@ const COMMON_TIMEZONES = [
 function RestaurantProfileSection() {
   const { t, i18n } = useTranslation()
   const { profile, loading, refresh } = useRestaurant()
+  const user = authClient.getUser()
+  const effectiveProfile = profile || (user?.restaurant as RestaurantProfile | undefined) || null
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [address, setAddress] = useState("")
-  const [timezone, setTimezone] = useState("UTC")
-  const [openingTime, setOpeningTime] = useState("11:00")
-  const [closingTime, setClosingTime] = useState("23:00")
+  const [name, setName] = useState(effectiveProfile?.name ?? "")
+  const [email, setEmail] = useState(effectiveProfile?.email ?? "")
+  const [phone, setPhone] = useState(effectiveProfile?.phone ?? "")
+  const [address, setAddress] = useState(effectiveProfile?.address ?? "")
+  const [timezone, setTimezone] = useState(effectiveProfile?.timezone ?? "UTC")
+  const [openingTime, setOpeningTime] = useState(
+    effectiveProfile?.openingTime != null ? minutesToTimeString(effectiveProfile.openingTime) : "11:00",
+  )
+  const [closingTime, setClosingTime] = useState(
+    effectiveProfile?.closingTime != null ? minutesToTimeString(effectiveProfile.closingTime) : "23:00",
+  )
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (profile) {
-      setName(profile.name ?? "")
-      setEmail(profile.email ?? "")
-      setPhone(profile.phone ?? "")
-      setAddress(profile.address ?? "")
-      setTimezone(profile.timezone ?? "UTC")
-      setOpeningTime(profile.openingTime != null ? minutesToTimeString(profile.openingTime) : "11:00")
-      setClosingTime(profile.closingTime != null ? minutesToTimeString(profile.closingTime) : "23:00")
+    if (effectiveProfile) {
+      setName(effectiveProfile.name ?? "")
+      setEmail(effectiveProfile.email ?? "")
+      setPhone(effectiveProfile.phone ?? "")
+      setAddress(effectiveProfile.address ?? "")
+      setTimezone(effectiveProfile.timezone ?? "UTC")
+      setOpeningTime(effectiveProfile.openingTime != null ? minutesToTimeString(effectiveProfile.openingTime) : "11:00")
+      setClosingTime(effectiveProfile.closingTime != null ? minutesToTimeString(effectiveProfile.closingTime) : "23:00")
       setError(null)
     }
-  }, [profile])
+  }, [effectiveProfile])
 
   function resetToCurrent() {
-    if (profile) {
-      setName(profile.name ?? "")
-      setEmail(profile.email ?? "")
-      setPhone(profile.phone ?? "")
-      setAddress(profile.address ?? "")
-      setTimezone(profile.timezone ?? "UTC")
-      setOpeningTime(profile.openingTime != null ? minutesToTimeString(profile.openingTime) : "11:00")
-      setClosingTime(profile.closingTime != null ? minutesToTimeString(profile.closingTime) : "23:00")
+    if (effectiveProfile) {
+      setName(effectiveProfile.name ?? "")
+      setEmail(effectiveProfile.email ?? "")
+      setPhone(effectiveProfile.phone ?? "")
+      setAddress(effectiveProfile.address ?? "")
+      setTimezone(effectiveProfile.timezone ?? "UTC")
+      setOpeningTime(effectiveProfile.openingTime != null ? minutesToTimeString(effectiveProfile.openingTime) : "11:00")
+      setClosingTime(effectiveProfile.closingTime != null ? minutesToTimeString(effectiveProfile.closingTime) : "23:00")
       setError(null)
     }
   }
 
   async function handleSave(e?: React.FormEvent) {
     if (e) e.preventDefault()
-    if (!profile) return
+    const targetId = profile?.id || effectiveProfile?.id || user?.restaurantId
+    if (!targetId) {
+      toast.error(t("pages.settings.profile.saveError", "No restaurant associated with this account"))
+      return
+    }
 
     if (!name.trim()) {
       setError(t("pages.settings.profile.nameRequired", "Restaurant name is required"))
@@ -135,7 +147,7 @@ function RestaurantProfileSection() {
     setError(null)
 
     try {
-      await updateRestaurantProfile(profile.id, {
+      await updateRestaurantProfile(targetId, {
         name: name.trim(),
         email: email.trim() || null,
         phone: phone.trim() || null,
@@ -155,7 +167,7 @@ function RestaurantProfileSection() {
     }
   }
 
-  if (loading && !profile) {
+  if (loading && !effectiveProfile) {
     return (
       <Card>
         <CardContent className="flex h-64 items-center justify-center">

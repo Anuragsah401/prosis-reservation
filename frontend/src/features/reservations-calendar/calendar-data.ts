@@ -1,4 +1,4 @@
-import { loadFloorNames, loadFloorPlanTables } from "@/features/floor-plan/floor-plan-storage"
+import { loadFloorNames, loadFloorPlanTables, isFacilityElement } from "@/features/floor-plan/floor-plan-storage"
 
 export type ReservationStatus =
   | "PENDING"
@@ -45,7 +45,8 @@ export interface CalendarReservation {
 
 /**
  * Table source for reservations calendar views.
- * Returns only tables configured via Floor Plan builder persistence.
+ * Returns only genuine dining tables configured via Floor Plan builder persistence
+ * (filtering out facilities like Bar, Kitchen Pass, Restrooms, Host Stands, etc.).
  */
 export function getCalendarTables(): CalendarTable[] {
   const summaries = loadFloorPlanTables() ?? []
@@ -55,11 +56,12 @@ export function getCalendarTables(): CalendarTable[] {
   const floorRank = new Map(floorOrder.map((floor, i) => [floor, i]))
 
   return summaries
+    .filter((t) => !isFacilityElement(t) && t.elementType !== "FACILITY" && !t.facilityType && (t.capacity === undefined || t.capacity > 0))
     .map((t) => ({
       id: t.id,
       name: t.name,
       capacity: t.capacity,
-      floor: t.floor,
+      floor: t.floor || "Main Floor",
     }))
     .sort((a, b) => {
       const aRank = floorRank.get(a.floor) ?? Number.MAX_SAFE_INTEGER

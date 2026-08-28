@@ -91,6 +91,7 @@ export const authService = {
             restaurantId: restaurant.id,
             roleId: ownerRole.id,
           },
+          include: { restaurant: true },
         })
       })
 
@@ -126,6 +127,7 @@ export const authService = {
         restaurantId: data.restaurantId,
         roleId: data.roleId,
       },
+      include: { restaurant: true },
     })
 
     const token = signToken({

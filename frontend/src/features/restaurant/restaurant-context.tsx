@@ -18,7 +18,10 @@ const RestaurantContext = createContext<RestaurantContextValue>({
 })
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<RestaurantProfile | null>(null)
+  const [profile, setProfile] = useState<RestaurantProfile | null>(() => {
+    const user = authClient.getUser()
+    return (user?.restaurant as RestaurantProfile | undefined) ?? null
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,11 +36,23 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     try {
       const data = await fetchRestaurantProfile()
       setProfile(data)
+
+      // Keep user.restaurant in localStorage in sync with latest profile
+      const user = authClient.getUser()
+      if (user) {
+        localStorage.setItem("prosisit:auth:user", JSON.stringify({ ...user, restaurant: data }))
+      }
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
-        // If the token is invalid or the restaurant was deleted, clean up the stale local session
+      if (err instanceof ApiError && err.status === 401) {
+        // If the token is invalid/expired, clean up session
         authClient.logout()
         setProfile(null)
+      } else {
+        // For network/404 errors, fallback to user.restaurant if available
+        const user = authClient.getUser()
+        if (user?.restaurant) {
+          setProfile(user.restaurant as RestaurantProfile)
+        }
       }
       setError(err instanceof Error ? err.message : "Failed to load restaurant profile")
     } finally {
@@ -47,6 +62,18 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void load()
+
+    const handleAuthChange = () => {
+      void load()
+    }
+
+    window.addEventListener("auth:state-change", handleAuthChange)
+    window.addEventListener("storage", handleAuthChange)
+
+    return () => {
+      window.removeEventListener("auth:state-change", handleAuthChange)
+      window.removeEventListener("storage", handleAuthChange)
+    }
   }, [])
 
   return (

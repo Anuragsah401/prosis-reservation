@@ -4,6 +4,19 @@ import { clearAllFormDrafts } from "@/hooks/use-form-persistence"
 const TOKEN_KEY = "prosisit:auth:token"
 const USER_KEY = "prosisit:auth:user"
 
+export interface AuthUserRestaurant {
+  id: string
+  name: string
+  slug: string
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  timezone?: string
+  openingTime?: number
+  closingTime?: number
+  isActive?: boolean
+}
+
 export interface AuthUser {
   id: string
   email: string
@@ -12,6 +25,7 @@ export interface AuthUser {
   isActive: boolean
   restaurantId: string | null
   roleId: string | null
+  restaurant?: AuthUserRestaurant | null
   createdAt: string
   updatedAt: string
 }
@@ -19,6 +33,12 @@ export interface AuthUser {
 export interface AuthResult {
   user: AuthUser
   token: string
+}
+
+export function notifyAuthChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth:state-change"))
+  }
 }
 
 export class AuthError extends Error {
@@ -133,6 +153,7 @@ export const authClient = {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
     clearAllFormDrafts()
+    notifyAuthChange()
   },
 
   getToken(): string | null {
@@ -156,4 +177,5 @@ export const authClient = {
 function persistSession(result: AuthResult) {
   localStorage.setItem(TOKEN_KEY, result.token)
   localStorage.setItem(USER_KEY, JSON.stringify(result.user))
+  notifyAuthChange()
 }

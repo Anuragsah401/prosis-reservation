@@ -86,9 +86,11 @@ export interface FacilityInspectable {
  * Returns true if an item represents an architectural restaurant facility element
  * rather than a bookable dining table.
  */
-export function isFacilityElement(table: FacilityInspectable): boolean {
+export function isFacilityElement(table?: FacilityInspectable | null): boolean {
+  if (!table) return false
   if (table.elementType === "FACILITY" || Boolean(table.facilityType)) return true
   if (table.location?.startsWith("FACILITY:") || table.section?.startsWith("FACILITY:")) return true
+  if (table.capacity === 0) return true
   const n = (table.name || "").toLowerCase()
   if (
     n.includes("bar") ||
@@ -100,6 +102,10 @@ export function isFacilityElement(table: FacilityInspectable): boolean {
     n.includes("exit") ||
     n.includes("kitchen") ||
     n.includes("host") ||
+    n.includes("stage") ||
+    n.includes("dj") ||
+    n.includes("buffet") ||
+    n.includes("stair") ||
     n.includes("wall") ||
     n.includes("divider") ||
     n.includes("plant") ||

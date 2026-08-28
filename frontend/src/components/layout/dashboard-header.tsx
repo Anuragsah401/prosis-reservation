@@ -33,6 +33,7 @@ export function DashboardHeader() {
   const navigate = useNavigate()
   const user = authClient.getUser()
   const { profile } = useRestaurant()
+  const restaurantDisplayName = profile?.name || user?.restaurant?.name || t("common.appName")
 
   function handleLogout() {
     authClient.logout()
@@ -52,7 +53,7 @@ export function DashboardHeader() {
           <SheetHeader className="border-b px-4 py-3">
             <SheetTitle className="flex items-center gap-2 text-base font-semibold">
               <Store className="text-primary size-4" />
-              <span className="truncate">{profile?.name || t("common.appName")}</span>
+              <span className="truncate">{restaurantDisplayName}</span>
             </SheetTitle>
           </SheetHeader>
           <div className="py-2">
@@ -67,7 +68,7 @@ export function DashboardHeader() {
           <Store className="size-4" />
         </div>
         <span className="truncate text-sm font-semibold tracking-tight sm:text-base">
-          {profile?.name || t("common.appName")}
+          {restaurantDisplayName}
         </span>
       </div>
 
@@ -87,8 +88,8 @@ export function DashboardHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.name ?? t("dashboardHeader.myAccount")}</p>
-                {profile?.name && (
-                  <p className="text-muted-foreground truncate text-xs leading-none">{profile.name}</p>
+                {restaurantDisplayName && (
+                  <p className="text-muted-foreground truncate text-xs leading-none">{restaurantDisplayName}</p>
                 )}
               </div>
             </DropdownMenuLabel>

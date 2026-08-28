@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express"
+import { prisma } from "@/db/client"
 import { restaurantService } from "@/modules/restaurant/restaurant.service"
 import { createRestaurantSchema, updateRestaurantSchema } from "@/modules/restaurant/restaurant.validation"
 import type { AuthenticatedRequest } from "@/modules/auth/auth.middleware"
@@ -27,7 +28,15 @@ export const restaurantController = {
 
   async getProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      let restaurantId = req.user?.restaurantId
+      if (!restaurantId && req.user?.sub) {
+        const user = await prisma.user.findUnique({
+          where: { id: req.user.sub },
+          select: { restaurantId: true },
+        })
+        restaurantId = user?.restaurantId ?? undefined
+      }
+
       if (!restaurantId) {
         return res.status(404).json({ error: "No restaurant associated with this account" })
       }
@@ -59,7 +68,15 @@ export const restaurantController = {
 
   async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      let restaurantId = req.user?.restaurantId
+      if (!restaurantId && req.user?.sub) {
+        const user = await prisma.user.findUnique({
+          where: { id: req.user.sub },
+          select: { restaurantId: true },
+        })
+        restaurantId = user?.restaurantId ?? undefined
+      }
+
       if (!restaurantId || restaurantId !== req.params.id) {
         return res.status(403).json({ error: "You are not authorized to update this restaurant" })
       }
@@ -79,7 +96,15 @@ export const restaurantController = {
 
   async remove(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      let restaurantId = req.user?.restaurantId
+      if (!restaurantId && req.user?.sub) {
+        const user = await prisma.user.findUnique({
+          where: { id: req.user.sub },
+          select: { restaurantId: true },
+        })
+        restaurantId = user?.restaurantId ?? undefined
+      }
+
       if (!restaurantId || restaurantId !== req.params.id) {
         return res.status(403).json({ error: "You are not authorized to delete this restaurant" })
       }
