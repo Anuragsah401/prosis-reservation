@@ -1,6 +1,5 @@
 import type { FloorPlanTable } from "@/features/floor-plan/floor-plan-data"
 import { DEFAULT_TABLE_WIDTH, DEFAULT_TABLE_HEIGHT } from "@/features/floor-plan/floor-plan-data"
-import { API_URL } from "@/lib/config"
 import { apiClient, getCurrentRestaurantId } from "@/lib/api-client"
 
 const STORAGE_KEY = "prosisit:floor-plan:layout"
@@ -199,23 +198,17 @@ export async function savePositions(
   layout: TableLayout[],
   restaurantId?: string,
 ): Promise<{ persisted: "server" | "local" }> {
-  if (restaurantId) {
+  const effectiveRestaurantId = restaurantId || getCurrentRestaurantId()
+  if (effectiveRestaurantId) {
     try {
-      const res = await fetch(`${API_URL}/tables/layout`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ restaurantId, tables: layout }),
-      })
-      if (res.ok) {
-        saveLocal(layout)
-        return { persisted: "server" }
-      }
+      await apiClient.patch(`/tables/layout`, { restaurantId: effectiveRestaurantId, tables: layout })
+      saveLocal(layout)
+      return { persisted: "server" }
     } catch {
       // fall through to local persistence
     }
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 250)) // simulate latency
   saveLocal(layout)
   return { persisted: "local" }
 }

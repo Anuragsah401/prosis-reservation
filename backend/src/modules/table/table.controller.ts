@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express"
+import { prisma } from "@/db/client"
 import { tableService } from "@/modules/table/table.service"
 import type { AuthenticatedRequest } from "@/modules/auth/auth.middleware"
 import {
@@ -8,10 +9,33 @@ import {
   syncFloorPlanSchema,
 } from "@/modules/table/table.validation"
 
+async function resolveRestaurantId(req: AuthenticatedRequest): Promise<string | undefined> {
+  let restaurantId: string | undefined = req.user?.restaurantId ?? undefined
+  if (!restaurantId && req.user?.sub) {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.sub },
+      select: { restaurantId: true },
+    })
+    restaurantId = user?.restaurantId ?? undefined
+  }
+  return restaurantId
+}
+
 export const tableController = {
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const restaurantId = String(req.query.restaurantId)
+      let restaurantId = req.query.restaurantId ? String(req.query.restaurantId) : ""
+      const authUser = (req as AuthenticatedRequest).user
+      if ((!restaurantId || restaurantId === "undefined" || restaurantId === "null") && authUser?.sub) {
+        const user = await prisma.user.findUnique({
+          where: { id: authUser.sub },
+          select: { restaurantId: true },
+        })
+        restaurantId = user?.restaurantId ?? ""
+      }
+      if (!restaurantId || restaurantId === "undefined" || restaurantId === "null") {
+        return res.status(200).json([])
+      }
       const date = req.query.date ? String(req.query.date) : undefined
       const reservedFor = req.query.reservedFor ? String(req.query.reservedFor) : undefined
       const result = await tableService.list(restaurantId, { date, reservedFor })
@@ -23,7 +47,18 @@ export const tableController = {
 
   async listFloors(req: Request, res: Response, next: NextFunction) {
     try {
-      const restaurantId = String(req.query.restaurantId)
+      let restaurantId = req.query.restaurantId ? String(req.query.restaurantId) : ""
+      const authUser = (req as AuthenticatedRequest).user
+      if ((!restaurantId || restaurantId === "undefined" || restaurantId === "null") && authUser?.sub) {
+        const user = await prisma.user.findUnique({
+          where: { id: authUser.sub },
+          select: { restaurantId: true },
+        })
+        restaurantId = user?.restaurantId ?? ""
+      }
+      if (!restaurantId || restaurantId === "undefined" || restaurantId === "null") {
+        return res.status(200).json([])
+      }
       const result = await tableService.listFloors(restaurantId)
       res.status(200).json(result)
     } catch (err) {
@@ -33,7 +68,7 @@ export const tableController = {
 
   async saveLayout(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      const restaurantId = await resolveRestaurantId(req)
       if (!restaurantId) {
         return res.status(400).json({ error: "No restaurant associated with this account" })
       }
@@ -54,7 +89,7 @@ export const tableController = {
   /** Full floor-plan sync (upsert by name + prune) from the designer. */
   async syncFloorPlan(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      const restaurantId = await resolveRestaurantId(req)
       if (!restaurantId) {
         return res.status(400).json({ error: "No restaurant associated with this account" })
       }
@@ -83,7 +118,7 @@ export const tableController = {
 
   async create(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      const restaurantId = await resolveRestaurantId(req)
       if (!restaurantId) {
         return res.status(400).json({ error: "No restaurant associated with this account" })
       }
@@ -103,7 +138,7 @@ export const tableController = {
 
   async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      const restaurantId = await resolveRestaurantId(req)
       if (!restaurantId) {
         return res.status(400).json({ error: "No restaurant associated with this account" })
       }
@@ -123,7 +158,7 @@ export const tableController = {
 
   async remove(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const restaurantId = req.user?.restaurantId
+      const restaurantId = await resolveRestaurantId(req)
       if (!restaurantId) {
         return res.status(400).json({ error: "No restaurant associated with this account" })
       }

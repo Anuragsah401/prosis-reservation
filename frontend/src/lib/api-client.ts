@@ -51,7 +51,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** Returns the current signed-in user's restaurantId, or null if unavailable. */
 export function getCurrentRestaurantId(): string | null {
-  return authClient.getUser()?.restaurantId ?? null
+  const user = authClient.getUser()
+  return user?.restaurantId ?? user?.restaurant?.id ?? null
 }
 
 export const apiClient = {

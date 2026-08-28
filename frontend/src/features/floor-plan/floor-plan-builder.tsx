@@ -418,16 +418,21 @@ export function FloorPlanBuilder() {
     [nodesByFloor, floorTables, handlers],
   )
 
-  const nodes = getFloorNodes(activeFloor)
+  const nodes = useMemo(() => {
+    return getFloorNodes(activeFloor)
+  }, [getFloorNodes, activeFloor])
 
   const setActiveFloorNodes = useCallback(
     (updater: (current: Node<TableNodeData | FacilityNodeData>[]) => Node<TableNodeData | FacilityNodeData>[]) => {
-      setNodesByFloor((current) => ({
-        ...current,
-        [activeFloor]: updater(current[activeFloor] ?? getFloorNodes(activeFloor)),
-      }))
+      setNodesByFloor((current) => {
+        const floorNodes = current[activeFloor] ?? (floorTables[activeFloor] ?? []).map((t) => nodeFromTable(t, handlers))
+        return {
+          ...current,
+          [activeFloor]: updater(floorNodes),
+        }
+      })
     },
-    [activeFloor, getFloorNodes],
+    [activeFloor, floorTables, handlers],
   )
 
   const onNodesChange = useCallback(
@@ -482,6 +487,8 @@ export function FloorPlanBuilder() {
         status: newTableStatus,
         shape: newTableShape,
         rotation: 0,
+        width: size.width,
+        height: size.height,
         ...handlers,
       },
     }
@@ -489,6 +496,7 @@ export function FloorPlanBuilder() {
     setActiveFloorNodes((current) => [...current, newNode])
     setIsDirty(true)
     setIsAddDialogOpen(false)
+    toast.success(`Table "${newTableName.trim() || `T${tableCounter}`}" added to ${activeFloor}`)
   }, [
     nodes.length,
     newTableName,
@@ -497,6 +505,7 @@ export function FloorPlanBuilder() {
     newTableShape,
     newTableStatus,
     tableCounter,
+    activeFloor,
     handlers,
     setActiveFloorNodes,
   ])
@@ -523,10 +532,12 @@ export function FloorPlanBuilder() {
     setActiveFloorNodes((current) => [...current, newNode])
     setIsDirty(true)
     setIsAddFacilityDialogOpen(false)
+    toast.success(`Facility "${finalName}" added to ${activeFloor}`)
   }, [
     selectedFacilityType,
     facilityCustomName,
     nodes.length,
+    activeFloor,
     handleRotate,
     handleDelete,
     setActiveFloorNodes,
@@ -535,16 +546,50 @@ export function FloorPlanBuilder() {
   const handleSave = useCallback(async (options?: { isAuto?: boolean }) => {
     setIsSaving(true)
     try {
-      const allFloorEntries = Object.entries({ ...floorTables, ...nodesByFloor })
       const allNodes: { floor: string; node: Node<TableNodeData | FacilityNodeData> }[] = []
       for (const floor of floors) {
-        const floorNodes = floor === activeFloor ? nodes : (nodesByFloor[floor] ?? getFloorNodes(floor))
+        const floorNodes = nodesByFloor[floor] ?? (floorTables[floor] ?? []).map((t) => nodeFromTable(t, handlers))
         for (const node of floorNodes) {
           allNodes.push({ floor, node })
         }
       }
-      void allFloorEntries
-      const result = await savePositions(
+
+      const savePayload = allNodes.map(({ floor, node }) => {
+        const isFacility = node.type === "facility"
+        const tableData = node.data as Partial<TableNodeData>
+        const facilityData = node.data as Partial<FacilityNodeData>
+        return {
+          name: node.data.name,
+          capacity: isFacility ? 0 : (tableData.capacity ?? 4),
+          location: isFacility ? `FACILITY:${facilityData.facilityType || "BAR"}` : (tableData.location ?? null),
+          floor: floor || DEFAULT_FLOOR_NAME,
+          shape: isFacility ? "RECTANGLE" : (tableData.shape ?? "RECTANGLE"),
+          positionX: Math.round(node.position.x),
+          positionY: Math.round(node.position.y),
+          width: node.width ?? (isFacility ? 120 : DEFAULT_TABLE_WIDTH),
+          height: node.height ?? (isFacility ? 60 : DEFAULT_TABLE_HEIGHT),
+          rotation: node.data.rotation || 0,
+          elementType: (isFacility ? "FACILITY" : "TABLE") as "FACILITY" | "TABLE",
+          facilityType: isFacility ? facilityData.facilityType : undefined,
+        }
+      })
+
+      // Sync to backend first
+      const serverSynced = await syncFloorPlanToServer(savePayload)
+
+      // Also persist locally
+      saveFloorPlanTables(
+        allNodes.map(({ floor, node }) => ({
+          id: node.id,
+          name: node.data.name,
+          floor: floor || DEFAULT_FLOOR_NAME,
+          capacity: node.type === "facility" ? 0 : (node.data as TableNodeData).capacity,
+          elementType: node.type === "facility" ? "FACILITY" : "TABLE",
+          facilityType: node.type === "facility" ? (node.data as FacilityNodeData).facilityType : undefined,
+        })),
+      )
+
+      await savePositions(
         allNodes.map(({ floor, node }) => {
           const isFacility = node.type === "facility"
           const tableData = node.data as Partial<TableNodeData>
@@ -557,43 +602,13 @@ export function FloorPlanBuilder() {
             height: node.height ?? (isFacility ? 60 : DEFAULT_TABLE_HEIGHT),
             shape: isFacility ? "RECTANGLE" : (tableData.shape ?? "RECTANGLE"),
             rotation: node.data.rotation || 0,
-            floor,
+            floor: floor || DEFAULT_FLOOR_NAME,
             elementType: isFacility ? "FACILITY" : "TABLE",
             facilityType: isFacility ? facilityData.facilityType : undefined,
           }
         }),
       )
-      saveFloorPlanTables(
-        allNodes.map(({ floor, node }) => ({
-          id: node.id,
-          name: node.data.name,
-          floor,
-          capacity: node.type === "facility" ? 0 : (node.data as TableNodeData).capacity,
-          elementType: node.type === "facility" ? "FACILITY" : "TABLE",
-          facilityType: node.type === "facility" ? (node.data as FacilityNodeData).facilityType : undefined,
-        })),
-      )
-      await syncFloorPlanToServer(
-        allNodes.map(({ floor, node }) => {
-          const isFacility = node.type === "facility"
-          const tableData = node.data as Partial<TableNodeData>
-          const facilityData = node.data as Partial<FacilityNodeData>
-          return {
-            name: node.data.name,
-            capacity: isFacility ? 0 : (tableData.capacity ?? 4),
-            location: isFacility ? `FACILITY:${facilityData.facilityType || "BAR"}` : (tableData.location ?? null),
-            floor,
-            shape: isFacility ? "RECTANGLE" : (tableData.shape ?? "RECTANGLE"),
-            positionX: Math.round(node.position.x),
-            positionY: Math.round(node.position.y),
-            width: node.width ?? (isFacility ? 120 : DEFAULT_TABLE_WIDTH),
-            height: node.height ?? (isFacility ? 60 : DEFAULT_TABLE_HEIGHT),
-            rotation: node.data.rotation || 0,
-            elementType: isFacility ? "FACILITY" : "TABLE",
-            facilityType: isFacility ? facilityData.facilityType : undefined,
-          }
-        }),
-      )
+
       // Update floorTables state with the newly saved tables
       const updatedByFloor: Record<string, FloorPlanTable[]> = {}
       for (const { floor, node } of allNodes) {
@@ -607,7 +622,7 @@ export function FloorPlanBuilder() {
           capacity: isFacility ? 0 : (tableData.capacity ?? 4),
           location: isFacility ? undefined : (tableData.location ?? undefined),
           status: (tableData.status as TableStatus) || "AVAILABLE",
-          floor,
+          floor: floor || DEFAULT_FLOOR_NAME,
           shape: isFacility ? "RECTANGLE" : (tableData.shape ?? "RECTANGLE"),
           positionX: Math.round(node.position.x),
           positionY: Math.round(node.position.y),
@@ -620,9 +635,9 @@ export function FloorPlanBuilder() {
       }
       setFloorTables(updatedByFloor)
       setIsDirty(false)
-      setLastSaveResult(result.persisted)
+      setLastSaveResult(serverSynced ? "server" : "local")
       if (!options?.isAuto) {
-        toast.success(result.persisted === "server" ? "Floor plan saved to server successfully!" : "Floor plan layout saved locally!")
+        toast.success(serverSynced ? "Floor plan saved to server successfully!" : "Floor plan layout saved locally!")
       }
     } catch (err) {
       console.error("[floor-plan] Save error:", err)
@@ -632,7 +647,7 @@ export function FloorPlanBuilder() {
     } finally {
       setIsSaving(false)
     }
-  }, [activeFloor, nodes, nodesByFloor, floorTables, floors, getFloorNodes])
+  }, [floors, nodesByFloor, floorTables, handlers])
 
   // Debounced Auto-Save
   useEffect(() => {
