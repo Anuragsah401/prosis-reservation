@@ -16,21 +16,67 @@ import { chatRouter } from "@/modules/chat/chat.routes"
 
 export const app = express()
 
-const allowedOrigins = env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+const configuredOrigins = env.CORS_ORIGIN.split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean)
 
-app.use(helmet())
+function isOriginAllowed(origin?: string): boolean {
+  if (!origin) return true // Allow curl, server-to-server, and mobile apps
+
+  const normalized = origin.trim().replace(/\/+$/, "")
+  if (configuredOrigins.includes(normalized) || configuredOrigins.includes("*")) {
+    return true
+  }
+
+  try {
+    const url = new URL(normalized)
+    const hostname = url.hostname
+
+    // Allow seatbooking domains (.dk, .com, etc.)
+    if (
+      hostname === "seatbooking.dk" ||
+      hostname.endsWith(".seatbooking.dk") ||
+      hostname === "seatbooking.com" ||
+      hostname.endsWith(".seatbooking.com") ||
+      hostname.endsWith(".netlify.app") ||
+      hostname.endsWith(".vercel.app") ||
+      hostname.endsWith(".onrender.com")
+    ) {
+      return true
+    }
+
+    // Allow local development origins
+    if (env.NODE_ENV !== "production" && (hostname === "localhost" || hostname === "127.0.0.1")) {
+      return true
+    }
+  } catch {
+    return false
+  }
+
+  return false
+}
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+)
+
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow non-browser requests (curl, server-to-server, no Origin header)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true)
       }
       callback(null, false)
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    optionsSuccessStatus: 200,
   }),
 )
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"))
