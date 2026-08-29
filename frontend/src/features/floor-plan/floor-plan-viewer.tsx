@@ -408,10 +408,7 @@ export function FloorPlanViewer({
                 )
               }
 
-              const selectedTable = tables.find((t) => t.id === selectedTableId)
-              const isSelected =
-                selectedTableId === tb.id ||
-                Boolean(selectedTable?.groupId && tb.groupId && tb.groupId === selectedTable.groupId)
+              const isSelected = selectedTableId === tb.id
               const isCurrent = currentTableId === tb.id
               const selectable = tb.available || isCurrent
 
