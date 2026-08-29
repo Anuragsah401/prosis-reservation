@@ -845,12 +845,22 @@ export function FloorPlanBuilder() {
     setActiveFloorNodes,
   ])
 
+  const isDirtyRef = useRef(isDirty)
+  isDirtyRef.current = isDirty
+
+  const floorsRef = useRef(floors)
+  floorsRef.current = floors
+
   const handleSave = useCallback(async (options?: { isAuto?: boolean }) => {
     setIsSaving(true)
     try {
+      const currentNodes = nodesByFloorRef.current
+      const currentFloorTables = floorTablesRef.current
+      const currentFloors = floorsRef.current
+
       const allNodes: { floor: string; node: Node<TableNodeData | FacilityNodeData> }[] = []
-      for (const floor of floors) {
-        const floorNodes = nodesByFloor[floor] ?? (floorTables[floor] ?? []).map((t) => nodeFromTable(t, handlers))
+      for (const floor of currentFloors) {
+        const floorNodes = currentNodes[floor] ?? (currentFloorTables[floor] ?? []).map((t) => nodeFromTable(t, handlersRef.current))
         for (const node of floorNodes) {
           allNodes.push({ floor, node })
         }
@@ -878,7 +888,7 @@ export function FloorPlanBuilder() {
         }
       })
 
-      // Sync to backend first
+      // Sync to backend
       const serverSynced = await syncFloorPlanToServer(savePayload)
 
       // Also persist locally
@@ -957,21 +967,92 @@ export function FloorPlanBuilder() {
     } finally {
       setIsSaving(false)
     }
-  }, [floors, nodesByFloor, floorTables, handlers])
+  }, [])
 
   const handleSaveRef = useRef(handleSave)
   handleSaveRef.current = handleSave
 
-  // Debounced Auto-Save: only triggers when isDirty is explicitly set by user edits
+  // Synchronously persist layout locally on every dirty state so page switches never lose edits
+  useEffect(() => {
+    if (!isDirty || isLoadingPlan) return
+
+    const currentNodes = nodesByFloorRef.current
+    const currentFloorTables = floorTablesRef.current
+    const currentFloors = floorsRef.current
+
+    const allNodes: { floor: string; node: Node<TableNodeData | FacilityNodeData> }[] = []
+    for (const floor of currentFloors) {
+      const floorNodes = currentNodes[floor] ?? (currentFloorTables[floor] ?? []).map((t) => nodeFromTable(t, handlersRef.current))
+      for (const node of floorNodes) {
+        allNodes.push({ floor, node })
+      }
+    }
+
+    if (allNodes.length > 0) {
+      saveFloorPlanTables(
+        allNodes.map(({ floor, node }) => ({
+          id: node.id,
+          name: node.data.name,
+          floor: floor || DEFAULT_FLOOR_NAME,
+          capacity: node.type === "facility" ? 0 : (node.data as TableNodeData).capacity,
+          elementType: node.type === "facility" ? "FACILITY" : "TABLE",
+          facilityType: node.type === "facility" ? (node.data as FacilityNodeData).facilityType : undefined,
+          groupId: node.type === "facility" ? null : (node.data as TableNodeData).groupId,
+          groupName: node.type === "facility" ? null : (node.data as TableNodeData).groupName,
+        })),
+      )
+
+      void savePositions(
+        allNodes.map(({ floor, node }) => {
+          const isFacility = node.type === "facility"
+          const tableData = node.data as Partial<TableNodeData>
+          const facilityData = node.data as Partial<FacilityNodeData>
+          return {
+            id: node.id,
+            positionX: Math.round(node.position.x),
+            positionY: Math.round(node.position.y),
+            width: node.width ?? (isFacility ? 120 : DEFAULT_TABLE_WIDTH),
+            height: node.height ?? (isFacility ? 60 : DEFAULT_TABLE_HEIGHT),
+            shape: isFacility ? "RECTANGLE" : (tableData.shape ?? "RECTANGLE"),
+            rotation: node.data.rotation || 0,
+            floor: floor || DEFAULT_FLOOR_NAME,
+            elementType: isFacility ? "FACILITY" : "TABLE",
+            facilityType: isFacility ? facilityData.facilityType : undefined,
+            groupId: isFacility ? null : (tableData.groupId ?? null),
+            groupName: isFacility ? null : (tableData.groupName ?? null),
+          }
+        }),
+      )
+    }
+  }, [nodesByFloor, isDirty, isLoadingPlan])
+
+  // Debounced Auto-Save to Backend + Unmount Flush on page switch
   useEffect(() => {
     if (!isDirty || isLoadingPlan) return
 
     const timer = setTimeout(() => {
       void handleSaveRef.current({ isAuto: true })
-    }, 1500)
+    }, 500)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      // When navigating away / unmounting while dirty, flush save to server immediately!
+      if (isDirtyRef.current) {
+        void handleSaveRef.current({ isAuto: true })
+      }
+    }
   }, [isDirty, isLoadingPlan])
+
+  // Flush on browser tab close / reload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isDirtyRef.current) {
+        void handleSaveRef.current({ isAuto: true })
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [])
 
   const handleReset = useCallback(() => {
     setNodesByFloor({})
