@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   ReactFlow,
@@ -720,7 +720,9 @@ export function FloorPlanBuilder() {
   const onNodesChange = useCallback(
     (changes: NodeChange<Node<TableNodeData | FacilityNodeData>>[]) => {
       setActiveFloorNodes((current) => applyNodeChanges(changes, current))
-      if (changes.some((c) => c.type === "position" || c.type === "dimensions")) {
+      // Only user-initiated removals should mark dirty.
+      // React Flow emits 'dimensions' on internal DOM measurement and 'select' on selection - neither should mark dirty!
+      if (changes.some((c) => c.type === "remove")) {
         setIsDirty(true)
       }
     },
@@ -939,16 +941,19 @@ export function FloorPlanBuilder() {
     }
   }, [floors, nodesByFloor, floorTables, handlers])
 
-  // Debounced Auto-Save
+  const handleSaveRef = useRef(handleSave)
+  handleSaveRef.current = handleSave
+
+  // Debounced Auto-Save: only triggers when isDirty is explicitly set by user edits
   useEffect(() => {
     if (!isDirty || isLoadingPlan) return
 
     const timer = setTimeout(() => {
-      void handleSave({ isAuto: true })
+      void handleSaveRef.current({ isAuto: true })
     }, 1500)
 
     return () => clearTimeout(timer)
-  }, [isDirty, isLoadingPlan, handleSave])
+  }, [isDirty, isLoadingPlan])
 
   const handleReset = useCallback(() => {
     setNodesByFloor({})
@@ -1192,6 +1197,9 @@ export function FloorPlanBuilder() {
             nodesDraggable={true}
             elementsSelectable={true}
             zoomOnScroll={true}
+            onNodeDragStop={() => {
+              setIsDirty(true)
+            }}
             onNodeDoubleClick={(_e, node) => {
               if (node.type === "table") {
                 handleOpenEditDialog(node.id)
