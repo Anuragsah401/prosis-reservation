@@ -53,42 +53,51 @@ const ACTIVE_STATUSES: ReservationStatus[] = ["PENDING", "CONFIRMED", "SEATED"]
 async function syncTableStatus(tableId: string | null) {
   if (!tableId) return
 
-  const table = await prisma.table.findUnique({ where: { id: tableId } })
-  if (!table) return
+  try {
+    const table = await prisma.table.findUnique({ where: { id: tableId } })
+    if (!table) return
 
-  const tablesInGroup = table.groupId
-    ? await prisma.table.findMany({
-        where: { restaurantId: table.restaurantId, groupId: table.groupId },
-      })
-    : [table]
-
-  const tableIds = tablesInGroup.map((t) => t.id)
-
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-
-  const active = await prisma.reservation.findMany({
-    where: {
-      tableId: { in: tableIds },
-      status: { in: ACTIVE_STATUSES },
-      reservedFor: { gte: startOfToday, lte: endOfToday },
-    },
-    select: { status: true },
-  })
-
-  const nextStatus: TableStatus = active.some((r) => r.status === "SEATED")
-    ? "OCCUPIED"
-    : active.length > 0
-      ? "RESERVED"
-      : "AVAILABLE"
-
-  for (const t of tablesInGroup) {
-    if (t.status === "MAINTENANCE") continue
-    if (t.status !== nextStatus) {
-      await prisma.table.update({ where: { id: t.id }, data: { status: nextStatus } })
-      realtimeService.broadcastToRestaurant(t.restaurantId, "TABLE_UPDATED", { tableId: t.id, status: nextStatus })
+    let tablesInGroup = [table]
+    if (table.groupId) {
+      try {
+        tablesInGroup = await prisma.table.findMany({
+          where: { restaurantId: table.restaurantId, groupId: table.groupId },
+        })
+      } catch {
+        tablesInGroup = [table]
+      }
     }
+
+    const tableIds = tablesInGroup.map((t) => t.id)
+
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+
+    const active = await prisma.reservation.findMany({
+      where: {
+        tableId: { in: tableIds },
+        status: { in: ACTIVE_STATUSES },
+        reservedFor: { gte: startOfToday, lte: endOfToday },
+      },
+      select: { status: true },
+    })
+
+    const nextStatus: TableStatus = active.some((r) => r.status === "SEATED")
+      ? "OCCUPIED"
+      : active.length > 0
+        ? "RESERVED"
+        : "AVAILABLE"
+
+    for (const t of tablesInGroup) {
+      if (t.status === "MAINTENANCE") continue
+      if (t.status !== nextStatus) {
+        await prisma.table.update({ where: { id: t.id }, data: { status: nextStatus } })
+        realtimeService.broadcastToRestaurant(t.restaurantId, "TABLE_UPDATED", { tableId: t.id, status: nextStatus })
+      }
+    }
+  } catch (err) {
+    console.warn("[syncTableStatus] Non-fatal status sync warning:", err)
   }
 }
 
@@ -262,19 +271,51 @@ export const reservationService = {
     const windowStart = new Date(data.reservedFor.getTime() - RESERVATION_DURATION_MINUTES * 60_000)
     const windowEnd = new Date(data.reservedFor.getTime() + RESERVATION_DURATION_MINUTES * 60_000)
 
-    const conflict = await prisma.reservation.findFirst({
-      where: {
-        restaurantId: data.restaurantId,
-        tableId: data.tableId,
-        status: { in: ACTIVE_STATUSES },
-        reservedFor: { gte: windowStart, lte: windowEnd },
-      },
-      orderBy: { reservedFor: "asc" },
-    })
+    try {
+      const targetTable = await prisma.table.findUnique({
+        where: { id: data.tableId },
+        select: { groupId: true },
+      })
 
-    return {
-      available: !conflict,
-      conflictingReservation: conflict ? toApiShape(conflict) : null,
+      const tableIdsToCheck = targetTable?.groupId
+        ? (
+            await prisma.table.findMany({
+              where: { restaurantId: data.restaurantId, groupId: targetTable.groupId },
+              select: { id: true },
+            })
+          ).map((t) => t.id)
+        : [data.tableId]
+
+      const conflict = await prisma.reservation.findFirst({
+        where: {
+          restaurantId: data.restaurantId,
+          tableId: { in: tableIdsToCheck },
+          status: { in: ACTIVE_STATUSES },
+          reservedFor: { gte: windowStart, lte: windowEnd },
+        },
+        orderBy: { reservedFor: "asc" },
+      })
+
+      return {
+        available: !conflict,
+        conflictingReservation: conflict ? toApiShape(conflict) : null,
+      }
+    } catch (err) {
+      console.warn("[checkAvailability] Error checking availability with groups, falling back:", err)
+      const conflict = await prisma.reservation.findFirst({
+        where: {
+          restaurantId: data.restaurantId,
+          tableId: data.tableId,
+          status: { in: ACTIVE_STATUSES },
+          reservedFor: { gte: windowStart, lte: windowEnd },
+        },
+        orderBy: { reservedFor: "asc" },
+      })
+
+      return {
+        available: !conflict,
+        conflictingReservation: conflict ? toApiShape(conflict) : null,
+      }
     }
   },
 
@@ -353,7 +394,29 @@ export const reservationService = {
   }) {
     // Frontend sends "__customer_choice__" sentinel when guest picks their own table.
     // Treat it as undefined (no table assigned yet).
-    const tableId = data.tableId === "__customer_choice__" ? undefined : data.tableId
+    const rawTableId = data.tableId === "__customer_choice__" ? undefined : data.tableId
+
+    // Verify tableId actually exists in the database for this restaurant to avoid Foreign Key errors
+    let assignedTableId: string | undefined = undefined
+    if (rawTableId) {
+      try {
+        const tableRecord = await prisma.table.findFirst({
+          where: {
+            restaurantId: data.restaurantId,
+            OR: [
+              { id: rawTableId },
+              { number: rawTableId },
+            ],
+          },
+          select: { id: true },
+        })
+        if (tableRecord) {
+          assignedTableId = tableRecord.id
+        }
+      } catch (err) {
+        console.warn("[create] Table lookup warning:", err)
+      }
+    }
 
     if (data.status !== "CHECKED_IN") {
       const restaurant = await prisma.restaurant.findUnique({
@@ -372,10 +435,10 @@ export const reservationService = {
       }
     }
 
-    if (tableId) {
+    if (assignedTableId) {
       const { available } = await this.checkAvailability({
         restaurantId: data.restaurantId,
-        tableId,
+        tableId: assignedTableId,
         reservedFor: data.reservedFor,
       })
       if (!available) {
@@ -393,7 +456,7 @@ export const reservationService = {
       data: {
         restaurantId: data.restaurantId,
         customerId: data.customerId,
-        tableId,
+        tableId: assignedTableId ?? null,
         partySize: data.partySize,
         reservedFor: data.reservedFor,
         notes: data.notes,
@@ -409,7 +472,9 @@ export const reservationService = {
     })
 
     // The table is now booked, so the floor plan should show it as Reserved.
-    await syncTableStatus(data.tableId ?? null)
+    if (assignedTableId) {
+      await syncTableStatus(assignedTableId)
+    }
 
     // Notify the customer so they can confirm. Email is preferred (it renders
     // the full details and floor plan link); SMS is the fallback for customers
