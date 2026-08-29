@@ -7,6 +7,7 @@ import {
   Controls,
   MiniMap,
   applyNodeChanges,
+  SelectionMode,
   type Node,
   type NodeChange,
   type NodeTypes,
@@ -48,6 +49,11 @@ import {
   Minimize,
   Trash2,
   X,
+  Link2,
+  Unlink,
+  Layers,
+  Sparkles,
+  Pencil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -83,8 +89,6 @@ import {
   UserCheck,
   Sprout,
   Users as RestroomIcon,
-  Layers,
-  Sparkles,
 } from "lucide-react"
 
 const nodeTypes: NodeTypes = { table: TableNode, facility: FacilityNode }
@@ -98,6 +102,9 @@ function nodeFromTable(
     onCycleShape: (id: string) => void
     onRotate: (id: string) => void
     onDelete: (id: string) => void
+    onUngroup?: (id: string) => void
+    onSelectGroup?: (groupId: string) => void
+    onEdit?: (id: string) => void
   },
 ): Node<TableNodeData | FacilityNodeData> {
   const isFacility = isFacilityElement(table)
@@ -138,6 +145,8 @@ function nodeFromTable(
       rotation: table.rotation || 0,
       width: table.width || DEFAULT_TABLE_WIDTH,
       height: table.height || DEFAULT_TABLE_HEIGHT,
+      groupId: table.groupId,
+      groupName: table.groupName,
       ...handlers,
     } as TableNodeData,
   }
@@ -169,6 +178,8 @@ function buildFloorTables(): Record<string, FloorPlanTable[]> {
       rotation: saved?.rotation ?? 0,
       elementType: isFacility ? "FACILITY" : "TABLE",
       facilityType: fType,
+      groupId: saved?.groupId ?? table.groupId ?? null,
+      groupName: saved?.groupName ?? table.groupName ?? null,
     }
     byFloor[floorName] ??= []
     byFloor[floorName].push(merged)
@@ -249,9 +260,194 @@ export function FloorPlanBuilder() {
     setIsDirty(true)
   }, [])
 
+  const handleUngroupTable = useCallback((id: string) => {
+    setNodesByFloor((current) => {
+      const next = { ...current }
+      for (const floor of Object.keys(next)) {
+        next[floor] = next[floor].map((n) => {
+          if (n.id === id && n.type === "table") {
+            const data = n.data as TableNodeData
+            return {
+              ...n,
+              data: {
+                ...data,
+                groupId: null,
+                groupName: null,
+              },
+            }
+          }
+          return n
+        })
+      }
+      return next
+    })
+    setIsDirty(true)
+    toast.success("Table ungrouped")
+  }, [])
+
+  const handleSelectGroup = useCallback((groupId: string) => {
+    setNodesByFloor((current) => {
+      const next = { ...current }
+      for (const floor of Object.keys(next)) {
+        next[floor] = next[floor].map((n) => {
+          if (n.type === "table" && (n.data as TableNodeData).groupId === groupId) {
+            return { ...n, selected: true }
+          }
+          return { ...n, selected: false }
+        })
+      }
+      return next
+    })
+  }, [])
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editTableId, setEditTableId] = useState<string | null>(null)
+  const [editTableName, setEditTableName] = useState("")
+  const [editTableCapacity, setEditTableCapacity] = useState("4")
+  const [editTableLocation, setEditTableLocation] = useState("")
+  const [editTableShape, setEditTableShape] = useState<TableShape>("RECTANGLE")
+  const [editTableStatus, setEditTableStatus] = useState<TableStatus>("AVAILABLE")
+
+  const handleOpenEditDialog = useCallback(
+    (id: string) => {
+      // 1. Search in nodesByFloor
+      for (const f of Object.keys(nodesByFloor)) {
+        const found = nodesByFloor[f]?.find((n) => n.id === id && n.type === "table") as Node<TableNodeData> | undefined
+        if (found) {
+          const data = found.data
+          setEditTableId(id)
+          setEditTableName(data.name)
+          setEditTableCapacity(String(data.capacity))
+          setEditTableLocation(data.location || f || activeFloor)
+          setEditTableShape(data.shape)
+          setEditTableStatus(data.status)
+          setIsEditDialogOpen(true)
+          return
+        }
+      }
+
+      // 2. Search in floorTables
+      for (const f of Object.keys(floorTables)) {
+        const found = floorTables[f]?.find((t) => t.id === id)
+        if (found) {
+          setEditTableId(id)
+          setEditTableName(found.name)
+          setEditTableCapacity(String(found.capacity))
+          setEditTableLocation(found.location || found.floor || f || activeFloor)
+          setEditTableShape(found.shape || "RECTANGLE")
+          setEditTableStatus(found.status || "AVAILABLE")
+          setIsEditDialogOpen(true)
+          return
+        }
+      }
+
+      // 3. Fallback: search stored local tables
+      const localTables = loadFloorPlanTables() ?? []
+      const foundLocal = localTables.find((t) => t.id === id)
+      if (foundLocal) {
+        setEditTableId(id)
+        setEditTableName(foundLocal.name)
+        setEditTableCapacity(String(foundLocal.capacity))
+        setEditTableLocation(foundLocal.floor || activeFloor)
+        setEditTableShape("RECTANGLE")
+        setEditTableStatus("AVAILABLE")
+        setIsEditDialogOpen(true)
+        return
+      }
+
+      // 4. Default fallback
+      setEditTableId(id)
+      setEditTableName("Table")
+      setEditTableCapacity("4")
+      setEditTableLocation(activeFloor)
+      setEditTableShape("RECTANGLE")
+      setEditTableStatus("AVAILABLE")
+      setIsEditDialogOpen(true)
+    },
+    [nodesByFloor, floorTables, activeFloor],
+  )
+
+  const handleSaveEditTable = useCallback(() => {
+    if (!editTableId) return
+    const capacity = Math.max(1, Number(editTableCapacity) || 1)
+    const finalName = editTableName.trim() || "Table"
+    const finalLocation = editTableLocation.trim() || undefined
+
+    setNodesByFloor((current) => {
+      const next = { ...current }
+      for (const f of Object.keys(next)) {
+        next[f] = next[f].map((n) => {
+          if (n.id === editTableId && n.type === "table") {
+            const data = n.data as TableNodeData
+            const size =
+              editTableShape === "CIRCLE"
+                ? { width: 40 + capacity * 12, height: 40 + capacity * 12 }
+                : editTableShape === "SQUARE"
+                  ? { width: 40 + capacity * 10, height: 40 + capacity * 10 }
+                  : { width: DEFAULT_TABLE_WIDTH, height: DEFAULT_TABLE_HEIGHT }
+            return {
+              ...n,
+              width: size.width,
+              height: size.height,
+              data: {
+                ...data,
+                name: finalName,
+                capacity,
+                location: finalLocation,
+                status: editTableStatus,
+                shape: editTableShape,
+                width: size.width,
+                height: size.height,
+              },
+            }
+          }
+          return n
+        })
+      }
+      return next
+    })
+
+    setFloorTables((current) => {
+      const next = { ...current }
+      for (const f of Object.keys(next)) {
+        next[f] = next[f].map((t) =>
+          t.id === editTableId
+            ? {
+                ...t,
+                name: finalName,
+                capacity,
+                location: finalLocation,
+                status: editTableStatus,
+                shape: editTableShape,
+              }
+            : t,
+        )
+      }
+      return next
+    })
+
+    setIsDirty(true)
+    setIsEditDialogOpen(false)
+    toast.success(`Table "${finalName}" updated`)
+  }, [
+    editTableId,
+    editTableName,
+    editTableCapacity,
+    editTableLocation,
+    editTableStatus,
+    editTableShape,
+  ])
+
   const handlers = useMemo(
-    () => ({ onCycleShape: handleCycleShape, onRotate: handleRotate, onDelete: handleDelete }),
-    [handleCycleShape, handleRotate, handleDelete],
+    () => ({
+      onCycleShape: handleCycleShape,
+      onRotate: handleRotate,
+      onDelete: handleDelete,
+      onUngroup: handleUngroupTable,
+      onSelectGroup: handleSelectGroup,
+      onEdit: handleOpenEditDialog,
+    }),
+    [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog],
   )
 
   // Pull the authoritative plan from the database.
@@ -292,6 +488,8 @@ export function FloorPlanBuilder() {
             capacity: tb.capacity,
             elementType: tb.elementType,
             facilityType: tb.facilityType,
+            groupId: tb.groupId,
+            groupName: tb.groupName,
           })),
         )
         void savePositions(
@@ -306,6 +504,8 @@ export function FloorPlanBuilder() {
             floor: tb.floor,
             elementType: tb.elementType,
             facilityType: tb.facilityType,
+            groupId: tb.groupId,
+            groupName: tb.groupName,
           })),
         )
       }
@@ -337,6 +537,10 @@ export function FloorPlanBuilder() {
   const [isAddFacilityDialogOpen, setIsAddFacilityDialogOpen] = useState(false)
   const [selectedFacilityType, setSelectedFacilityType] = useState<FacilityType>("BAR")
   const [facilityCustomName, setFacilityCustomName] = useState("")
+
+  // Group Dialog state
+  const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false)
+  const [customGroupName, setCustomGroupName] = useState("")
 
   const handleOpenAddFloorDialog = useCallback(() => {
     const existingNumbers = floors
@@ -421,6 +625,84 @@ export function FloorPlanBuilder() {
   const nodes = useMemo(() => {
     return getFloorNodes(activeFloor)
   }, [getFloorNodes, activeFloor])
+
+  // Multi-selected tables on the active floor
+  const selectedTableNodes = useMemo(() => {
+    return nodes.filter((n) => n.selected && n.type === "table") as Node<TableNodeData>[]
+  }, [nodes])
+
+  const totalSelectedCapacity = useMemo(() => {
+    return selectedTableNodes.reduce((acc, n) => acc + (n.data.capacity || 0), 0)
+  }, [selectedTableNodes])
+
+  const selectedGroupIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const n of selectedTableNodes) {
+      if (n.data.groupId) ids.add(n.data.groupId)
+    }
+    return Array.from(ids)
+  }, [selectedTableNodes])
+
+  const handleOpenGroupDialog = useCallback(() => {
+    const defaultName = `Group ${selectedTableNodes.map((n) => n.data.name).join("+")}`
+    setCustomGroupName(defaultName.length > 25 ? `Banquet (${totalSelectedCapacity}p)` : defaultName)
+    setIsGroupDialogOpen(true)
+  }, [selectedTableNodes, totalSelectedCapacity])
+
+  const handleGroupSelectedTables = useCallback(() => {
+    if (selectedTableNodes.length < 2) return
+    const newGroupId = `grp-${crypto.randomUUID()}`
+    const finalGroupName =
+      customGroupName.trim() || `Group ${selectedTableNodes.map((n) => n.data.name).join("+")}`
+    const selectedIds = new Set(selectedTableNodes.map((n) => n.id))
+
+    setActiveFloorNodes((current) =>
+      current.map((n) => {
+        if (selectedIds.has(n.id) && n.type === "table") {
+          const data = n.data as TableNodeData
+          return {
+            ...n,
+            data: {
+              ...data,
+              groupId: newGroupId,
+              groupName: finalGroupName,
+            },
+          }
+        }
+        return n
+      }),
+    )
+
+    setIsDirty(true)
+    setIsGroupDialogOpen(false)
+    toast.success(`Grouped ${selectedTableNodes.length} tables as "${finalGroupName}" (${totalSelectedCapacity} seats)`)
+  }, [selectedTableNodes, customGroupName, totalSelectedCapacity])
+
+  const handleUngroupSelectedTables = useCallback(() => {
+    const selectedIds = new Set(selectedTableNodes.map((n) => n.id))
+    setActiveFloorNodes((current) =>
+      current.map((n) => {
+        if (selectedIds.has(n.id) && n.type === "table") {
+          const data = n.data as TableNodeData
+          return {
+            ...n,
+            data: {
+              ...data,
+              groupId: null,
+              groupName: null,
+            },
+          }
+        }
+        return n
+      }),
+    )
+    setIsDirty(true)
+    toast.success("Tables ungrouped")
+  }, [selectedTableNodes])
+
+  const handleDeselectAll = useCallback(() => {
+    setActiveFloorNodes((current) => current.map((n) => ({ ...n, selected: false })))
+  }, [])
 
   const setActiveFloorNodes = useCallback(
     (updater: (current: Node<TableNodeData | FacilityNodeData>[]) => Node<TableNodeData | FacilityNodeData>[]) => {
@@ -571,6 +853,8 @@ export function FloorPlanBuilder() {
           rotation: node.data.rotation || 0,
           elementType: (isFacility ? "FACILITY" : "TABLE") as "FACILITY" | "TABLE",
           facilityType: isFacility ? facilityData.facilityType : undefined,
+          groupId: isFacility ? null : (tableData.groupId ?? null),
+          groupName: isFacility ? null : (tableData.groupName ?? null),
         }
       })
 
@@ -586,6 +870,8 @@ export function FloorPlanBuilder() {
           capacity: node.type === "facility" ? 0 : (node.data as TableNodeData).capacity,
           elementType: node.type === "facility" ? "FACILITY" : "TABLE",
           facilityType: node.type === "facility" ? (node.data as FacilityNodeData).facilityType : undefined,
+          groupId: node.type === "facility" ? null : (node.data as TableNodeData).groupId,
+          groupName: node.type === "facility" ? null : (node.data as TableNodeData).groupName,
         })),
       )
 
@@ -605,6 +891,8 @@ export function FloorPlanBuilder() {
             floor: floor || DEFAULT_FLOOR_NAME,
             elementType: isFacility ? "FACILITY" : "TABLE",
             facilityType: isFacility ? facilityData.facilityType : undefined,
+            groupId: isFacility ? null : (tableData.groupId ?? null),
+            groupName: isFacility ? null : (tableData.groupName ?? null),
           }
         }),
       )
@@ -631,6 +919,8 @@ export function FloorPlanBuilder() {
           rotation: node.data.rotation || 0,
           elementType: isFacility ? "FACILITY" : "TABLE",
           facilityType: isFacility ? facilityData.facilityType : undefined,
+          groupId: isFacility ? null : (tableData.groupId ?? null),
+          groupName: isFacility ? null : (tableData.groupName ?? null),
         })
       }
       setFloorTables(updatedByFloor)
@@ -872,7 +1162,7 @@ export function FloorPlanBuilder() {
 
       <div
         className={cn(
-          "bg-muted/30 w-full overflow-hidden border",
+          "bg-muted/30 relative w-full overflow-hidden border",
           // Fills the remaining overlay height instead of staying at the
           // fixed h-150 used in the normal page flow.
           isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-150 rounded-xl",
@@ -894,6 +1184,19 @@ export function FloorPlanBuilder() {
             onNodesChange={onNodesChange}
             nodeTypes={nodeTypes}
             colorMode={resolvedTheme}
+            selectionMode={SelectionMode.Partial}
+            panOnDrag={true}
+            selectionOnDrag={false}
+            selectionKeyCode={["Shift", "Meta", "Control"]}
+            multiSelectionKeyCode={["Shift", "Meta", "Control"]}
+            nodesDraggable={true}
+            elementsSelectable={true}
+            zoomOnScroll={true}
+            onNodeDoubleClick={(_e, node) => {
+              if (node.type === "table") {
+                handleOpenEditDialog(node.id)
+              }
+            }}
             fitView
             proOptions={{ hideAttribution: true }}
           >
@@ -915,7 +1218,163 @@ export function FloorPlanBuilder() {
             />
           </ReactFlow>
         )}
+
+        {/* Floating Multi/Single-Selection Action Bar */}
+        {selectedTableNodes.length >= 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border border-border/80 bg-background/95 p-2 px-4 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-2 pr-3 border-r">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Layers className="size-4" />
+              </div>
+              <div className="text-xs">
+                <span className="font-semibold text-foreground">
+                  {selectedTableNodes.length === 1
+                    ? (selectedTableNodes[0].data as TableNodeData).name
+                    : `${selectedTableNodes.length} tables selected`}
+                </span>
+                <span className="text-muted-foreground ml-1.5 font-medium">({totalSelectedCapacity} seats)</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {selectedTableNodes.length === 1 && (
+                <Button
+                  size="sm"
+                  onClick={() => handleOpenEditDialog(selectedTableNodes[0].id)}
+                  className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold"
+                >
+                  <Pencil className="size-3.5" />
+                  <span>Edit Table</span>
+                </Button>
+              )}
+
+              {selectedTableNodes.length >= 2 && (
+                <Button
+                  size="sm"
+                  onClick={handleOpenGroupDialog}
+                  className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white shadow-xs font-semibold"
+                >
+                  <Link2 className="size-3.5" />
+                  <span>Group Tables</span>
+                </Button>
+              )}
+
+              {selectedGroupIds.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleUngroupSelectedTables}
+                  className="gap-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                >
+                  <Unlink className="size-3.5" />
+                  <span>Ungroup</span>
+                </Button>
+              )}
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleDeselectAll}
+                className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                title="Clear selection"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Group Selected Tables Dialog */}
+      <Dialog open={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-violet-600 dark:text-violet-400">
+              <Link2 className="size-5" />
+              Group Selected Tables
+            </DialogTitle>
+            <DialogDescription>
+              Combine {selectedTableNodes.length} tables on {activeFloor} into a single bookable group.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleGroupSelectedTables()
+            }}
+            className="grid gap-4 py-2"
+          >
+            <div className="grid gap-2">
+              <Label htmlFor="group-name">Group Name</Label>
+              <Input
+                id="group-name"
+                value={customGroupName}
+                onChange={(e) => setCustomGroupName(e.target.value)}
+                placeholder="e.g. Banquet A, Party Group 1"
+                autoFocus
+              />
+            </div>
+
+            <div className="rounded-xl border bg-muted/40 p-3 text-xs space-y-2">
+              <div className="flex items-center justify-between font-semibold text-foreground border-b pb-1.5">
+                <span>Selected Tables</span>
+                <span className="text-violet-600 dark:text-violet-400 font-bold">{totalSelectedCapacity} Total Seats</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {selectedTableNodes.map((n) => (
+                  <Badge key={n.id} variant="secondary" className="gap-1 text-xs">
+                    <span className="font-semibold">{n.data.name}</span>
+                    <span className="text-muted-foreground">({n.data.capacity} seats)</span>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">Preset Name Suggestions</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  `Banquet (${totalSelectedCapacity}p)`,
+                  "Large Party Group",
+                  "VIP Combined Lounge",
+                  "Long Table Array",
+                  `Group ${selectedTableNodes.map((n) => n.data.name).join("+")}`,
+                ].map((suggestion) => (
+                  <Badge
+                    key={suggestion}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-violet-500/10 hover:border-violet-500/40 hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-xs py-1"
+                    onClick={() => setCustomGroupName(suggestion)}
+                  >
+                    + {suggestion}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-3 text-xs space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-violet-700 dark:text-violet-300">
+                <Link2 className="size-3.5" />
+                <span>Linked Group Reservation</span>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                When a customer or staff selects any table from this group, <strong>all {selectedTableNodes.length} tables</strong> will be automatically reserved together for that booking.
+              </p>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsGroupDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-violet-600 hover:bg-violet-700 text-white">
+                <Link2 className="size-4" />
+                Group Tables Permanently
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Table Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -1009,6 +1468,106 @@ export function FloorPlanBuilder() {
             <Button onClick={handleCreateTable} disabled={!newTableName.trim()}>
               <Plus className="size-4" />
               {t("pages.floorPlan.addDialog.addTable")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Table Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="size-5 text-primary" />
+              Edit Table: {editTableName}
+            </DialogTitle>
+            <DialogDescription>
+              Update table details, seats, shape, and status on {activeFloor}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-table-name">Table Name</Label>
+                <Input
+                  id="edit-table-name"
+                  value={editTableName}
+                  onChange={(e) => setEditTableName(e.target.value)}
+                  placeholder="e.g. T1"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-table-capacity">Seats</Label>
+                <Input
+                  id="edit-table-capacity"
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={editTableCapacity}
+                  onChange={(e) => setEditTableCapacity(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="edit-table-location">Floor Location / Section</Label>
+              <Input
+                id="edit-table-location"
+                value={editTableLocation}
+                onChange={(e) => setEditTableLocation(e.target.value)}
+                placeholder="e.g. Main Floor"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-1.5">
+                <Label>Shape</Label>
+                <Select value={editTableShape} onValueChange={(v) => setEditTableShape(v as TableShape)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RECTANGLE">
+                      <RectangleHorizontal className="size-4" /> Rectangle
+                    </SelectItem>
+                    <SelectItem value="SQUARE">
+                      <Square className="size-4" /> Square
+                    </SelectItem>
+                    <SelectItem value="CIRCLE">
+                      <Circle className="size-4" /> Circle
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label>Status</Label>
+                <Select
+                  value={editTableStatus}
+                  onValueChange={(v) => setEditTableStatus(v as TableStatus)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(statusLabels) as TableStatus[]).map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {statusLabels[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEditTable} disabled={!editTableName.trim()}>
+              <CheckCircle2 className="size-4" />
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

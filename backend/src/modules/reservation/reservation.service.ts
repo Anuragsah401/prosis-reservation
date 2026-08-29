@@ -54,7 +54,15 @@ async function syncTableStatus(tableId: string | null) {
   if (!tableId) return
 
   const table = await prisma.table.findUnique({ where: { id: tableId } })
-  if (!table || table.status === "MAINTENANCE") return
+  if (!table) return
+
+  const tablesInGroup = table.groupId
+    ? await prisma.table.findMany({
+        where: { restaurantId: table.restaurantId, groupId: table.groupId },
+      })
+    : [table]
+
+  const tableIds = tablesInGroup.map((t) => t.id)
 
   const now = new Date()
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
@@ -62,7 +70,7 @@ async function syncTableStatus(tableId: string | null) {
 
   const active = await prisma.reservation.findMany({
     where: {
-      tableId,
+      tableId: { in: tableIds },
       status: { in: ACTIVE_STATUSES },
       reservedFor: { gte: startOfToday, lte: endOfToday },
     },
@@ -75,9 +83,12 @@ async function syncTableStatus(tableId: string | null) {
       ? "RESERVED"
       : "AVAILABLE"
 
-  if (table.status !== nextStatus) {
-    await prisma.table.update({ where: { id: tableId }, data: { status: nextStatus } })
-    realtimeService.broadcastToRestaurant(table.restaurantId, "TABLE_UPDATED", { tableId, status: nextStatus })
+  for (const t of tablesInGroup) {
+    if (t.status === "MAINTENANCE") continue
+    if (t.status !== nextStatus) {
+      await prisma.table.update({ where: { id: t.id }, data: { status: nextStatus } })
+      realtimeService.broadcastToRestaurant(t.restaurantId, "TABLE_UPDATED", { tableId: t.id, status: nextStatus })
+    }
   }
 }
 
@@ -521,6 +532,8 @@ export const reservationService = {
         width: true,
         height: true,
         rotation: true,
+        groupId: true,
+        groupName: true,
       },
       orderBy: [{ floor: "asc" }, { number: "asc" }],
     })
@@ -537,7 +550,30 @@ export const reservationService = {
       },
       select: { tableId: true },
     })
-    const occupiedTableIds = new Set(conflicts.map((c) => c.tableId))
+    const rawConflictIds = new Set(conflicts.map((c) => c.tableId).filter(Boolean) as string[])
+
+    // Expand occupied tables to include all partner tables in any booked group
+    const occupiedTableIds = new Set<string>()
+    for (const t of tables) {
+      if (rawConflictIds.has(t.id)) {
+        occupiedTableIds.add(t.id)
+        if (t.groupId) {
+          for (const partner of tables) {
+            if (partner.groupId === t.groupId) {
+              occupiedTableIds.add(partner.id)
+            }
+          }
+        }
+      }
+    }
+
+    // Compute combined group capacities so groups can seat larger parties
+    const groupCapacities = new Map<string, number>()
+    for (const t of tables) {
+      if (t.groupId) {
+        groupCapacities.set(t.groupId, (groupCapacities.get(t.groupId) ?? 0) + t.capacity)
+      }
+    }
 
     return {
       reservation: {
@@ -552,11 +588,16 @@ export const reservationService = {
           ? { id: reservation.table.id, name: reservation.table.number, floor: reservation.table.floor }
           : null,
       },
-      tables: tables.map((t) => ({
-        ...t,
-        name: t.number,
-        available: !occupiedTableIds.has(t.id) && t.capacity >= reservation.partySize,
-      })),
+      tables: tables.map((t) => {
+        const effectiveCapacity = t.groupId ? (groupCapacities.get(t.groupId) ?? t.capacity) : t.capacity
+        return {
+          ...t,
+          name: t.number,
+          groupId: t.groupId,
+          groupName: t.groupName,
+          available: !occupiedTableIds.has(t.id) && effectiveCapacity >= reservation.partySize,
+        }
+      }),
     }
   },
 
@@ -587,7 +628,17 @@ export const reservationService = {
       if (!table) {
         throw new Error("Selected table not found")
       }
-      if (table.capacity < reservation.partySize) {
+
+      let effectiveCapacity = table.capacity
+      if (table.groupId) {
+        const groupTables = await prisma.table.findMany({
+          where: { restaurantId: reservation.restaurantId, groupId: table.groupId },
+          select: { capacity: true },
+        })
+        effectiveCapacity = groupTables.reduce((sum, gt) => sum + gt.capacity, 0)
+      }
+
+      if (effectiveCapacity < reservation.partySize) {
         throw new Error("Selected table is too small for your party")
       }
       const { available } = await this.checkAvailability({

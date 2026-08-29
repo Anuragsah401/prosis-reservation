@@ -17,6 +17,8 @@ export interface TableOption {
   name: string
   floor: string
   capacity: number
+  groupId?: string | null
+  groupName?: string | null
 }
 
 /**
@@ -39,6 +41,8 @@ export function useTableOptions(): TableOption[] {
         name: t.name,
         floor: t.floor || "Main Floor",
         capacity: t.capacity,
+        groupId: t.groupId ?? null,
+        groupName: t.groupName ?? null,
       }))
       setOptions(summaries)
       saveFloorPlanTables(summaries)
@@ -78,6 +82,8 @@ export function buildViewerTables(_partySize: number): FloorPlanViewerTable[] {
       available: !isFacility,
       elementType: isFacility ? "FACILITY" : "TABLE",
       facilityType: t.facilityType,
+      groupId: p.groupId ?? t.groupId ?? null,
+      groupName: p.groupName ?? t.groupName ?? null,
     }
   })
 }
@@ -104,6 +110,8 @@ export async function loadViewerTables(
         capacity: t.capacity,
         elementType: t.elementType,
         facilityType: t.facilityType,
+        groupId: t.groupId ?? null,
+        groupName: t.groupName ?? null,
       }))
     )
     return serverTables.map((t) => toViewerTable(t, partySize))
@@ -128,6 +136,8 @@ function toViewerTable(t: FloorPlanTable, _partySize: number): FloorPlanViewerTa
     available: !isFacility && !isMaintenance,
     elementType: isFacility ? "FACILITY" : "TABLE",
     facilityType: t.facilityType,
+    groupId: t.groupId ?? null,
+    groupName: t.groupName ?? null,
   }
 }
 

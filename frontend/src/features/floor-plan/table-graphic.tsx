@@ -1,5 +1,5 @@
 import React, { useMemo } from "react"
-import { Users, Check } from "lucide-react"
+import { Users, Check, Link2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import type { TableShape, TableStatus } from "@/features/floor-plan/floor-plan-data"
@@ -18,6 +18,8 @@ export interface TableGraphicProps {
   showStatusBadge?: boolean
   className?: string
   children?: React.ReactNode
+  groupId?: string | null
+  groupName?: string | null
 }
 
 const statusTheme: Record<TableStatus, {
@@ -80,6 +82,129 @@ const statusTheme: Record<TableStatus, {
     text: "text-destructive",
     badgeVariant: "destructive",
   },
+}
+
+export interface GroupColorTheme {
+  id: string
+  name: string
+  innerBorder: string
+  innerGlow: string
+  outerRing: string
+  badgeBg: string
+  badgeText: string
+  badgeBorder: string
+  accentText: string
+  chairRing: string
+}
+
+export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
+  {
+    id: "violet",
+    name: "Violet",
+    innerBorder: "border-2 border-violet-500 dark:border-violet-400",
+    innerGlow: "bg-violet-500/10 dark:bg-violet-400/15 shadow-[inset_0_0_12px_rgba(139,92,246,0.3)]",
+    outerRing: "ring-2 ring-violet-500/70 border-violet-500/80 shadow-violet-500/20",
+    badgeBg: "bg-violet-600 dark:bg-violet-500",
+    badgeText: "text-white",
+    badgeBorder: "border-violet-400/60 shadow-xs",
+    accentText: "text-violet-600 dark:text-violet-400",
+    chairRing: "ring-1.5 ring-violet-500/60",
+  },
+  {
+    id: "blue",
+    name: "Blue",
+    innerBorder: "border-2 border-blue-500 dark:border-blue-400",
+    innerGlow: "bg-blue-500/10 dark:bg-blue-400/15 shadow-[inset_0_0_12px_rgba(59,130,246,0.3)]",
+    outerRing: "ring-2 ring-blue-500/70 border-blue-500/80 shadow-blue-500/20",
+    badgeBg: "bg-blue-600 dark:bg-blue-500",
+    badgeText: "text-white",
+    badgeBorder: "border-blue-400/60 shadow-xs",
+    accentText: "text-blue-600 dark:text-blue-400",
+    chairRing: "ring-1.5 ring-blue-500/60",
+  },
+  {
+    id: "amber",
+    name: "Amber",
+    innerBorder: "border-2 border-amber-500 dark:border-amber-400",
+    innerGlow: "bg-amber-500/10 dark:bg-amber-400/15 shadow-[inset_0_0_12px_rgba(245,158,11,0.3)]",
+    outerRing: "ring-2 ring-amber-500/70 border-amber-500/80 shadow-amber-500/20",
+    badgeBg: "bg-amber-600 dark:bg-amber-500",
+    badgeText: "text-white",
+    badgeBorder: "border-amber-400/60 shadow-xs",
+    accentText: "text-amber-600 dark:text-amber-400",
+    chairRing: "ring-1.5 ring-amber-500/60",
+  },
+  {
+    id: "rose",
+    name: "Rose",
+    innerBorder: "border-2 border-rose-500 dark:border-rose-400",
+    innerGlow: "bg-rose-500/10 dark:bg-rose-400/15 shadow-[inset_0_0_12px_rgba(244,63,94,0.3)]",
+    outerRing: "ring-2 ring-rose-500/70 border-rose-500/80 shadow-rose-500/20",
+    badgeBg: "bg-rose-600 dark:bg-rose-500",
+    badgeText: "text-white",
+    badgeBorder: "border-rose-400/60 shadow-xs",
+    accentText: "text-rose-600 dark:text-rose-400",
+    chairRing: "ring-1.5 ring-rose-500/60",
+  },
+  {
+    id: "teal",
+    name: "Teal",
+    innerBorder: "border-2 border-teal-500 dark:border-teal-400",
+    innerGlow: "bg-teal-500/10 dark:bg-teal-400/15 shadow-[inset_0_0_12px_rgba(20,184,166,0.3)]",
+    outerRing: "ring-2 ring-teal-500/70 border-teal-500/80 shadow-teal-500/20",
+    badgeBg: "bg-teal-600 dark:bg-teal-500",
+    badgeText: "text-white",
+    badgeBorder: "border-teal-400/60 shadow-xs",
+    accentText: "text-teal-600 dark:text-teal-400",
+    chairRing: "ring-1.5 ring-teal-500/60",
+  },
+  {
+    id: "fuchsia",
+    name: "Fuchsia",
+    innerBorder: "border-2 border-fuchsia-500 dark:border-fuchsia-400",
+    innerGlow: "bg-fuchsia-500/10 dark:bg-fuchsia-400/15 shadow-[inset_0_0_12px_rgba(217,70,239,0.3)]",
+    outerRing: "ring-2 ring-fuchsia-500/70 border-fuchsia-500/80 shadow-fuchsia-500/20",
+    badgeBg: "bg-fuchsia-600 dark:bg-fuchsia-500",
+    badgeText: "text-white",
+    badgeBorder: "border-fuchsia-400/60 shadow-xs",
+    accentText: "text-fuchsia-600 dark:text-fuchsia-400",
+    chairRing: "ring-1.5 ring-fuchsia-500/60",
+  },
+  {
+    id: "emerald",
+    name: "Emerald",
+    innerBorder: "border-2 border-emerald-500 dark:border-emerald-400",
+    innerGlow: "bg-emerald-500/10 dark:bg-emerald-400/15 shadow-[inset_0_0_12px_rgba(16,185,129,0.3)]",
+    outerRing: "ring-2 ring-emerald-500/70 border-emerald-500/80 shadow-emerald-500/20",
+    badgeBg: "bg-emerald-600 dark:bg-emerald-500",
+    badgeText: "text-white",
+    badgeBorder: "border-emerald-400/60 shadow-xs",
+    accentText: "text-emerald-600 dark:text-emerald-400",
+    chairRing: "ring-1.5 ring-emerald-500/60",
+  },
+  {
+    id: "indigo",
+    name: "Indigo",
+    innerBorder: "border-2 border-indigo-500 dark:border-indigo-400",
+    innerGlow: "bg-indigo-500/10 dark:bg-indigo-400/15 shadow-[inset_0_0_12px_rgba(99,102,241,0.3)]",
+    outerRing: "ring-2 ring-indigo-500/70 border-indigo-500/80 shadow-indigo-500/20",
+    badgeBg: "bg-indigo-600 dark:bg-indigo-500",
+    badgeText: "text-white",
+    badgeBorder: "border-indigo-400/60 shadow-xs",
+    accentText: "text-indigo-600 dark:text-indigo-400",
+    chairRing: "ring-1.5 ring-indigo-500/60",
+  },
+]
+
+export function getGroupColorTheme(groupId: string | null | undefined): GroupColorTheme | null {
+  if (!groupId) return null
+  let hash = 0
+  for (let i = 0; i < groupId.length; i++) {
+    hash = (hash << 5) - hash + groupId.charCodeAt(i)
+    hash |= 0
+  }
+  const index = Math.abs(hash) % GROUP_COLOR_PALETTES.length
+  return GROUP_COLOR_PALETTES[index]
 }
 
 interface ChairItem {
@@ -497,8 +622,11 @@ export function TableGraphic({
   showStatusBadge = false,
   className,
   children,
+  groupId,
+  groupName,
 }: TableGraphicProps) {
   const statusCfg = statusTheme[status] || statusTheme.AVAILABLE
+  const groupTheme = useMemo(() => getGroupColorTheme(groupId), [groupId])
 
   // Dynamic dimension calculations for responsive styling
   const minDim = Math.min(width, height)
@@ -533,6 +661,7 @@ export function TableGraphic({
             "absolute z-0 rounded-full border shadow-xs transition-colors pointer-events-none",
             statusCfg.chairBg,
             statusCfg.chairBorder,
+            groupTheme && groupTheme.chairRing,
             isSelected && "border-primary/60 bg-primary/20",
           )}
           style={chair.style}
@@ -552,6 +681,8 @@ export function TableGraphic({
           statusCfg.tableBg,
           isSelected
             ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
+            : groupTheme
+            ? cn("hover:shadow-lg", groupTheme.outerRing)
             : isSelectable
             ? "hover:border-primary/80 hover:shadow-lg"
             : "",
@@ -562,14 +693,25 @@ export function TableGraphic({
           height: `calc(100% - 8px)`,
         }}
       >
-        {/* Subtle tabletop architectural inlay */}
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-1 border shadow-inner",
-            tableRadiusClass,
-            statusCfg.tableInset,
-          )}
-        />
+        {/* Same-color inner border recognition for grouped tables */}
+        {groupTheme ? (
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-1.5 z-10 transition-all",
+              tableRadiusClass,
+              groupTheme.innerBorder,
+              groupTheme.innerGlow,
+            )}
+          />
+        ) : (
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-1 border shadow-inner",
+              tableRadiusClass,
+              statusCfg.tableInset,
+            )}
+          />
+        )}
 
         {/* Subtle Glass/Surface Reflection Highlight */}
         <div
@@ -594,10 +736,27 @@ export function TableGraphic({
           </div>
         ))}
 
-        {/* Selected Checkmark Badge */}
+        {/* Selection Checkmark */}
         {isSelected && (
           <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 z-30 flex size-5 items-center justify-center rounded-full shadow-md">
             <Check className="size-3 stroke-[3]" />
+          </span>
+        )}
+
+        {/* Group Badge Indicator */}
+        {(groupName || groupId) && groupTheme && (
+          <span
+            className={cn(
+              "absolute -top-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-full font-black shadow-md px-2 py-0.5 border text-center transition-all",
+              groupTheme.badgeBg,
+              groupTheme.badgeText,
+              groupTheme.badgeBorder,
+              isCompact ? "text-[8px] max-w-[85%]" : "text-[9px] max-w-[90%]",
+            )}
+            title={`Grouped: ${groupName || "Linked Group"}`}
+          >
+            <Link2 className="size-2.5 shrink-0 stroke-[2.5]" />
+            <span className="truncate">{groupName || "Linked"}</span>
           </span>
         )}
 

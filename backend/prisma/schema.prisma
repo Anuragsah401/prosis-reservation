@@ -103,6 +103,8 @@ model Table {
   width        Float       @default(140)
   height       Float       @default(90)
   rotation     Float       @default(0)
+  groupId      String?
+  groupName    String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -111,6 +113,7 @@ model Table {
 
   @@unique([restaurantId, number])
   @@index([restaurantId])
+  @@index([groupId])
   @@map("tables")
 }
 

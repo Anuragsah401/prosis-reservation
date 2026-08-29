@@ -21,6 +21,8 @@ export interface FloorPlanViewerTable {
   available: boolean
   elementType?: "TABLE" | "FACILITY"
   facilityType?: FacilityType
+  groupId?: string | null
+  groupName?: string | null
 }
 
 interface FloorPlanViewerProps {
@@ -406,7 +408,10 @@ export function FloorPlanViewer({
                 )
               }
 
-              const isSelected = selectedTableId === tb.id
+              const selectedTable = tables.find((t) => t.id === selectedTableId)
+              const isSelected =
+                selectedTableId === tb.id ||
+                Boolean(selectedTable?.groupId && tb.groupId && tb.groupId === selectedTable.groupId)
               const isCurrent = currentTableId === tb.id
               const selectable = tb.available || isCurrent
 
@@ -448,6 +453,8 @@ export function FloorPlanViewer({
                     seatsLabel={seatsLabel}
                     isSelected={isSelected}
                     isSelectable={selectable}
+                    groupId={tb.groupId}
+                    groupName={tb.groupName}
                   />
                 </button>
               )

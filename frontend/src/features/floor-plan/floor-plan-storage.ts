@@ -6,7 +6,18 @@ const STORAGE_KEY = "prosisit:floor-plan:layout"
 
 export type TableLayout = Pick<
   FloorPlanTable,
-  "id" | "positionX" | "positionY" | "width" | "height" | "shape" | "rotation" | "floor" | "elementType" | "facilityType"
+  | "id"
+  | "positionX"
+  | "positionY"
+  | "width"
+  | "height"
+  | "shape"
+  | "rotation"
+  | "floor"
+  | "elementType"
+  | "facilityType"
+  | "groupId"
+  | "groupName"
 >
 
 export interface FloorPlanSyncTable {
@@ -20,6 +31,8 @@ export interface FloorPlanSyncTable {
   width: number
   height: number
   rotation: number
+  groupId?: string | null
+  groupName?: string | null
 }
 
 /**
@@ -29,7 +42,9 @@ export interface FloorPlanSyncTable {
  * reads tables from the database. Requires an authenticated session with a
  * restaurantId; resolves to false when unavailable (plan stays local-only).
  */
-export async function syncFloorPlanToServer(tables: (FloorPlanSyncTable & { elementType?: "TABLE" | "FACILITY"; facilityType?: string })[]): Promise<boolean> {
+export async function syncFloorPlanToServer(
+  tables: (FloorPlanSyncTable & { elementType?: "TABLE" | "FACILITY"; facilityType?: string })[],
+): Promise<boolean> {
   const restaurantId = getCurrentRestaurantId()
   // An empty array is still a valid plan (all tables removed), so it is
   // synced too — otherwise deletions would never reach the database.
@@ -46,6 +61,8 @@ export async function syncFloorPlanToServer(tables: (FloorPlanSyncTable & { elem
       width: t.width,
       height: t.height,
       rotation: t.rotation,
+      groupId: t.groupId ?? null,
+      groupName: t.groupName ?? null,
     }))
     await apiClient.put(`/tables/floor-plan`, { restaurantId, tables: payloadTables })
     return true
@@ -70,6 +87,8 @@ interface ApiTable {
   height: number | null
   rotation: number | null
   status: FloorPlanTable["status"]
+  groupId?: string | null
+  groupName?: string | null
 }
 
 export interface FacilityInspectable {
@@ -175,6 +194,8 @@ export async function fetchFloorPlanFromServer(reservedFor?: string): Promise<Fl
         rotation: t.rotation ?? 0,
         elementType: isFacility ? "FACILITY" : "TABLE",
         facilityType: extractedFacilityType,
+        groupId: t.groupId ?? null,
+        groupName: t.groupName ?? null,
       }
     })
   } catch (err) {
@@ -184,15 +205,11 @@ export async function fetchFloorPlanFromServer(reservedFor?: string): Promise<Fl
 }
 
 /**
- * Persists table layout (position, size, shape, rotation, floor).
+ * Persists table layout (position, size, shape, rotation, floor, group).
  *
  * Attempts the real backend endpoint first — `PATCH /api/tables/layout`
  * (see `backend/src/modules/table/table.routes.ts`), which requires an
- * authenticated session. Since the frontend does not yet have a wired-up
- * login flow, any failure (401, network, no restaurantId) falls back to
- * localStorage so the designer remains fully usable in the meantime. Once
- * auth is wired up, pass a real `restaurantId` and bearer token and this
- * will transparently persist server-side.
+ * authenticated session.
  */
 export async function savePositions(
   layout: TableLayout[],
@@ -227,6 +244,8 @@ function saveLocal(layout: TableLayout[]) {
       floor: t.floor,
       elementType: t.elementType,
       facilityType: t.facilityType,
+      groupId: t.groupId,
+      groupName: t.groupName,
     }
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
@@ -278,6 +297,8 @@ export interface FloorPlanTableSummary {
   capacity: number
   elementType?: "TABLE" | "FACILITY"
   facilityType?: FloorPlanTable["facilityType"]
+  groupId?: string | null
+  groupName?: string | null
 }
 
 /**

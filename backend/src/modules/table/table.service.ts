@@ -1,6 +1,6 @@
 import { prisma } from "@/db/client"
 import { realtimeService } from "@/modules/realtime/realtime.service"
-import type { Prisma } from "@prisma/client"
+import type { Prisma, ReservationStatus } from "@prisma/client"
 
 // Public API uses `name`/`location`; the underlying Prisma model stores these
 // as `number`/`section` (see prisma/schema.prisma). Map between the two here
@@ -44,10 +44,21 @@ export const tableService = {
       orderBy: [{ floor: "asc" }, { number: "asc" }],
     })
 
+    // Map active reservations per groupId so any table in a group reflects group status
+    const groupActiveMap = new Map<string, Array<{ status: ReservationStatus }>>()
+    for (const t of tables) {
+      if (t.groupId && t.reservations && t.reservations.length > 0) {
+        const existing = groupActiveMap.get(t.groupId) ?? []
+        groupActiveMap.set(t.groupId, [...existing, ...t.reservations])
+      }
+    }
+
     return tables.map((t) => {
       let status = t.status
       if (t.status !== "MAINTENANCE") {
-        const activeInWindow = t.reservations ?? []
+        const activeInWindow = (t.groupId && groupActiveMap.has(t.groupId))
+          ? groupActiveMap.get(t.groupId)!
+          : (t.reservations ?? [])
         status = activeInWindow.some((r) => r.status === "SEATED")
           ? "OCCUPIED"
           : activeInWindow.length > 0
@@ -124,6 +135,8 @@ export const tableService = {
     width?: number
     height?: number
     rotation?: number
+    groupId?: string | null
+    groupName?: string | null
   }) {
     const existing = await prisma.table.findUnique({
       where: { restaurantId_number: { restaurantId: data.restaurantId, number: data.name } },
@@ -146,6 +159,8 @@ export const tableService = {
         width: data.width,
         height: data.height,
         rotation: data.rotation,
+        groupId: data.groupId,
+        groupName: data.groupName,
       },
     })
     return toApiShape(table)
@@ -166,6 +181,8 @@ export const tableService = {
       width: number
       height: number
       rotation: number
+      groupId: string | null
+      groupName: string | null
     }>,
   ) {
     const existing = await prisma.table.findFirst({ where: { id, restaurantId } })
@@ -187,6 +204,8 @@ export const tableService = {
         width: data.width,
         height: data.height,
         rotation: data.rotation,
+        groupId: data.groupId,
+        groupName: data.groupName,
       },
     })
     return toApiShape(table)
@@ -202,8 +221,7 @@ export const tableService = {
 
   /**
    * Bulk-persist floor plan layout changes (position, size, shape, rotation,
-   * floor assignment) for many tables in a single transaction. Used by the
-   * floor plan designer's "Save layout" action.
+   * floor assignment, group assignment) for many tables in a single transaction.
    */
   async saveLayout(
     restaurantId: string,
@@ -216,6 +234,8 @@ export const tableService = {
       shape?: Prisma.TableUpdateInput["shape"]
       rotation?: number
       floor?: string
+      groupId?: string | null
+      groupName?: string | null
     }>,
   ) {
     const ids = tables.map((t) => t.id)
@@ -241,6 +261,8 @@ export const tableService = {
             shape: t.shape,
             rotation: t.rotation,
             floor: t.floor,
+            groupId: t.groupId,
+            groupName: t.groupName,
           },
         }),
       ),
@@ -257,10 +279,8 @@ export const tableService = {
 
   /**
    * Full floor-plan sync from the designer: upserts every table by its name
-   * (unique per restaurant) with layout + capacity, and removes tables that
-   * no longer exist in the plan. This lets the frontend designer — whose
-   * table ids are local-only — persist the complete plan so guest-facing
-   * pages (e.g. reservation confirmation) can render the real layout.
+   * (unique per restaurant) with layout + capacity + group, and removes tables that
+   * no longer exist in the plan.
    */
   async syncFloorPlan(
     restaurantId: string,
@@ -275,6 +295,8 @@ export const tableService = {
       width: number
       height: number
       rotation: number
+      groupId?: string | null
+      groupName?: string | null
     }>,
   ) {
     // Ensure each table/facility has a unique name/number per restaurant
@@ -322,6 +344,8 @@ export const tableService = {
               width: t.width,
               height: t.height,
               rotation: t.rotation,
+              groupId: t.groupId,
+              groupName: t.groupName,
             },
             update: {
               capacity: t.capacity,
@@ -333,6 +357,8 @@ export const tableService = {
               width: t.width,
               height: t.height,
               rotation: t.rotation,
+              groupId: t.groupId,
+              groupName: t.groupName,
             },
           }),
         )

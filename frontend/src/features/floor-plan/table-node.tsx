@@ -1,5 +1,5 @@
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react"
-import { RotateCw, Square, RectangleHorizontal, Circle, Trash2 } from "lucide-react"
+import { RotateCw, Square, RectangleHorizontal, Circle, Trash2, Unlink, Link2, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { TableShape, TableStatus } from "@/features/floor-plan/floor-plan-data"
 import { TableGraphic } from "@/features/floor-plan/table-graphic"
@@ -13,9 +13,14 @@ export interface TableNodeData extends Record<string, unknown> {
   rotation: number
   width?: number
   height?: number
+  groupId?: string | null
+  groupName?: string | null
   onCycleShape: (id: string) => void
   onRotate: (id: string) => void
   onDelete: (id: string) => void
+  onUngroup?: (id: string) => void
+  onSelectGroup?: (groupId: string) => void
+  onEdit?: (id: string) => void
 }
 
 export function TableNode({ id, data, selected, width, height }: NodeProps & { data: TableNodeData; width?: number; height?: number }) {
@@ -45,38 +50,101 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
           location={data.location}
           showStatusBadge
           isSelected={selected}
+          groupId={data.groupId}
+          groupName={data.groupName}
         />
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
       </div>
 
       {selected && (
-        <div className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50">
+        <div
+          className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50 pointer-events-auto"
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {data.onEdit && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 text-primary hover:bg-primary/10 cursor-pointer"
+              title="Edit Table (Name, Seats, Shape, Status)"
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onEdit?.(id)
+              }}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          )}
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-7 cursor-pointer"
             title="Cycle shape"
-            onClick={() => data.onCycleShape(id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              data.onCycleShape(id)
+            }}
           >
             {data.shape === "RECTANGLE" && <RectangleHorizontal className="size-4" />}
             {data.shape === "SQUARE" && <Square className="size-4" />}
             {data.shape === "CIRCLE" && <Circle className="size-4" />}
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-7 cursor-pointer"
             title="Rotate 15°"
-            onClick={() => data.onRotate(id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              data.onRotate(id)
+            }}
           >
             <RotateCw className="size-4" />
           </Button>
+          {data.groupId && data.onSelectGroup && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 size-7 cursor-pointer"
+              title={`Select all tables in ${data.groupName || "group"}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onSelectGroup?.(data.groupId!)
+              }}
+            >
+              <Link2 className="size-4" />
+            </Button>
+          )}
+          {data.groupId && data.onUngroup && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 size-7 cursor-pointer"
+              title="Ungroup this table"
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onUngroup?.(id)
+              }}
+            >
+              <Unlink className="size-4" />
+            </Button>
+          )}
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="text-destructive hover:bg-destructive/10 size-7"
+            className="text-destructive hover:bg-destructive/10 size-7 cursor-pointer"
             title="Delete table"
-            onClick={() => data.onDelete(id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              data.onDelete(id)
+            }}
           >
             <Trash2 className="size-4" />
           </Button>

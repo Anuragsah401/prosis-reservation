@@ -16,6 +16,8 @@ export const createTableSchema = z.object({
   width: z.coerce.number().positive().optional(),
   height: z.coerce.number().positive().optional(),
   rotation: z.coerce.number().optional(),
+  groupId: z.string().nullish(),
+  groupName: z.string().nullish(),
 })
 
 export const updateTableSchema = z.object({
@@ -30,6 +32,8 @@ export const updateTableSchema = z.object({
   width: z.coerce.number().positive().optional(),
   height: z.coerce.number().positive().optional(),
   rotation: z.coerce.number().optional(),
+  groupId: z.string().nullish(),
+  groupName: z.string().nullish(),
 })
 
 export const layoutTableSchema = z.object({
@@ -41,6 +45,8 @@ export const layoutTableSchema = z.object({
   shape: tableShapeEnum.optional(),
   rotation: z.coerce.number().optional(),
   floor: z.string().optional(),
+  groupId: z.string().nullish(),
+  groupName: z.string().nullish(),
 })
 
 export const saveLayoutSchema = z.object({
@@ -64,6 +70,8 @@ export const syncFloorPlanSchema = z.object({
       width: z.coerce.number().positive(),
       height: z.coerce.number().positive(),
       rotation: z.coerce.number(),
+      groupId: z.string().nullish(),
+      groupName: z.string().nullish(),
     }),
   ),
 })

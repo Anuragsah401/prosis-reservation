@@ -26,6 +26,8 @@ export interface FloorPlanTable {
   rotation: number
   elementType?: "TABLE" | "FACILITY"
   facilityType?: FacilityType
+  groupId?: string | null
+  groupName?: string | null
 }
 
 export const DEFAULT_TABLE_WIDTH = 140
