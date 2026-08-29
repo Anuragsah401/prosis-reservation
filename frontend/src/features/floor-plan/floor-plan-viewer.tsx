@@ -140,7 +140,7 @@ export function FloorPlanViewer({
       fitToContainer()
     })
     return () => cancelAnimationFrame(frame)
-  }, [fitToContainer, displayedFloor])
+  }, [fitToContainer, displayedFloor, fullscreen])
 
   useEffect(() => {
     const handleResize = () => {
@@ -154,6 +154,18 @@ export function FloorPlanViewer({
     setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)))
   }
 
+  const handleToggleFullscreen = useCallback(() => {
+    pointers.current.clear()
+    isPointerActive.current = false
+    hasDragged.current = false
+    setDragging(false)
+    setPinching(false)
+    pinchStart.current = null
+    const next = !fullscreen
+    setFullscreen(next)
+    onFullscreenChange?.(next)
+  }, [fullscreen, onFullscreenChange])
+
   // Escape closes the overlay, and the page behind it is locked so it can't
   // scroll under the fullscreen map on touch devices.
   useEffect(() => {
@@ -161,8 +173,7 @@ export function FloorPlanViewer({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setFullscreen(false)
-        onFullscreenChange?.(false)
+        handleToggleFullscreen()
       }
     }
     document.addEventListener("keydown", onKeyDown)
@@ -174,7 +185,7 @@ export function FloorPlanViewer({
       document.removeEventListener("keydown", onKeyDown)
       document.body.style.overflow = previousOverflow
     }
-  }, [fullscreen, onFullscreenChange])
+  }, [fullscreen, handleToggleFullscreen])
 
   // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't support
   // requestFullscreen() on non-video elements, which is exactly the mobile
@@ -186,10 +197,12 @@ export function FloorPlanViewer({
   // dialog's box instead of covering the whole screen.
   const viewer = (
     <div
+      data-radix-portal=""
       className={cn(
         "flex flex-col gap-2 w-full h-full min-h-0",
-        fullscreen && "bg-background fixed inset-0 z-[60] p-3 sm:p-4",
+        fullscreen && "bg-background fixed inset-0 z-[9999] p-3 sm:p-4 pointer-events-auto",
       )}
+      style={fullscreen ? { pointerEvents: "auto" } : undefined}
     >
       {/* Always shown so the current floor is visible even with a single
           floor — without this, one-floor plans gave no indication which
@@ -260,11 +273,7 @@ export function FloorPlanViewer({
           {showFullscreen !== false && (
             <button
               type="button"
-              onClick={() => {
-                const next = !fullscreen
-                setFullscreen(next)
-                onFullscreenChange?.(next)
-              }}
+              onClick={handleToggleFullscreen}
               className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
               aria-label={fullscreen ? "Exit full screen" : "View full screen"}
               title={fullscreen ? "Exit full screen" : "View full screen"}
