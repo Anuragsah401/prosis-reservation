@@ -777,6 +777,7 @@ export function FloorPlanBuilder() {
     const newNode: Node<TableNodeData> = {
       id: `new-${crypto.randomUUID()}`,
       type: "table",
+      selected: true,
       position: { x: 60 + ((nodes.length * 24) % 300), y: 60 + ((nodes.length * 24) % 200) },
       width: size.width,
       height: size.height,
@@ -793,7 +794,7 @@ export function FloorPlanBuilder() {
       },
     }
     setTableCounter((c) => c + 1)
-    setActiveFloorNodes((current) => [...current, newNode])
+    setActiveFloorNodes((current) => [...current.map((n) => ({ ...n, selected: false })), newNode])
     setIsDirty(true)
     setIsAddDialogOpen(false)
     toast.success(`Table "${newTableName.trim() || `T${tableCounter}`}" added to ${activeFloor}`)
@@ -816,6 +817,7 @@ export function FloorPlanBuilder() {
     const newNode: Node<FacilityNodeData> = {
       id: `fac-${crypto.randomUUID()}`,
       type: "facility",
+      selected: true,
       position: { x: 60 + ((nodes.length * 28) % 280), y: 60 + ((nodes.length * 28) % 200) },
       width: def.width,
       height: def.height,
@@ -829,7 +831,7 @@ export function FloorPlanBuilder() {
         onDelete: handleDelete,
       },
     }
-    setActiveFloorNodes((current) => [...current, newNode])
+    setActiveFloorNodes((current) => [...current.map((n) => ({ ...n, selected: false })), newNode])
     setIsDirty(true)
     setIsAddFacilityDialogOpen(false)
     toast.success(`Facility "${finalName}" added to ${activeFloor}`)
