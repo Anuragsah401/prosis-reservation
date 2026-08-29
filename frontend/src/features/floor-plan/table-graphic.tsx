@@ -653,6 +653,34 @@ export function TableGraphic({
       )}
       style={{ width: `${width}px`, height: `${height}px` }}
     >
+      {/* Selection Checkmark (Rendered on outer overflow-visible container so it is NEVER clipped) */}
+      {isSelected && (
+        <span className="bg-primary text-primary-foreground absolute -top-2 -right-2 z-40 flex size-5 items-center justify-center rounded-full shadow-md">
+          <Check className="size-3 stroke-[3]" />
+        </span>
+      )}
+
+      {/* Group Badge Indicator (Rendered on outer overflow-visible container so it is NEVER clipped) */}
+      {(groupName || groupId) && groupTheme && (
+        <span
+          className={cn(
+            "absolute -top-3.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 rounded-full font-bold shadow-md px-2.5 py-0.5 border text-center transition-all whitespace-nowrap pointer-events-none select-none",
+            groupTheme.badgeBg,
+            groupTheme.badgeText,
+            groupTheme.badgeBorder,
+            isVeryCompact
+              ? "text-[9px] px-1.5 py-0"
+              : isCompact
+              ? "text-[10px] px-2 py-0.5"
+              : "text-[11px] px-2.5 py-0.5",
+          )}
+          title={`Group: ${groupName || "Linked Group"}`}
+        >
+          <Link2 className="size-3 shrink-0 stroke-[2.5]" />
+          <span className="truncate max-w-[130px] font-bold">{groupName || "Linked"}</span>
+        </span>
+      )}
+
       {/* 1. Surrounding Dining Chairs */}
       {chairs.map((chair) => (
         <div
@@ -736,30 +764,6 @@ export function TableGraphic({
           </div>
         ))}
 
-        {/* Selection Checkmark */}
-        {isSelected && (
-          <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 z-30 flex size-5 items-center justify-center rounded-full shadow-md">
-            <Check className="size-3 stroke-[3]" />
-          </span>
-        )}
-
-        {/* Group Badge Indicator */}
-        {(groupName || groupId) && groupTheme && (
-          <span
-            className={cn(
-              "absolute -top-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-full font-black shadow-md px-2 py-0.5 border text-center transition-all",
-              groupTheme.badgeBg,
-              groupTheme.badgeText,
-              groupTheme.badgeBorder,
-              isCompact ? "text-[8px] max-w-[85%]" : "text-[9px] max-w-[90%]",
-            )}
-            title={`Grouped: ${groupName || "Linked Group"}`}
-          >
-            <Link2 className="size-2.5 shrink-0 stroke-[2.5]" />
-            <span className="truncate">{groupName || "Linked"}</span>
-          </span>
-        )}
-
         {/* 4. Adaptive Centerpiece & Typography Container */}
         <div
           className={cn(
@@ -794,6 +798,23 @@ export function TableGraphic({
               {name}
             </span>
           </div>
+
+          {/* Group Name in Centerpiece */}
+          {(groupName || groupId) && groupTheme && (
+            <div className="flex items-center justify-center gap-1 max-w-full px-1">
+              <span
+                className={cn(
+                  "font-bold truncate tracking-tight flex items-center gap-0.5",
+                  groupTheme.accentText,
+                  isVeryCompact ? "text-[8px]" : isCompact ? "text-[9px]" : "text-[11px]",
+                )}
+                title={`Group: ${groupName || "Linked Group"}`}
+              >
+                <Link2 className={cn("shrink-0", isVeryCompact ? "size-2" : isCompact ? "size-2.5" : "size-3")} />
+                <span className="truncate">{groupName || "Linked"}</span>
+              </span>
+            </div>
+          )}
 
           {/* Status Badge (Only shown in medium/large when explicitly enabled) */}
           {showStatusBadge && !isCompact && (
