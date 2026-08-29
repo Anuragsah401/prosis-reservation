@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -109,6 +109,47 @@ export function FloorPlanViewer({
     return { width: maxX + PADDING, height: maxY + PADDING }
   }, [floorTables])
 
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const fitToContainer = useCallback(() => {
+    if (!containerRef.current || floorTables.length === 0) {
+      setZoom(1)
+      setPan({ x: 0, y: 0 })
+      return
+    }
+    const { clientWidth, clientHeight } = containerRef.current
+    if (clientWidth <= 0 || clientHeight <= 0) return
+
+    const pad = 24
+    const availableWidth = clientWidth - pad * 2
+    const availableHeight = clientHeight - pad * 2
+
+    const scaleX = availableWidth / bounds.width
+    const scaleY = availableHeight / bounds.height
+    const initialScale = Math.min(1.15, Math.max(MIN_ZOOM, Math.min(scaleX, scaleY)))
+
+    const centeredX = (clientWidth - bounds.width * initialScale) / 2
+    const centeredY = (clientHeight - bounds.height * initialScale) / 2
+
+    setZoom(initialScale)
+    setPan({ x: Math.round(centeredX), y: Math.round(centeredY) })
+  }, [floorTables.length, bounds])
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      fitToContainer()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [fitToContainer, displayedFloor])
+
+  useEffect(() => {
+    const handleResize = () => {
+      fitToContainer()
+    }
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [fitToContainer])
+
   const zoomBy = (delta: number) => {
     setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)))
   }
@@ -146,30 +187,28 @@ export function FloorPlanViewer({
   const viewer = (
     <div
       className={cn(
-        "flex flex-col gap-2",
-        fullscreen && "bg-background fixed inset-0 z-[60] p-3",
+        "flex flex-col gap-2 w-full h-full min-h-0",
+        fullscreen && "bg-background fixed inset-0 z-[60] p-3 sm:p-4",
       )}
     >
       {/* Always shown so the current floor is visible even with a single
           floor — without this, one-floor plans gave no indication which
           floor's tables were on display. */}
       {floors.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 rounded-md border p-0.5 self-start">
+        <div className="flex flex-wrap items-center gap-1 rounded-md border p-0.5 self-start shrink-0">
           {floors.map((floor) => (
             <button
               key={floor}
               type="button"
               onClick={() => {
                 setActiveFloor(floor)
-                setZoom(1)
-                setPan({ x: 0, y: 0 })
                 setDragging(false)
                 setPinching(false)
                 pointers.current.clear()
                 pinchStart.current = null
               }}
               className={cn(
-                "rounded-sm px-2.5 py-1 text-xs font-medium transition-colors",
+                "rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
                 displayedFloor === floor
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -183,14 +222,12 @@ export function FloorPlanViewer({
 
       <div
         className={cn(
-          "bg-muted/30 relative overflow-hidden border",
-          // Fills the remaining overlay height so the canvas grows with the
-          // screen instead of staying at its fixed inline height.
-          fullscreen ? "min-h-0 flex-1 rounded-md" : "rounded-lg",
+          "bg-muted/30 relative overflow-hidden border w-full flex-1 min-h-0",
+          fullscreen ? "min-h-0 flex-1 rounded-md" : "rounded-lg min-h-[300px] sm:min-h-[360px]",
         )}
       >
         <div
-          className="absolute top-2 right-2 z-10 flex flex-col gap-1.5"
+          className="absolute top-2 right-2 z-20 flex flex-col gap-1.5"
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button
@@ -213,13 +250,10 @@ export function FloorPlanViewer({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setZoom(1)
-              setPan({ x: 0, y: 0 })
-            }}
+            onClick={() => fitToContainer()}
             className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
-            aria-label="Reset view"
-            title="Reset view"
+            aria-label="Fit view"
+            title="Fit view"
           >
             <RotateCcw className="size-4 text-foreground" />
           </button>
@@ -230,8 +264,6 @@ export function FloorPlanViewer({
                 const next = !fullscreen
                 setFullscreen(next)
                 onFullscreenChange?.(next)
-                setZoom(1)
-                setPan({ x: 0, y: 0 })
               }}
               className="bg-card hover:bg-accent text-foreground hover:text-accent-foreground border-border flex size-8 cursor-pointer items-center justify-center rounded-md border shadow-md transition-colors"
               aria-label={fullscreen ? "Exit full screen" : "View full screen"}
@@ -243,9 +275,9 @@ export function FloorPlanViewer({
         </div>
 
         <div
+          ref={containerRef}
           className={cn(
-            "w-full touch-none select-none",
-            fullscreen ? "h-full" : "h-85 sm:h-100",
+            "w-full h-full touch-none select-none overflow-hidden",
             dragging ? "cursor-grabbing" : "cursor-grab",
           )}
           onWheel={(e) => {
