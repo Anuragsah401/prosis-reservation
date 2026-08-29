@@ -103,7 +103,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Violet",
     innerBorder: "border-2 border-violet-500 dark:border-violet-400",
     innerGlow: "bg-violet-500/10 dark:bg-violet-400/15 shadow-[inset_0_0_12px_rgba(139,92,246,0.3)]",
-    outerRing: "ring-2 ring-violet-500/70 border-violet-500/80 shadow-violet-500/20",
+    outerRing: "shadow-violet-500/20",
     badgeBg: "bg-violet-600 dark:bg-violet-500",
     badgeText: "text-white",
     badgeBorder: "border-violet-400/60 shadow-xs",
@@ -115,7 +115,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Blue",
     innerBorder: "border-2 border-blue-500 dark:border-blue-400",
     innerGlow: "bg-blue-500/10 dark:bg-blue-400/15 shadow-[inset_0_0_12px_rgba(59,130,246,0.3)]",
-    outerRing: "ring-2 ring-blue-500/70 border-blue-500/80 shadow-blue-500/20",
+    outerRing: "shadow-blue-500/20",
     badgeBg: "bg-blue-600 dark:bg-blue-500",
     badgeText: "text-white",
     badgeBorder: "border-blue-400/60 shadow-xs",
@@ -127,7 +127,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Amber",
     innerBorder: "border-2 border-amber-500 dark:border-amber-400",
     innerGlow: "bg-amber-500/10 dark:bg-amber-400/15 shadow-[inset_0_0_12px_rgba(245,158,11,0.3)]",
-    outerRing: "ring-2 ring-amber-500/70 border-amber-500/80 shadow-amber-500/20",
+    outerRing: "shadow-amber-500/20",
     badgeBg: "bg-amber-600 dark:bg-amber-500",
     badgeText: "text-white",
     badgeBorder: "border-amber-400/60 shadow-xs",
@@ -139,7 +139,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Rose",
     innerBorder: "border-2 border-rose-500 dark:border-rose-400",
     innerGlow: "bg-rose-500/10 dark:bg-rose-400/15 shadow-[inset_0_0_12px_rgba(244,63,94,0.3)]",
-    outerRing: "ring-2 ring-rose-500/70 border-rose-500/80 shadow-rose-500/20",
+    outerRing: "shadow-rose-500/20",
     badgeBg: "bg-rose-600 dark:bg-rose-500",
     badgeText: "text-white",
     badgeBorder: "border-rose-400/60 shadow-xs",
@@ -151,7 +151,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Teal",
     innerBorder: "border-2 border-teal-500 dark:border-teal-400",
     innerGlow: "bg-teal-500/10 dark:bg-teal-400/15 shadow-[inset_0_0_12px_rgba(20,184,166,0.3)]",
-    outerRing: "ring-2 ring-teal-500/70 border-teal-500/80 shadow-teal-500/20",
+    outerRing: "shadow-teal-500/20",
     badgeBg: "bg-teal-600 dark:bg-teal-500",
     badgeText: "text-white",
     badgeBorder: "border-teal-400/60 shadow-xs",
@@ -163,7 +163,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Fuchsia",
     innerBorder: "border-2 border-fuchsia-500 dark:border-fuchsia-400",
     innerGlow: "bg-fuchsia-500/10 dark:bg-fuchsia-400/15 shadow-[inset_0_0_12px_rgba(217,70,239,0.3)]",
-    outerRing: "ring-2 ring-fuchsia-500/70 border-fuchsia-500/80 shadow-fuchsia-500/20",
+    outerRing: "shadow-fuchsia-500/20",
     badgeBg: "bg-fuchsia-600 dark:bg-fuchsia-500",
     badgeText: "text-white",
     badgeBorder: "border-fuchsia-400/60 shadow-xs",
@@ -175,7 +175,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Emerald",
     innerBorder: "border-2 border-emerald-500 dark:border-emerald-400",
     innerGlow: "bg-emerald-500/10 dark:bg-emerald-400/15 shadow-[inset_0_0_12px_rgba(16,185,129,0.3)]",
-    outerRing: "ring-2 ring-emerald-500/70 border-emerald-500/80 shadow-emerald-500/20",
+    outerRing: "shadow-emerald-500/20",
     badgeBg: "bg-emerald-600 dark:bg-emerald-500",
     badgeText: "text-white",
     badgeBorder: "border-emerald-400/60 shadow-xs",
@@ -187,7 +187,7 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
     name: "Indigo",
     innerBorder: "border-2 border-indigo-500 dark:border-indigo-400",
     innerGlow: "bg-indigo-500/10 dark:bg-indigo-400/15 shadow-[inset_0_0_12px_rgba(99,102,241,0.3)]",
-    outerRing: "ring-2 ring-indigo-500/70 border-indigo-500/80 shadow-indigo-500/20",
+    outerRing: "shadow-indigo-500/20",
     badgeBg: "bg-indigo-600 dark:bg-indigo-500",
     badgeText: "text-white",
     badgeBorder: "border-indigo-400/60 shadow-xs",
@@ -708,9 +708,7 @@ export function TableGraphic({
           statusCfg.tableBorder,
           statusCfg.tableBg,
           isSelected
-            ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
-            : groupTheme
-            ? cn("hover:shadow-lg", groupTheme.outerRing)
+            ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
             : isSelectable
             ? "hover:border-primary/80 hover:shadow-lg"
             : "",
