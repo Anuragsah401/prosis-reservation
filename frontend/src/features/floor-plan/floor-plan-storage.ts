@@ -295,6 +295,7 @@ export interface FloorPlanTableSummary {
   name: string
   floor: string
   capacity: number
+  status?: FloorPlanTable["status"]
   elementType?: "TABLE" | "FACILITY"
   facilityType?: FloorPlanTable["facilityType"]
   groupId?: string | null

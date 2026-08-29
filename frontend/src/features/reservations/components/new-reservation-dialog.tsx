@@ -132,12 +132,20 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
 
   const reservedForIso = useMemo(() => {
     try {
+      if (!date || !time) return new Date().toISOString()
+      const [year, month, day] = date.split("-").map(Number)
       const [hour, minute] = (time || "19:00").split(":").map(Number)
-      const parsed = date ? new Date(date) : new Date()
-      if (Number.isFinite(hour) && Number.isFinite(minute)) {
-        parsed.setHours(hour, minute, 0, 0)
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day) &&
+        Number.isFinite(hour) &&
+        Number.isFinite(minute)
+      ) {
+        const parsed = new Date(year, month - 1, day, hour, minute, 0, 0)
+        return parsed.toISOString()
       }
-      return parsed.toISOString()
+      return new Date().toISOString()
     } catch {
       return new Date().toISOString()
     }
@@ -197,8 +205,8 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
         )
         return false
       }
-      const start = new Date(date)
-      start.setHours(hour, minute, 0, 0)
+      const [year, month, day] = date.split("-").map(Number)
+      const start = new Date(year, month - 1, day, hour, minute, 0, 0)
       if (start.getTime() < Date.now() - 60_000) {
         setError(t("pages.reservations.newDialog.errorPastTime", "Cannot select a date or time in the past."))
         return false
@@ -240,8 +248,8 @@ export function NewReservationDialog({ defaultDate, onCreate }: NewReservationDi
       )
       return
     }
-    const start = new Date(date)
-    start.setHours(hour, minute, 0, 0)
+    const [year, month, day] = date.split("-").map(Number)
+    const start = new Date(year, month - 1, day, hour, minute, 0, 0)
     if (start.getTime() < Date.now() - 60_000) {
       setError(t("pages.reservations.newDialog.errorPastTime", "Cannot select a date or time in the past."))
       return

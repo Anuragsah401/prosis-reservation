@@ -104,10 +104,20 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
 
   const reservedForIso = useMemo(() => {
     try {
+      if (!date || !time) return new Date().toISOString()
+      const [year, month, day] = date.split("-").map(Number)
       const [hour, minute] = (time || "19:00").split(":").map(Number)
-      const start = new Date(date || new Date().toISOString().slice(0, 10))
-      start.setHours(hour, minute, 0, 0)
-      return start.toISOString()
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day) &&
+        Number.isFinite(hour) &&
+        Number.isFinite(minute)
+      ) {
+        const parsed = new Date(year, month - 1, day, hour, minute, 0, 0)
+        return parsed.toISOString()
+      }
+      return new Date().toISOString()
     } catch {
       return new Date().toISOString()
     }
@@ -138,22 +148,27 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
     t("pages.reservations.newDialog.stepTable"),
   ]
 
-  function validateStep(current: number): boolean {
-    if (current === 0) {
+  function validateStep(s: number): boolean {
+    if (s === 0) {
       if (!customerName.trim() || !customerPhone.trim()) {
         setError(t("pages.reservations.newDialog.errorRequired"))
         return false
       }
       return true
     }
-    if (current === 1) {
+    if (s === 1) {
       if (!date || !time) {
-        setError(t("pages.reservations.newDialog.errorRequired"))
+        setError(t("pages.reservations.editDialog.errorRequired"))
         return false
       }
       const party = Number(partySize)
       if (!Number.isFinite(party) || party < 1) {
         setError(t("pages.reservations.newDialog.errorPartySize"))
+        return false
+      }
+      const trimmedName = customerName.trim()
+      if (!trimmedName) {
+        setError(t("pages.reservations.editDialog.errorCustomerName"))
         return false
       }
       const [hour, minute] = time.split(":").map(Number)
@@ -168,8 +183,8 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
         )
         return false
       }
-      const start = new Date(date)
-      start.setHours(hour, minute, 0, 0)
+      const [year, month, day] = date.split("-").map(Number)
+      const start = new Date(year, month - 1, day, hour, minute, 0, 0)
       if (start.getTime() < Date.now() - 60_000) {
         setError(t("pages.reservations.newDialog.errorPastTime", "Cannot select a date or time in the past."))
         return false
@@ -208,8 +223,8 @@ export function EditReservationDialog({ reservation, open, onOpenChange, onSave 
       return
     }
 
-    const start = new Date(date)
-    start.setHours(hour, minute, 0, 0)
+    const [year, month, day] = date.split("-").map(Number)
+    const start = new Date(year, month - 1, day, hour, minute, 0, 0)
     if (start.getTime() < Date.now() - 60_000) {
       setError(t("pages.reservations.newDialog.errorPastTime", "Cannot select a date or time in the past."))
       return

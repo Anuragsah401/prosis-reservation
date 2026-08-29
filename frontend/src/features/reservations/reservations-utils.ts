@@ -62,12 +62,16 @@ export function useTableOptions(): TableOption[] {
  * placed have no geometry, so the viewer falls back to arranging them in a
  * grid. Tables too small for the party are dimmed and not selectable.
  */
-export function buildViewerTables(_partySize: number): FloorPlanViewerTable[] {
+export function buildViewerTables(partySize: number): FloorPlanViewerTable[] {
   const summaries = loadFloorPlanTables() ?? []
   const positions = loadPositions()
   return summaries.map((t) => {
     const p = positions[t.id] ?? {}
     const isFacility = t.elementType === "FACILITY" || t.capacity === 0
+    const isMaintenance = t.status === "MAINTENANCE"
+    const isBooked = t.status === "RESERVED" || t.status === "OCCUPIED"
+    const isTooSmall = Boolean(partySize && partySize > 0 && t.capacity > 0 && t.capacity < partySize)
+    const isAvailable = !isFacility && !isMaintenance && !isBooked && !isTooSmall
     return {
       id: t.id,
       name: t.name,
@@ -79,7 +83,8 @@ export function buildViewerTables(_partySize: number): FloorPlanViewerTable[] {
       width: p.width ?? DEFAULT_TABLE_WIDTH,
       height: p.height ?? DEFAULT_TABLE_HEIGHT,
       rotation: p.rotation ?? 0,
-      available: !isFacility,
+      available: isAvailable,
+      status: t.status ?? (isAvailable ? "AVAILABLE" : "RESERVED"),
       elementType: isFacility ? "FACILITY" : "TABLE",
       facilityType: t.facilityType,
       groupId: p.groupId ?? t.groupId ?? null,
@@ -108,6 +113,7 @@ export async function loadViewerTables(
         name: t.name,
         floor: t.floor || "Main Floor",
         capacity: t.capacity,
+        status: t.status,
         elementType: t.elementType,
         facilityType: t.facilityType,
         groupId: t.groupId ?? null,
@@ -119,9 +125,13 @@ export async function loadViewerTables(
   return buildViewerTables(partySize)
 }
 
-function toViewerTable(t: FloorPlanTable, _partySize: number): FloorPlanViewerTable {
+function toViewerTable(t: FloorPlanTable, partySize: number): FloorPlanViewerTable {
   const isFacility = t.elementType === "FACILITY" || t.capacity === 0
   const isMaintenance = t.status === "MAINTENANCE"
+  const isBooked = t.status === "RESERVED" || t.status === "OCCUPIED"
+  const isTooSmall = Boolean(partySize && partySize > 0 && t.capacity > 0 && t.capacity < partySize)
+  const isAvailable = !isFacility && !isMaintenance && !isBooked && !isTooSmall
+
   return {
     id: t.id,
     name: t.name,
@@ -133,7 +143,8 @@ function toViewerTable(t: FloorPlanTable, _partySize: number): FloorPlanViewerTa
     width: t.width ?? DEFAULT_TABLE_WIDTH,
     height: t.height ?? DEFAULT_TABLE_HEIGHT,
     rotation: t.rotation ?? 0,
-    available: !isFacility && !isMaintenance,
+    available: isAvailable,
+    status: t.status ?? (isAvailable ? "AVAILABLE" : "RESERVED"),
     elementType: isFacility ? "FACILITY" : "TABLE",
     facilityType: t.facilityType,
     groupId: t.groupId ?? null,

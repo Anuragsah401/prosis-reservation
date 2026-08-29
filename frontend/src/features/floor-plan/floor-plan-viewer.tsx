@@ -4,7 +4,7 @@ import { Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TableGraphic } from "@/features/floor-plan/table-graphic"
 import { FacilityGraphic } from "@/features/floor-plan/facility-graphic"
-import type { FacilityType } from "@/features/floor-plan/floor-plan-data"
+import type { FacilityType, TableStatus } from "@/features/floor-plan/floor-plan-data"
 
 export interface FloorPlanViewerTable {
   id: string
@@ -19,6 +19,7 @@ export interface FloorPlanViewerTable {
   height: number
   rotation: number
   available: boolean
+  status?: TableStatus
   elementType?: "TABLE" | "FACILITY"
   facilityType?: FacilityType
   groupId?: string | null
@@ -418,6 +419,7 @@ export function FloorPlanViewer({
                   type="button"
                   data-table
                   data-table-id={tb.id}
+                  disabled={!selectable}
                   aria-disabled={!selectable}
                   onClick={(e) => {
                     e.preventDefault()
@@ -429,7 +431,7 @@ export function FloorPlanViewer({
                   }}
                   className={cn(
                     "absolute p-0 border-0 bg-transparent text-left focus:outline-hidden z-10",
-                    selectable ? "cursor-pointer" : "cursor-not-allowed",
+                    selectable ? "cursor-pointer" : "cursor-not-allowed opacity-50",
                   )}
                   style={{
                     left: tb.positionX!,
@@ -443,13 +445,14 @@ export function FloorPlanViewer({
                     name={tb.name}
                     capacity={tb.capacity}
                     shape={tb.shape}
-                    status={selectable ? "AVAILABLE" : "MAINTENANCE"}
+                    status={tb.status ?? (selectable ? "AVAILABLE" : "RESERVED")}
                     width={w}
                     height={h}
                     location={tb.section || undefined}
                     seatsLabel={seatsLabel}
                     isSelected={isSelected}
                     isSelectable={selectable}
+                    showStatusBadge={!selectable}
                     groupId={tb.groupId}
                     groupName={tb.groupName}
                   />
