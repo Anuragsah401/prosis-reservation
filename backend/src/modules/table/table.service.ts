@@ -315,56 +315,61 @@ export const tableService = {
 
     const names = uniqueTables.map((t) => t.name)
 
-    const synced = await prisma.$transaction(async (tx) => {
-      // Remove tables deleted from the plan (skip any with reservations
-      // attached to avoid orphaning bookings — they keep their table).
-      const stale = await tx.table.findMany({
-        where: { restaurantId, number: { notIn: names } },
-        select: { id: true, _count: { select: { reservations: true } } },
-      })
-      const deletable = stale.filter((s) => s._count.reservations === 0).map((s) => s.id)
-      if (deletable.length > 0) {
-        await tx.table.deleteMany({ where: { id: { in: deletable } } })
-      }
+    const synced = await prisma.$transaction(
+      async (tx) => {
+        // Remove tables deleted from the plan (skip any with reservations
+        // attached to avoid orphaning bookings — they keep their table).
+        const stale = await tx.table.findMany({
+          where: { restaurantId, number: { notIn: names } },
+          select: { id: true, _count: { select: { reservations: true } } },
+        })
+        const deletable = stale.filter((s) => s._count.reservations === 0).map((s) => s.id)
+        if (deletable.length > 0) {
+          await tx.table.deleteMany({ where: { id: { in: deletable } } })
+        }
 
-      const results = []
-      for (const t of uniqueTables) {
-        results.push(
-          await tx.table.upsert({
-            where: { restaurantId_number: { restaurantId, number: t.name } },
-            create: {
-              restaurantId,
-              number: t.name,
-              capacity: t.capacity,
-              section: t.location,
-              floor: t.floor,
-              shape: t.shape,
-              positionX: t.positionX,
-              positionY: t.positionY,
-              width: t.width,
-              height: t.height,
-              rotation: t.rotation,
-              groupId: t.groupId,
-              groupName: t.groupName,
-            },
-            update: {
-              capacity: t.capacity,
-              section: t.location,
-              floor: t.floor,
-              shape: t.shape,
-              positionX: t.positionX,
-              positionY: t.positionY,
-              width: t.width,
-              height: t.height,
-              rotation: t.rotation,
-              groupId: t.groupId,
-              groupName: t.groupName,
-            },
-          }),
+        const results = await Promise.all(
+          uniqueTables.map((t) =>
+            tx.table.upsert({
+              where: { restaurantId_number: { restaurantId, number: t.name } },
+              create: {
+                restaurantId,
+                number: t.name,
+                capacity: t.capacity,
+                section: t.location,
+                floor: t.floor,
+                shape: t.shape,
+                positionX: t.positionX,
+                positionY: t.positionY,
+                width: t.width,
+                height: t.height,
+                rotation: t.rotation,
+                groupId: t.groupId,
+                groupName: t.groupName,
+              },
+              update: {
+                capacity: t.capacity,
+                section: t.location,
+                floor: t.floor,
+                shape: t.shape,
+                positionX: t.positionX,
+                positionY: t.positionY,
+                width: t.width,
+                height: t.height,
+                rotation: t.rotation,
+                groupId: t.groupId,
+                groupName: t.groupName,
+              },
+            }),
+          ),
         )
-      }
-      return results
-    })
+        return results
+      },
+      {
+        timeout: 30000,
+        maxWait: 10000,
+      },
+    )
 
     const res = synced.map(toApiShape)
     realtimeService.broadcastToRestaurant(restaurantId, "TABLE_UPDATED", res)
