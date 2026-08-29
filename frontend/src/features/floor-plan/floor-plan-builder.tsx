@@ -308,17 +308,30 @@ export function FloorPlanBuilder() {
   const [editTableShape, setEditTableShape] = useState<TableShape>("RECTANGLE")
   const [editTableStatus, setEditTableStatus] = useState<TableStatus>("AVAILABLE")
 
+  const nodesByFloorRef = useRef(nodesByFloor)
+  nodesByFloorRef.current = nodesByFloor
+
+  const floorTablesRef = useRef(floorTables)
+  floorTablesRef.current = floorTables
+
+  const activeFloorRef = useRef(activeFloor)
+  activeFloorRef.current = activeFloor
+
   const handleOpenEditDialog = useCallback(
     (id: string) => {
+      const currentNodes = nodesByFloorRef.current
+      const currentFloorTables = floorTablesRef.current
+      const currentActiveFloor = activeFloorRef.current
+
       // 1. Search in nodesByFloor
-      for (const f of Object.keys(nodesByFloor)) {
-        const found = nodesByFloor[f]?.find((n) => n.id === id && n.type === "table") as Node<TableNodeData> | undefined
+      for (const f of Object.keys(currentNodes)) {
+        const found = currentNodes[f]?.find((n) => n.id === id && n.type === "table") as Node<TableNodeData> | undefined
         if (found) {
           const data = found.data
           setEditTableId(id)
           setEditTableName(data.name)
           setEditTableCapacity(String(data.capacity))
-          setEditTableLocation(data.location || f || activeFloor)
+          setEditTableLocation(data.location || f || currentActiveFloor)
           setEditTableShape(data.shape)
           setEditTableStatus(data.status)
           setIsEditDialogOpen(true)
@@ -327,13 +340,13 @@ export function FloorPlanBuilder() {
       }
 
       // 2. Search in floorTables
-      for (const f of Object.keys(floorTables)) {
-        const found = floorTables[f]?.find((t) => t.id === id)
+      for (const f of Object.keys(currentFloorTables)) {
+        const found = currentFloorTables[f]?.find((t) => t.id === id)
         if (found) {
           setEditTableId(id)
           setEditTableName(found.name)
           setEditTableCapacity(String(found.capacity))
-          setEditTableLocation(found.location || found.floor || f || activeFloor)
+          setEditTableLocation(found.location || found.floor || f || currentActiveFloor)
           setEditTableShape(found.shape || "RECTANGLE")
           setEditTableStatus(found.status || "AVAILABLE")
           setIsEditDialogOpen(true)
@@ -348,7 +361,7 @@ export function FloorPlanBuilder() {
         setEditTableId(id)
         setEditTableName(foundLocal.name)
         setEditTableCapacity(String(foundLocal.capacity))
-        setEditTableLocation(foundLocal.floor || activeFloor)
+        setEditTableLocation(foundLocal.floor || currentActiveFloor)
         setEditTableShape("RECTANGLE")
         setEditTableStatus("AVAILABLE")
         setIsEditDialogOpen(true)
@@ -359,12 +372,12 @@ export function FloorPlanBuilder() {
       setEditTableId(id)
       setEditTableName("Table")
       setEditTableCapacity("4")
-      setEditTableLocation(activeFloor)
+      setEditTableLocation(currentActiveFloor)
       setEditTableShape("RECTANGLE")
       setEditTableStatus("AVAILABLE")
       setIsEditDialogOpen(true)
     },
-    [nodesByFloor, floorTables, activeFloor],
+    [],
   )
 
   const handleSaveEditTable = useCallback(() => {
@@ -450,7 +463,10 @@ export function FloorPlanBuilder() {
     [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog],
   )
 
-  // Pull the authoritative plan from the database.
+  const handlersRef = useRef(handlers)
+  handlersRef.current = handlers
+
+  // Pull the authoritative plan from the database on initial mount.
   useEffect(() => {
     let cancelled = false
     void Promise.resolve().then(async () => {
@@ -469,7 +485,7 @@ export function FloorPlanBuilder() {
         setNodesByFloor(() => {
           const next: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
           for (const [f, tbls] of Object.entries(byFloor)) {
-            next[f] = tbls.map((t) => nodeFromTable(t, handlers))
+            next[f] = tbls.map((t) => nodeFromTable(t, handlersRef.current))
           }
           return next
         })
@@ -514,7 +530,7 @@ export function FloorPlanBuilder() {
     return () => {
       cancelled = true
     }
-  }, [handlers])
+  }, [])
 
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
