@@ -21,6 +21,7 @@ export interface TableNodeData extends Record<string, unknown> {
   onUngroup?: (id: string) => void
   onSelectGroup?: (groupId: string) => void
   onEdit?: (id: string) => void
+  onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
 }
 
 export function TableNode({ id, data, selected, width, height }: NodeProps & { data: TableNodeData; width?: number; height?: number }) {
@@ -34,6 +35,9 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
         minWidth={60}
         minHeight={60}
         handleClassName="!size-2.5 !rounded-full !border-2 !border-primary !bg-background"
+        onResizeEnd={(_event, params) => {
+          data.onResizeEnd?.(id, params)
+        }}
       />
       <div
         className="cursor-grab active:cursor-grabbing size-full"

@@ -12,6 +12,7 @@ export interface FacilityNodeData extends Record<string, unknown> {
   height?: number
   onRotate: (id: string) => void
   onDelete: (id: string) => void
+  onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
 }
 
 export function FacilityNode({
@@ -33,6 +34,9 @@ export function FacilityNode({
         keepAspectRatio={data.facilityType === "PLANT"}
         lineClassName="!border-primary"
         handleClassName="!size-2.5 !rounded-full !border-2 !border-primary !bg-background"
+        onResizeEnd={(_event, params) => {
+          data.onResizeEnd?.(id, params)
+        }}
       />
       <div
         className="cursor-grab active:cursor-grabbing size-full"

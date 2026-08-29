@@ -105,6 +105,7 @@ function nodeFromTable(
     onUngroup?: (id: string) => void
     onSelectGroup?: (groupId: string) => void
     onEdit?: (id: string) => void
+    onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
   },
 ): Node<TableNodeData | FacilityNodeData> {
   const isFacility = isFacilityElement(table)
@@ -126,6 +127,7 @@ function nodeFromTable(
         height: table.height || def.height,
         onRotate: handlers.onRotate,
         onDelete: handlers.onDelete,
+        onResizeEnd: handlers.onResizeEnd,
       } as FacilityNodeData,
     }
   }
@@ -451,6 +453,60 @@ export function FloorPlanBuilder() {
     editTableShape,
   ])
 
+  const handleResizeEnd = useCallback(
+    (id: string, params: { width: number; height: number; x?: number; y?: number }) => {
+      const newWidth = Math.round(params.width)
+      const newHeight = Math.round(params.height)
+      setNodesByFloor((current) => {
+        const next = { ...current }
+        for (const floor of Object.keys(next)) {
+          next[floor] = next[floor].map((n) => {
+            if (n.id === id) {
+              const newPos =
+                params.x !== undefined && params.y !== undefined
+                  ? { x: Math.round(params.x), y: Math.round(params.y) }
+                  : n.position
+              return {
+                ...n,
+                position: newPos,
+                width: newWidth,
+                height: newHeight,
+                data: {
+                  ...n.data,
+                  width: newWidth,
+                  height: newHeight,
+                },
+              }
+            }
+            return n
+          })
+        }
+        return next
+      })
+
+      setFloorTables((current) => {
+        const next = { ...current }
+        for (const floor of Object.keys(next)) {
+          next[floor] = next[floor].map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  positionX: params.x !== undefined ? Math.round(params.x) : t.positionX,
+                  positionY: params.y !== undefined ? Math.round(params.y) : t.positionY,
+                  width: newWidth,
+                  height: newHeight,
+                }
+              : t,
+          )
+        }
+        return next
+      })
+
+      setIsDirty(true)
+    },
+    [],
+  )
+
   const handlers = useMemo(
     () => ({
       onCycleShape: handleCycleShape,
@@ -459,8 +515,9 @@ export function FloorPlanBuilder() {
       onUngroup: handleUngroupTable,
       onSelectGroup: handleSelectGroup,
       onEdit: handleOpenEditDialog,
+      onResizeEnd: handleResizeEnd,
     }),
-    [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog],
+    [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog, handleResizeEnd],
   )
 
   const handlersRef = useRef(handlers)
@@ -829,6 +886,7 @@ export function FloorPlanBuilder() {
         height: def.height,
         onRotate: handleRotate,
         onDelete: handleDelete,
+        onResizeEnd: handleResizeEnd,
       },
     }
     setActiveFloorNodes((current) => [...current.map((n) => ({ ...n, selected: false })), newNode])
@@ -842,6 +900,7 @@ export function FloorPlanBuilder() {
     activeFloor,
     handleRotate,
     handleDelete,
+    handleResizeEnd,
     setActiveFloorNodes,
   ])
 
