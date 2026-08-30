@@ -1009,19 +1009,6 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  size="default"
-                  onClick={() => {
-                    setSelectedTableId(null)
-                    setTableChoiceMode("AUTO")
-                    setIsFloorPlanModalOpen(false)
-                  }}
-                >
-                  Use Auto
-                </Button>
-
-                <Button
-                  type="button"
                   disabled={!selectedTableId}
                   size="default"
                   onClick={() => {
