@@ -31,17 +31,17 @@ export function DashboardSidebar() {
         )}
       >
         {collapsed ? (
-          <Tooltip delayDuration={150}>
+          <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setCollapsed(false)}
-                className="size-9 rounded-xl bg-gradient-to-br from-primary via-primary/95 to-primary/85 text-primary-foreground flex items-center justify-center font-bold text-xs shadow-xs ring-1 ring-primary/20 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                className="size-10 rounded-xl bg-gradient-to-br from-primary via-primary/95 to-primary/85 text-primary-foreground flex items-center justify-center font-bold shadow-xs ring-1 ring-primary/20 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
                 aria-label="Expand sidebar"
               >
-                <UtensilsCrossed className="size-4" />
+                <UtensilsCrossed className="size-5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium text-xs">
+            <TooltipContent side="right" sideOffset={10} className="font-semibold text-xs py-1 px-2.5 shadow-md">
               {appName} — {t("nav.expandSidebar", "Expand sidebar")}
             </TooltipContent>
           </Tooltip>
@@ -87,20 +87,43 @@ export function DashboardSidebar() {
 
       {/* Footer Section */}
       {collapsed ? (
-        <div className="flex justify-center border-t border-border/60 p-2">
-          <Tooltip delayDuration={150}>
+        <div className="flex flex-col items-center gap-2 border-t border-border/60 p-2">
+          {profile?.id && (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <a
+                  href={`/restaurant/${profile.id}/book`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="size-10 rounded-xl border border-border/70 bg-card hover:bg-accent flex items-center justify-center shrink-0 transition-colors shadow-2xs overflow-hidden"
+                  aria-label="View public booking page"
+                >
+                  {profile.logoUrl ? (
+                    <img src={profile.logoUrl} alt={restaurantName} className="size-full object-contain p-1" />
+                  ) : (
+                    <Store className="size-5 text-primary" />
+                  )}
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={10} className="font-semibold text-xs py-1 px-2.5 shadow-md">
+                {restaurantName} — {t("nav.liveBooking", "Live Booking Page")}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                className="size-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80"
                 onClick={() => setCollapsed(false)}
                 aria-label="Expand sidebar"
               >
-                <PanelLeftOpen className="size-4" />
+                <PanelLeftOpen className="size-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
+            <TooltipContent side="right" sideOffset={10} className="font-semibold text-xs py-1 px-2.5 shadow-md">
               {t("nav.expandSidebar", "Expand sidebar")}
             </TooltipContent>
           </Tooltip>
