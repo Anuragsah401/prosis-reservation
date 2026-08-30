@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom"
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
+import { ScreenSaverOverlay } from "@/features/screensaver/screensaver-overlay"
 import { SEOHead } from "@/components/seo"
 
 export function DashboardLayout() {
@@ -14,6 +15,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <ScreenSaverOverlay />
     </div>
   )
 }

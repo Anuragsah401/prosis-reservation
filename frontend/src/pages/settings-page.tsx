@@ -34,11 +34,13 @@ import {
   timeStringToMinutes,
   type RestaurantProfile,
 } from "@/features/restaurant/restaurant-api"
+import { ScreenSaverSettingsSection } from "@/features/screensaver/screensaver-settings-section"
 import {
   Store,
   CalendarClock,
   Bell,
   LayoutGrid,
+  Monitor,
   Users,
   CreditCard,
   ShieldCheck,
@@ -52,6 +54,7 @@ type SettingsSection =
   | "reservations"
   | "notifications"
   | "tables"
+  | "screensaver"
   | "team"
   | "billing"
   | "security"
@@ -62,6 +65,7 @@ function useSectionsList(t: (key: string) => string): { id: SettingsSection; lab
     { id: "reservations", label: t("pages.settings.nav.reservations"), icon: CalendarClock },
     { id: "notifications", label: t("pages.settings.nav.notifications"), icon: Bell },
     { id: "tables", label: t("pages.settings.nav.tables"), icon: LayoutGrid },
+    { id: "screensaver", label: t("pages.settings.nav.screensaver"), icon: Monitor },
     { id: "team", label: t("pages.settings.nav.team"), icon: Users },
     { id: "billing", label: t("pages.settings.nav.billing"), icon: CreditCard },
     { id: "security", label: t("pages.settings.nav.security"), icon: ShieldCheck },
@@ -773,7 +777,7 @@ export function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const sectionParam = searchParams.get("section") as SettingsSection | null
   const isValidSection = (s: string | null): s is SettingsSection =>
-    Boolean(s && ["profile", "reservations", "notifications", "tables", "team", "billing", "security"].includes(s))
+    Boolean(s && ["profile", "reservations", "notifications", "tables", "screensaver", "team", "billing", "security"].includes(s))
 
   const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
     isValidSection(sectionParam) ? sectionParam : "profile",
@@ -829,6 +833,7 @@ export function SettingsPage() {
           {activeSection === "reservations" && <ReservationSettingsSection />}
           {activeSection === "notifications" && <NotificationsSection />}
           {activeSection === "tables" && <TablesSection />}
+          {activeSection === "screensaver" && <ScreenSaverSettingsSection />}
           {activeSection === "team" && <TeamSection />}
           {activeSection === "billing" && <BillingSection />}
           {activeSection === "security" && <SecuritySection />}

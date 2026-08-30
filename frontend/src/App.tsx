@@ -4,6 +4,7 @@ import { RequireAuth, RedirectIfAuthenticated } from '@/features/auth/require-au
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
 import { RealtimeProvider } from '@/features/realtime'
+import { ScreenSaverProvider } from '@/features/screensaver/screensaver-context'
 import { Toaster } from '@/components/ui/sonner'
 import { ChatWidget } from '@/components/chat/chat-widget'
 import { Loader2 } from 'lucide-react'
@@ -37,8 +38,9 @@ function App() {
   return (
     <RestaurantProvider>
       <RealtimeProvider>
-        <Toaster />
-        <Suspense fallback={<PageLoadingFallback />}>
+        <ScreenSaverProvider>
+          <Toaster />
+          <Suspense fallback={<PageLoadingFallback />}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route
@@ -91,6 +93,7 @@ function App() {
           </Routes>
         </Suspense>
         <ChatWidget />
+        </ScreenSaverProvider>
       </RealtimeProvider>
     </RestaurantProvider>
   )
