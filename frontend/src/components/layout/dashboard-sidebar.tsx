@@ -4,16 +4,12 @@ import { SidebarNav } from "@/components/layout/sidebar-nav"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSidebarCollapsed } from "@/components/layout/use-sidebar-collapsed"
-import { useRestaurant } from "@/features/restaurant/restaurant-context"
-import { authClient } from "@/features/auth/auth-client"
 import { cn } from "@/lib/utils"
 
 export function DashboardSidebar() {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useSidebarCollapsed()
-  const { profile } = useRestaurant()
-  const user = authClient.getUser()
-  const restaurantDisplayName = profile?.name || user?.restaurant?.name || t("common.appName", "Seat Booking")
+  const appName = t("common.appName", "Seat Booking")
 
   return (
     <aside
@@ -33,37 +29,21 @@ export function DashboardSidebar() {
             <TooltipTrigger asChild>
               <button
                 onClick={() => setCollapsed(false)}
-                className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold overflow-hidden cursor-pointer shadow-xs"
+                className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold shadow-xs cursor-pointer"
                 aria-label="Expand sidebar"
               >
-                {profile?.logoUrl ? (
-                  <img
-                    src={profile.logoUrl}
-                    alt={restaurantDisplayName}
-                    className="size-full object-contain p-0.5 bg-background"
-                  />
-                ) : (
-                  "SB"
-                )}
+                SB
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">{restaurantDisplayName} — expand sidebar</TooltipContent>
+            <TooltipContent side="right">{appName} — expand sidebar</TooltipContent>
           </Tooltip>
         ) : (
           <>
             <div className="flex items-center gap-2.5 min-w-0">
-              {profile?.logoUrl ? (
-                <img
-                  src={profile.logoUrl}
-                  alt={restaurantDisplayName}
-                  className="size-7 shrink-0 rounded-md border object-contain bg-background shadow-2xs"
-                />
-              ) : (
-                <div className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold shadow-2xs">
-                  SB
-                </div>
-              )}
-              <span className="text-sm font-semibold truncate tracking-tight">{restaurantDisplayName}</span>
+              <div className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold shadow-2xs">
+                SB
+              </div>
+              <span className="text-base font-semibold truncate tracking-tight">{appName}</span>
             </div>
             <Button
               variant="ghost"
