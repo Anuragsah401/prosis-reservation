@@ -42,7 +42,6 @@ interface FloorPlanViewerProps {
   showFullscreen?: boolean
 }
 
-const PADDING = 20
 const DEFAULT_W = 140
 const DEFAULT_H = 90
 const MIN_ZOOM = 0.1
@@ -103,14 +102,14 @@ export function FloorPlanViewer({
   }, [tables, displayedFloor])
 
   const bounds = useMemo(() => {
-    if (floorTables.length === 0) return { minX: 0, minY: 0, width: 400, height: 200 }
+    if (floorTables.length === 0) return { minX: 0, minY: 0, maxX: 600, maxY: 400, contentW: 600, contentH: 400 }
     const minX = Math.min(...floorTables.map((t) => t.positionX ?? 0))
     const minY = Math.min(...floorTables.map((t) => t.positionY ?? 0))
     const maxX = Math.max(...floorTables.map((t) => (t.positionX ?? 0) + (t.width || DEFAULT_W)))
     const maxY = Math.max(...floorTables.map((t) => (t.positionY ?? 0) + (t.height || DEFAULT_H)))
-    const width = Math.max(100, maxX - minX + PADDING * 2)
-    const height = Math.max(100, maxY - minY + PADDING * 2)
-    return { minX, minY, maxX, maxY, width, height }
+    const contentW = Math.max(120, maxX - minX)
+    const contentH = Math.max(120, maxY - minY)
+    return { minX, minY, maxX, maxY, contentW, contentH }
   }, [floorTables])
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -124,19 +123,25 @@ export function FloorPlanViewer({
     const { clientWidth, clientHeight } = containerRef.current
     if (clientWidth <= 0 || clientHeight <= 0) return
 
-    const pad = clientWidth < 640 ? 10 : 20
-    const availableWidth = clientWidth - pad * 2
-    const availableHeight = clientHeight - pad * 2
+    const pad = clientWidth < 640 ? 20 : 36
+    const availableWidth = Math.max(100, clientWidth - pad * 2)
+    const availableHeight = Math.max(100, clientHeight - pad * 2)
 
-    const scaleX = availableWidth / bounds.width
-    const scaleY = availableHeight / bounds.height
-    const initialScale = Math.min(1.0, Math.max(0.1, Math.min(scaleX, scaleY)))
+    // Calculate scale so the table cluster fills the screen nicely
+    const scaleX = availableWidth / bounds.contentW
+    const scaleY = availableHeight / bounds.contentH
+    const initialScale = Math.min(1.15, Math.max(0.15, Math.min(scaleX, scaleY)))
 
-    const centeredX = (clientWidth - bounds.width * initialScale) / 2 - (bounds.minX - PADDING) * initialScale
-    const centeredY = (clientHeight - bounds.height * initialScale) / 2 - (bounds.minY - PADDING) * initialScale
+    // Calculate exact cluster centroid
+    const clusterCenterX = bounds.minX + bounds.contentW / 2
+    const clusterCenterY = bounds.minY + bounds.contentH / 2
+
+    // Center centroid directly in the middle of the viewport
+    const panX = clientWidth / 2 - clusterCenterX * initialScale
+    const panY = clientHeight / 2 - clusterCenterY * initialScale
 
     setZoom(initialScale)
-    setPan({ x: Math.round(centeredX), y: Math.round(centeredY) })
+    setPan({ x: Math.round(panX), y: Math.round(panY) })
   }, [floorTables.length, bounds])
 
   useEffect(() => {
@@ -401,8 +406,8 @@ export function FloorPlanViewer({
               !dragging && !pinching && "transition-transform duration-75",
             )}
             style={{
-              width: bounds.width,
-              height: bounds.height,
+              width: Math.max((bounds.maxX || 600) + 300, 2000),
+              height: Math.max((bounds.maxY || 400) + 300, 1600),
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               backgroundImage:
                 "radial-gradient(circle, color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px, transparent 1px)",
