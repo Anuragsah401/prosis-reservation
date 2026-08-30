@@ -16,6 +16,7 @@ import {
   Store,
   LayoutGrid,
   List,
+  X,
 } from "lucide-react"
 import {
   Card,
@@ -86,6 +87,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   const [tableChoiceMode, setTableChoiceMode] = useState<"AUTO" | "CHOOSE">("AUTO")
   const [tablePickerView, setTablePickerView] = useState<"MAP" | "LIST">("MAP")
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
+  const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false)
   const [floorPlanTables, setFloorPlanTables] = useState<FloorPlanViewerTable[]>([])
   const [isLoadingTables, setIsLoadingTables] = useState(false)
 
@@ -155,6 +157,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   }, [date, slots])
 
   // Load floor plan tables when moving to step 2 or when date/time/guests changes
+  // NOTE: selectedTableId is intentionally excluded from dependency array to avoid reloading on selection
   useEffect(() => {
     if (step === 2 && reservedForIso) {
       let cancelled = false
@@ -164,12 +167,11 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         .then((tables) => {
           if (!cancelled) {
             setFloorPlanTables(tables)
-            if (selectedTableId) {
-              const current = tables.find((t) => t.id === selectedTableId)
-              if (!current || !current.available) {
-                setSelectedTableId(null)
-              }
-            }
+            setSelectedTableId((currentId) => {
+              if (!currentId) return null
+              const current = tables.find((t) => t.id === currentId)
+              return current && current.available ? currentId : null
+            })
           }
         })
         .catch(() => {
@@ -185,7 +187,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         cancelled = true
       }
     }
-  }, [step, restaurantId, reservedForIso, guests, selectedTableId])
+  }, [step, restaurantId, reservedForIso, guests])
 
   const selectedTableObj = useMemo(() => {
     if (!selectedTableId) return null
@@ -505,7 +507,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         </Card>
       )}
 
-      {/* STEP 2: TABLE SELECTION (WITH MOBILE LIST & MAP VIEWS) */}
+      {/* STEP 2: TABLE SELECTION (WITH FULL-VIEWPORT POPUP DIALOG) */}
       {step === 2 && (
         <Card className="shadow-xs">
           <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
@@ -521,9 +523,9 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-5">
+          <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-4 sm:gap-5">
             {/* Table Choice Modes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <button
                 type="button"
                 onClick={() => {
@@ -531,7 +533,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                   setSelectedTableId(null)
                 }}
                 className={cn(
-                  "flex flex-col items-start gap-1.5 rounded-2xl border p-4 text-left transition-all",
+                  "flex flex-col items-start gap-2 rounded-2xl border p-4 sm:p-5 text-left transition-all",
                   tableChoiceMode === "AUTO"
                     ? "border-primary bg-primary/10 ring-2 ring-primary/20 shadow-xs"
                     : "border-border hover:bg-muted/50 bg-card",
@@ -545,13 +547,21 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   {t("publicBooking.step2.autoHint", "We'll automatically assign the best available table for your party upon arrival.")}
                 </p>
+                {tableChoiceMode === "AUTO" && (
+                  <Badge variant="secondary" className="mt-1 text-[11px] font-semibold text-primary">
+                    Active Choice
+                  </Badge>
+                )}
               </button>
 
               <button
                 type="button"
-                onClick={() => setTableChoiceMode("CHOOSE")}
+                onClick={() => {
+                  setTableChoiceMode("CHOOSE")
+                  setIsFloorPlanModalOpen(true)
+                }}
                 className={cn(
-                  "flex flex-col items-start gap-1.5 rounded-2xl border p-4 text-left transition-all",
+                  "flex flex-col items-start gap-2 rounded-2xl border p-4 sm:p-5 text-left transition-all group",
                   tableChoiceMode === "CHOOSE"
                     ? "border-primary bg-primary/10 ring-2 ring-primary/20 shadow-xs"
                     : "border-border hover:bg-muted/50 bg-card",
@@ -565,143 +575,39 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   {t("publicBooking.step2.chooseHint", "Pick your favorite available table directly on our interactive restaurant layout.")}
                 </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge variant={tableChoiceMode === "CHOOSE" && selectedTableObj ? "default" : "outline"} className="text-[11px] font-semibold">
+                    {selectedTableObj ? getTableDisplayName(selectedTableObj) : "Tap to open layout"}
+                  </Badge>
+                </div>
               </button>
             </div>
 
-            {/* Interactive Floor Plan / Table Picker */}
+            {/* Selected Table Summary Banner */}
             {tableChoiceMode === "CHOOSE" && (
-              <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-3.5 sm:p-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
-                      <Layers className="size-4 text-primary" />
-                      <span>{t("publicBooking.step2.floorPlanTitle", "Restaurant Tables")}</span>
-                    </h3>
-
-                    {/* View Switcher (Map vs List) */}
-                    <div className="flex items-center rounded-lg border bg-background p-0.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setTablePickerView("MAP")}
-                        className={cn(
-                          "flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium",
-                          tablePickerView === "MAP"
-                            ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <LayoutGrid className="size-3.5" />
-                        <span>Map</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTablePickerView("LIST")}
-                        className={cn(
-                          "flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium",
-                          tablePickerView === "LIST"
-                            ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <List className="size-3.5" />
-                        <span>List ({availableTablesList.length})</span>
-                      </button>
-                    </div>
+              <div className="flex items-center justify-between p-4 rounded-2xl border border-primary/30 bg-primary/5 flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                    <Store className="size-5" />
                   </div>
-
-                  {selectedTableObj ? (
-                    <Badge variant="default" className="text-xs font-semibold shadow-xs">
-                      {getTableDisplayName(selectedTableObj, t("publicBooking.step2.autoTitle"))} ({selectedTableObj.capacity} seats)
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs text-muted-foreground">
-                      {t("publicBooking.step2.selectBadge", "Select a table")}
-                    </Badge>
-                  )}
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground font-medium">Selected Table</span>
+                    <span className="text-sm font-bold text-foreground">
+                      {selectedTableObj ? `${getTableDisplayName(selectedTableObj)} (${selectedTableObj.capacity} seats)` : "No table selected yet"}
+                    </span>
+                  </div>
                 </div>
 
-                {isLoadingTables ? (
-                  <div className="flex h-72 items-center justify-center rounded-xl border bg-background">
-                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : floorPlanTables.length === 0 ? (
-                  <div className="flex h-44 flex-col items-center justify-center gap-2 rounded-xl border bg-background p-4 text-center">
-                    <AlertCircle className="size-8 text-muted-foreground" />
-                    <p className="text-muted-foreground text-xs">
-                      {t("publicBooking.step2.noTables", "No tables found on the floor plan. You can continue with Restaurant Choice.")}
-                    </p>
-                  </div>
-                ) : tablePickerView === "LIST" ? (
-                  /* Mobile-Friendly Table List */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-                    {floorPlanTables.map((tbl) => {
-                      const isAvailable = tbl.available
-                      const isSelected = selectedTableId === tbl.id
-
-                      return (
-                        <button
-                          key={tbl.id}
-                          type="button"
-                          disabled={!isAvailable}
-                          onClick={() => setSelectedTableId(tbl.id)}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-xl border text-left transition-all touch-manipulation",
-                            isSelected
-                              ? "border-primary bg-primary/10 ring-2 ring-primary/25 shadow-xs font-semibold"
-                              : isAvailable
-                                ? "border-border/80 bg-background hover:bg-muted/60 active:scale-[0.98]"
-                                : "opacity-40 bg-muted/40 cursor-not-allowed border-border/40",
-                          )}
-                        >
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-foreground">
-                              {getTableDisplayName(tbl)}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {tbl.capacity} seats {tbl.floor ? `• ${tbl.floor}` : ""}
-                            </span>
-                          </div>
-
-                          {isSelected ? (
-                            <Badge variant="default" className="text-[10px]">Selected</Badge>
-                          ) : isAvailable ? (
-                            <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">Available</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">Unavailable</Badge>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  /* Map / Floor Plan View */
-                  <>
-                    <div className="h-[320px] sm:h-[380px] w-full rounded-xl border bg-background overflow-hidden shadow-xs">
-                      <FloorPlanViewer
-                        tables={floorPlanTables}
-                        selectedTableId={selectedTableId}
-                        onSelect={setSelectedTableId}
-                        seatsLabel={t("reservationConfirm.seats", "seats")}
-                        showFullscreen={false}
-                      />
-                    </div>
-
-                    <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-[11px]">
-                      <span className="flex items-center gap-1.5">
-                        <span className="bg-card inline-block size-3 rounded-sm border-2 border-emerald-500/60" />
-                        {t("publicBooking.step2.legendAvailable", "Available ({{guests}}+ seats)", { guests })}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="bg-muted inline-block size-3 rounded-sm border-2 opacity-40" />
-                        {t("publicBooking.step2.legendUnavailable", "Unavailable")}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="border-primary bg-primary/20 inline-block size-3 rounded-sm border-2" />
-                        {t("publicBooking.step2.legendSelected", "Selected")}
-                      </span>
-                    </div>
-                  </>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFloorPlanModalOpen(true)}
+                  className="gap-1.5 font-semibold text-xs rounded-xl"
+                >
+                  <Layers className="size-3.5" />
+                  <span>{selectedTableObj ? "Change Table" : "Open Floor Plan"}</span>
+                </Button>
               </div>
             )}
           </CardContent>
@@ -895,6 +801,220 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
             />
           </CardContent>
         </Card>
+      )}
+
+      {/* Floor Plan Selection Pop-Up Dialog / Modal */}
+      {isFloorPlanModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-200">
+          {/* Backdrop Overlay */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setIsFloorPlanModalOpen(false)}
+          />
+
+          {/* Dialog Container */}
+          <div className="relative z-10 flex flex-col w-full h-full sm:h-[90vh] sm:max-h-[850px] max-w-5xl bg-background sm:rounded-3xl border border-border shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-border/80 bg-card/80 backdrop-blur-md shrink-0">
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-bold text-foreground truncate">
+                    {t("publicBooking.step2.floorPlanTitle", "Select Your Table")}
+                  </h2>
+                  {selectedTableObj && (
+                    <Badge variant="default" className="text-xs font-semibold shrink-0">
+                      {getTableDisplayName(selectedTableObj)} ({selectedTableObj.capacity} seats)
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {restaurant.name} • {guests} guests • {date} at {selectedTime && formatDisplayTime(selectedTime)}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Mode Switcher */}
+                <div className="flex items-center rounded-xl border bg-muted/40 p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setTablePickerView("MAP")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-medium",
+                      tablePickerView === "MAP"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <LayoutGrid className="size-3.5" />
+                    <span>Map</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTablePickerView("LIST")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-medium",
+                      tablePickerView === "LIST"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <List className="size-3.5" />
+                    <span>List ({availableTablesList.length})</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFloorPlanModalOpen(false)}
+                  className="size-9 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all"
+                  aria-label="Close"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 relative overflow-hidden bg-muted/15 flex flex-col min-h-0">
+              {isLoadingTables ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="size-8 animate-spin text-primary" />
+                    <span className="text-xs text-muted-foreground font-medium">Loading floor plan layout…</span>
+                  </div>
+                </div>
+              ) : floorPlanTables.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+                  <AlertCircle className="size-10 text-muted-foreground" />
+                  <p className="text-sm font-semibold">No floor plan layout available</p>
+                  <p className="text-xs text-muted-foreground max-w-sm">
+                    You can proceed with Restaurant's Choice and our team will assign the ideal table for you.
+                  </p>
+                </div>
+              ) : tablePickerView === "LIST" ? (
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {floorPlanTables.map((tbl) => {
+                      const isAvailable = tbl.available
+                      const isSelected = selectedTableId === tbl.id
+
+                      return (
+                        <button
+                          key={tbl.id}
+                          type="button"
+                          disabled={!isAvailable}
+                          onClick={() => setSelectedTableId(tbl.id)}
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border text-left transition-all touch-manipulation",
+                            isSelected
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-md font-semibold"
+                              : isAvailable
+                                ? "border-border bg-card hover:bg-muted/70 active:scale-[0.98] shadow-xs"
+                                : "opacity-40 bg-muted/30 cursor-not-allowed border-border/40",
+                          )}
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-foreground">
+                              {getTableDisplayName(tbl)}
+                            </span>
+                            <span className="text-xs text-muted-foreground mt-0.5">
+                              {tbl.capacity} seats {tbl.floor ? `• ${tbl.floor}` : ""}
+                            </span>
+                          </div>
+
+                          {isSelected ? (
+                            <Badge variant="default" className="text-xs">Selected</Badge>
+                          ) : isAvailable ? (
+                            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30 bg-emerald-500/10">Available</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Unavailable</Badge>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 relative w-full h-full overflow-hidden flex flex-col">
+                  <div className="flex-1 w-full h-full relative overflow-hidden">
+                    <FloorPlanViewer
+                      tables={floorPlanTables}
+                      selectedTableId={selectedTableId}
+                      onSelect={setSelectedTableId}
+                      seatsLabel={t("reservationConfirm.seats", "seats")}
+                      showFullscreen={false}
+                    />
+                  </div>
+
+                  {/* Map Legend */}
+                  <div className="border-t bg-card/80 backdrop-blur-xs px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1.5">
+                        <span className="bg-card inline-block size-3 rounded-sm border-2 border-emerald-500/60" />
+                        <span>Available ({guests}+ seats)</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="bg-muted inline-block size-3 rounded-sm border-2 opacity-40" />
+                        <span>Unavailable</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="border-primary bg-primary/20 inline-block size-3 rounded-sm border-2" />
+                        <span>Selected</span>
+                      </span>
+                    </div>
+                    <span className="hidden sm:inline text-[11px]">Pinch / Drag to pan & zoom</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-t border-border/80 bg-card shrink-0">
+              <div className="flex items-center gap-2">
+                {selectedTableObj ? (
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Selected Table</span>
+                    <span className="text-xs sm:text-sm font-bold text-foreground">
+                      {getTableDisplayName(selectedTableObj)} ({selectedTableObj.capacity} seats)
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic">
+                    Tap any available table on the layout to select
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  onClick={() => {
+                    setSelectedTableId(null)
+                    setTableChoiceMode("AUTO")
+                    setIsFloorPlanModalOpen(false)
+                  }}
+                >
+                  Use Auto
+                </Button>
+
+                <Button
+                  type="button"
+                  disabled={!selectedTableId}
+                  size="default"
+                  onClick={() => {
+                    setIsFloorPlanModalOpen(false)
+                  }}
+                  className="gap-1.5 font-semibold shadow-xs"
+                >
+                  <Check className="size-4" />
+                  <span>Confirm Table</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Mobile Sticky Bottom Action Bar */}
