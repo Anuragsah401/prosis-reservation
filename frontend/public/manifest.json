@@ -1,18 +1,102 @@
 {
-  "name": "Seat Booking",
+  "id": "dk.seatbooking.app",
+  "name": "Seat Booking — Restaurant Reservation & Floor Plan System",
   "short_name": "Seat Booking",
-  "description": "Modern Restaurant Table Reservation & Floor Plan Management",
+  "description": "Modern cloud restaurant table reservation system, 2D interactive floor plan layout, standby kiosk screensaver, and instant online booking.",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "fullscreen",
+    "minimal-ui"
+  ],
   "background_color": "#090d16",
   "theme_color": "#090d16",
   "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "food",
+    "business",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/favicon.svg",
-      "sizes": "192x192 512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reservations",
+      "short_name": "Reservations",
+      "description": "Manage and view restaurant table reservations",
+      "url": "/reservations",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Floor Plan",
+      "short_name": "Floor Plan",
+      "description": "Interactive 2D table layout and floor builder",
+      "url": "/floor-plan",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Standby Kiosk",
+      "short_name": "Kiosk",
+      "description": "Full-screen guest standby kiosk & screensaver",
+      "url": "/screensaver",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View restaurant table and occupancy analytics",
+      "url": "/analytics",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "any"
+        }
+      ]
     }
   ]
 }

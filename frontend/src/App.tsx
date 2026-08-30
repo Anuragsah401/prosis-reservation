@@ -7,6 +7,7 @@ import { RealtimeProvider } from '@/features/realtime'
 import { ScreenSaverProvider } from '@/features/screensaver/screensaver-context'
 import { Toaster } from '@/components/ui/sonner'
 import { ChatWidget } from '@/components/chat/chat-widget'
+import { PWAStatusBar } from '@/components/pwa-install-dialog'
 import { Loader2 } from 'lucide-react'
 
 // Route-level lazy loading for performance & instant initial page loads
@@ -93,6 +94,7 @@ function App() {
           </Routes>
         </Suspense>
         <ChatWidget />
+        <PWAStatusBar />
         </ScreenSaverProvider>
       </RealtimeProvider>
     </RestaurantProvider>

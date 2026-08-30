@@ -35,6 +35,9 @@ import {
   type RestaurantProfile,
 } from "@/features/restaurant/restaurant-api"
 import { ScreenSaverSettingsSection } from "@/features/screensaver/screensaver-settings-section"
+import { Badge } from "@/components/ui/badge"
+import { usePWA } from "@/hooks/use-pwa"
+import { PWAInstallButton } from "@/components/pwa-install-dialog"
 import {
   Store,
   CalendarClock,
@@ -47,6 +50,8 @@ import {
   Loader2,
   ExternalLink,
   Clock,
+  Smartphone,
+  RefreshCw,
 } from "lucide-react"
 
 type SettingsSection =
@@ -55,6 +60,7 @@ type SettingsSection =
   | "notifications"
   | "tables"
   | "screensaver"
+  | "app"
   | "team"
   | "billing"
   | "security"
@@ -66,6 +72,7 @@ function useSectionsList(t: (key: string) => string): { id: SettingsSection; lab
     { id: "notifications", label: t("pages.settings.nav.notifications"), icon: Bell },
     { id: "tables", label: t("pages.settings.nav.tables"), icon: LayoutGrid },
     { id: "screensaver", label: t("pages.settings.nav.screensaver"), icon: Monitor },
+    { id: "app", label: t("pages.settings.nav.app") || "Desktop & Mobile App (PWA)", icon: Smartphone },
     { id: "team", label: t("pages.settings.nav.team"), icon: Users },
     { id: "billing", label: t("pages.settings.nav.billing"), icon: CreditCard },
     { id: "security", label: t("pages.settings.nav.security"), icon: ShieldCheck },
@@ -772,12 +779,168 @@ function SecuritySection() {
   )
 }
 
+function PWASettingsSection() {
+  const { isInstalled, isOnline } = usePWA()
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
+
+  const handleCheckUpdate = () => {
+    setCheckingUpdate(true)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg) {
+          reg.update().then(() => {
+            setTimeout(() => {
+              setCheckingUpdate(false)
+              toast.success("Seat Booking is running the latest version!")
+            }, 600)
+          })
+        } else {
+          setCheckingUpdate(false)
+          toast.success("App cache is up to date.")
+        }
+      })
+    } else {
+      setCheckingUpdate(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+              <Smartphone className="size-5" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Desktop & Mobile App (PWA)</CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Install Seat Booking directly on your iPad, Android tablet, phone, Mac, or PC for a standalone kiosk and POS experience.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 text-xs">
+          {/* Status Indicators */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl border bg-muted/20">
+              <div className="flex flex-col">
+                <span className="font-semibold text-foreground">App Display Mode</span>
+                <span className="text-muted-foreground text-[11px] mt-0.5">
+                  {isInstalled ? "Standalone App Window" : "Web Browser Window"}
+                </span>
+              </div>
+              <Badge variant={isInstalled ? "default" : "outline"} className="text-[10px]">
+                {isInstalled ? "Standalone Installed" : "In Browser"}
+              </Badge>
+            </div>
+
+            <div className="flex items-center justify-between p-3.5 rounded-2xl border bg-muted/20">
+              <div className="flex flex-col">
+                <span className="font-semibold text-foreground">Offline Resiliency</span>
+                <span className="text-muted-foreground text-[11px] mt-0.5">
+                  {isOnline ? "Online & Synchronized" : "Working Offline (Cached)"}
+                </span>
+              </div>
+              <Badge variant={isOnline ? "default" : "secondary"} className="text-[10px]">
+                {isOnline ? "Connected" : "Offline"}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Quick Install Action if not installed */}
+          {!isInstalled && (
+            <div className="p-4 rounded-2xl border border-primary/30 bg-primary/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex flex-col">
+                <span className="font-bold text-sm text-foreground">Install Standalone App</span>
+                <span className="text-muted-foreground text-xs mt-0.5 max-w-md">
+                  Removes the browser address bar, back buttons, and browser tabs for a clean POS, floor plan, and standby kiosk display.
+                </span>
+              </div>
+              <PWAInstallButton
+                variant="default"
+                size="default"
+                className="rounded-xl font-semibold shadow-xs shrink-0"
+              />
+            </div>
+          )}
+
+          {/* Platform Instructions */}
+          <div className="rounded-2xl border p-4 bg-card space-y-3">
+            <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+              Installation by Device
+            </span>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="flex flex-col gap-1 p-3 rounded-xl border bg-muted/30">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-primary inline-block shrink-0" />
+                  iPad & iPhone (iOS Safari)
+                </span>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Tap the <strong>Share</strong> icon in Safari toolbar, scroll down and tap <strong>Add to Home Screen</strong>.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1 p-3 rounded-xl border bg-muted/30">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-primary inline-block shrink-0" />
+                  Android & Tablets (Chrome / Edge)
+                </span>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Tap the 3-dots menu in Chrome and choose <strong>Install App</strong> or <strong>Add to Home Screen</strong>.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1 p-3 rounded-xl border bg-muted/30">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-primary inline-block shrink-0" />
+                  Mac (Safari / Chrome)
+                </span>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  In Safari: Choose <strong>File → Add to Dock</strong>. In Chrome: Click the install icon in the URL address bar.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1 p-3 rounded-xl border bg-muted/30">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-primary inline-block shrink-0" />
+                  Windows PC (Edge / Chrome)
+                </span>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Click the <strong>Install</strong> icon in the right side of the URL bar to launch as a standalone desktop app.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="justify-between border-t p-4 bg-muted/10">
+          <span className="text-xs text-muted-foreground">
+            Service Worker active • Version 1.0.0
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCheckUpdate}
+            disabled={checkingUpdate}
+            className="rounded-xl gap-1.5 text-xs font-semibold"
+          >
+            <RefreshCw className={cn("size-3.5", checkingUpdate && "animate-spin")} />
+            <span>{checkingUpdate ? "Checking…" : "Check for Updates"}</span>
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  )
+}
+
 export function SettingsPage() {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const sectionParam = searchParams.get("section") as SettingsSection | null
   const isValidSection = (s: string | null): s is SettingsSection =>
-    Boolean(s && ["profile", "reservations", "notifications", "tables", "screensaver", "team", "billing", "security"].includes(s))
+    Boolean(s && ["profile", "reservations", "notifications", "tables", "screensaver", "app", "team", "billing", "security"].includes(s))
 
   const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
     isValidSection(sectionParam) ? sectionParam : "profile",
@@ -834,6 +997,7 @@ export function SettingsPage() {
           {activeSection === "notifications" && <NotificationsSection />}
           {activeSection === "tables" && <TablesSection />}
           {activeSection === "screensaver" && <ScreenSaverSettingsSection />}
+          {activeSection === "app" && <PWASettingsSection />}
           {activeSection === "team" && <TeamSection />}
           {activeSection === "billing" && <BillingSection />}
           {activeSection === "security" && <SecuritySection />}

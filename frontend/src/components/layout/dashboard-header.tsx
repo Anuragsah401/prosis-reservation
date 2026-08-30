@@ -17,6 +17,7 @@ import { SidebarNav } from "@/components/layout/sidebar-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { NotificationBell } from "@/features/notifications/notification-bell"
+import { PWAInstallButton } from "@/components/pwa-install-dialog"
 import { authClient } from "@/features/auth/auth-client"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
 
@@ -64,8 +65,15 @@ export function DashboardHeader() {
               <span className="truncate">{restaurantDisplayName}</span>
             </SheetTitle>
           </SheetHeader>
-          <div className="py-2">
+          <div className="py-2 flex flex-col justify-between flex-1">
             <SidebarNav onNavigate={() => setMobileOpen(false)} />
+            <div className="p-3 border-t mt-auto">
+              <PWAInstallButton
+                variant="default"
+                size="sm"
+                className="w-full rounded-xl text-xs gap-1.5 font-semibold"
+              />
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -89,6 +97,11 @@ export function DashboardHeader() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <PWAInstallButton
+          variant="outline"
+          size="sm"
+          className="hidden sm:flex rounded-xl text-xs gap-1.5 font-semibold bg-background hover:bg-muted"
+        />
         <LanguageSwitcher />
         <ThemeToggle />
         <NotificationBell />
