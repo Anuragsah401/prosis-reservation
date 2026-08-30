@@ -806,16 +806,9 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
             {/* Header: Title, Reservation Context, View Switcher & Close */}
             <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/80 bg-card shrink-0 gap-3">
               <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
-                    {t("publicBooking.step2.floorPlanTitle", "Select Your Table")}
-                  </h2>
-                  {selectedTableObj && (
-                    <Badge variant="default" className="text-[11px] font-semibold shrink-0">
-                      {getTableDisplayName(selectedTableObj)} ({selectedTableObj.capacity} seats)
-                    </Badge>
-                  )}
-                </div>
+                <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
+                  {t("publicBooking.step2.floorPlanTitle", "Select Your Table")}
+                </h2>
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
                   {restaurant.name} • {guests} guests • {date} at {selectedTime && formatDisplayTime(selectedTime)}
                 </p>
