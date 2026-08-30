@@ -10,7 +10,15 @@
     "reservations": "Rezervasyonlar",
     "customers": "Müşteriler",
     "analytics": "Analitik",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "sectionMain": "Operasyonlar",
+    "sectionInsights": "Müşteri & Analiz",
+    "sectionSystem": "Tercihler",
+    "collapseSidebar": "Kenar çubuğunu daralt",
+    "expandSidebar": "Kenar çubuğunu genişlet",
+    "liveBooking": "Canlı Rezervasyon Sayfası",
+    "acceptingReservations": "Çevrimiçi",
+    "tagline": "Rezervasyon Sistemi"
   },
   "header": {
     "signIn": "Giriş yap",

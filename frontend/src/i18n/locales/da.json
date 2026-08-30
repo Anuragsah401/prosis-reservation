@@ -10,7 +10,15 @@
     "reservations": "Reservationer",
     "customers": "Kunder",
     "analytics": "Statistik",
-    "settings": "Indstillinger"
+    "settings": "Indstillinger",
+    "sectionMain": "Drift",
+    "sectionInsights": "Kunder & Data",
+    "sectionSystem": "Indstillinger",
+    "collapseSidebar": "Skjul sidepanel",
+    "expandSidebar": "Udvid sidepanel",
+    "liveBooking": "Offentlig bookingside",
+    "acceptingReservations": "Online",
+    "tagline": "Bordstyring"
   },
   "header": {
     "signIn": "Log ind",

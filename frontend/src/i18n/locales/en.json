@@ -10,7 +10,15 @@
     "reservations": "Reservations",
     "customers": "Customers",
     "analytics": "Analytics",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sectionMain": "Operations",
+    "sectionInsights": "Insights & CRM",
+    "sectionSystem": "Preferences",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "liveBooking": "Live Booking Page",
+    "acceptingReservations": "Online",
+    "tagline": "Reservation Suite"
   },
   "header": {
     "signIn": "Sign in",
