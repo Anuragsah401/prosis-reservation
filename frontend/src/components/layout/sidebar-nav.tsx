@@ -47,7 +47,7 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
                           : "gap-3 rounded-lg px-2.5 py-2 text-sm font-medium",
                         isActive
                           ? collapsed
-                            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25 font-semibold"
+                            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25 font-semibold ring-2 ring-primary/25"
                             : "bg-primary/10 text-primary font-semibold border border-primary/20 shadow-2xs dark:bg-primary/20 dark:border-primary/30"
                           : "text-muted-foreground hover:bg-muted/80 hover:text-foreground active:scale-[0.97]",
                       )
@@ -69,9 +69,9 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
                             collapsed ? "size-5" : "size-4.5",
                             isActive
                               ? collapsed
-                                ? "text-primary-foreground stroke-[2.2]"
+                                ? "text-primary-foreground stroke-[2.3]"
                                 : "text-primary stroke-[2.2]"
-                              : "text-muted-foreground group-hover:text-foreground",
+                              : "text-muted-foreground group-hover:text-foreground stroke-[1.8]",
                           )}
                         />
 
@@ -107,4 +107,3 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
     </nav>
   )
 }
-
