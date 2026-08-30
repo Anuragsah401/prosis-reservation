@@ -332,7 +332,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   })
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-3.5 py-5 sm:px-6 sm:py-10 pb-28 sm:pb-12">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-3.5 py-5 sm:px-6 sm:py-10 pb-10 sm:pb-12">
       <SEOHead
         title={`Reserve a Table at ${restaurant.name}`}
         description={`Book your table online at ${restaurant.name}${restaurant.address ? ` in ${restaurant.address}` : ""}. Instant confirmation, seating layout selection, and special requests.`}
@@ -1035,61 +1035,6 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Mobile Sticky Bottom Action Bar */}
-      {step !== 4 && (
-        <div className="fixed bottom-0 inset-x-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md p-3 sm:hidden shadow-lg flex items-center justify-between gap-3">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold truncate text-foreground">
-              {guests} guests • {date}
-            </span>
-            <span className="text-[11px] text-muted-foreground truncate">
-              {selectedTime ? formatDisplayTime(selectedTime) : "Select a time"}
-              {tableChoiceMode === "CHOOSE" && selectedTableObj ? ` • ${getTableDisplayName(selectedTableObj)}` : ""}
-            </span>
-          </div>
-
-          {step === 1 && (
-            <Button
-              onClick={goToStep2}
-              disabled={!selectedTime}
-              size="default"
-              className="h-10 px-4 font-semibold shrink-0 gap-1.5 shadow-sm"
-            >
-              <span>Next</span>
-              <ChevronRight className="size-4" />
-            </Button>
-          )}
-
-          {step === 2 && (
-            <Button
-              onClick={goToStep3}
-              disabled={tableChoiceMode === "CHOOSE" && !selectedTableId}
-              size="default"
-              className="h-10 px-4 font-semibold shrink-0 gap-1.5 shadow-sm"
-            >
-              <span>Next</span>
-              <ChevronRight className="size-4" />
-            </Button>
-          )}
-
-          {step === 3 && (
-            <Button
-              onClick={() => void handleFinalSubmit()}
-              disabled={isSubmitting}
-              size="default"
-              className="h-10 px-4 font-semibold shrink-0 gap-1.5 shadow-sm"
-            >
-              {isSubmitting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="size-4" />
-              )}
-              <span>Book</span>
-            </Button>
-          )}
         </div>
       )}
     </div>
