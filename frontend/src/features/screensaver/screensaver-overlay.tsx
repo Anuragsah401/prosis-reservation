@@ -12,6 +12,8 @@ import {
   QrCode,
   ShieldCheck,
   ChevronRight,
+  Maximize2,
+  Minimize2,
 } from "lucide-react"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
 import { authClient } from "@/features/auth/auth-client"
@@ -117,6 +119,26 @@ export function ScreenSaverOverlay() {
     return () => clearInterval(interval)
   }, [isActive])
 
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(typeof document !== "undefined" && document.fullscreenElement))
+
+  // Track fullscreen changes
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement))
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange)
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange)
+  }, [])
+
+  const handleToggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {})
+    }
+  }
+
   // Close on Escape key
   useEffect(() => {
     if (!isActive) return
@@ -214,12 +236,23 @@ export function ScreenSaverOverlay() {
 
           <button
             type="button"
+            onClick={handleToggleFullscreen}
+            className="size-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white/80 hover:text-white flex items-center justify-center transition-all shadow-md"
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+          </button>
+
+          <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               dismissScreenSaver()
             }}
             className="size-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white/80 hover:text-white flex items-center justify-center transition-all shadow-md"
             aria-label="Exit screen saver"
+            title="Close screen saver"
           >
             <X className="size-4" />
           </button>

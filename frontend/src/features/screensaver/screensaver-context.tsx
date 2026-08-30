@@ -63,6 +63,15 @@ export function ScreenSaverProvider({ children }: { children: ReactNode }) {
   const activateScreenSaver = useCallback(() => {
     activationTimeRef.current = Date.now()
     setIsActive(true)
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {
+          // Browser may require user gesture for automatic fullscreen
+        })
+      }
+    } catch {
+      // ignore
+    }
   }, [])
 
   const dismissScreenSaver = useCallback(() => {
@@ -70,6 +79,13 @@ export function ScreenSaverProvider({ children }: { children: ReactNode }) {
     if (Date.now() - activationTimeRef.current < 500) return
     setIsActive(false)
     lastActiveTimestampRef.current = Date.now()
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {})
+      }
+    } catch {
+      // ignore
+    }
   }, [])
 
   // Inactivity detection loop
