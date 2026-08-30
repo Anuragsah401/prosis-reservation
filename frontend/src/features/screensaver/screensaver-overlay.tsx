@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { QRCodeSVG } from "qrcode.react"
 import {
   Sparkles,
@@ -170,11 +171,17 @@ export function ScreenSaverOverlay() {
   const currentSlideData = PROMO_SLIDES[activeSlide]
   const SlideIcon = currentSlideData.icon
 
-  return (
+  return createPortal(
     <div
-      onClick={dismissScreenSaver}
+      onClick={() => {
+        // If user clicked anywhere on screensaver while not in fullscreen, also attempt fullscreen expansion
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {})
+        }
+        dismissScreenSaver()
+      }}
       className={cn(
-        "fixed inset-0 z-[99999] flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden cursor-pointer",
+        "fixed inset-0 z-[999999] w-screen h-screen min-h-svh flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden cursor-pointer",
         "bg-gradient-to-br transition-all duration-700 text-white font-sans",
         theme.bg,
       )}
@@ -224,15 +231,28 @@ export function ScreenSaverOverlay() {
           <div />
         )}
 
-        {/* Center/Right: Live System Badge & Dismiss Button */}
-        <div className="flex items-center gap-3">
+        {/* Center/Right: Live System Badge, Fullscreen & Dismiss Button */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-400 shadow-sm backdrop-blur-md">
             <span className="relative flex size-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
             </span>
-            <span>LIVE RESERVATION DESK</span>
+            <span className="hidden sm:inline">LIVE RESERVATION DESK</span>
+            <span className="sm:hidden">LIVE</span>
           </div>
+
+          {!isFullscreen && (
+            <button
+              type="button"
+              onClick={handleToggleFullscreen}
+              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md shadow-xs transition-all hover:scale-105"
+              title="Enter Fullscreen"
+            >
+              <Maximize2 className="size-3.5" />
+              <span className="hidden md:inline">Fullscreen Mode</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -415,17 +435,31 @@ export function ScreenSaverOverlay() {
       </main>
 
       {/* Footer Notice */}
-      <footer className="relative z-10 flex items-center justify-between gap-4 text-xs text-white/60">
+      <footer className="relative z-10 flex items-center justify-between gap-4 text-xs text-white/60 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-white/60 animate-ping" />
-          <span>Interactive Screen Saver Active</span>
+          <span>Interactive Standby Display Active</span>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/15 text-white/80 backdrop-blur-md shadow-xs">
-          <span>Click anywhere or press any key to resume</span>
-          <ChevronRight className="size-3.5" />
+        <div className="flex items-center gap-2.5">
+          {!isFullscreen && (
+            <button
+              type="button"
+              onClick={handleToggleFullscreen}
+              className="flex items-center gap-1.5 bg-primary/80 hover:bg-primary text-primary-foreground px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-md transition-all hover:scale-105"
+            >
+              <Maximize2 className="size-3.5" />
+              <span>Full Screen</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-full border border-white/15 text-white/80 backdrop-blur-md shadow-xs">
+            <span>Press Escape or touch anywhere to resume</span>
+            <ChevronRight className="size-3.5" />
+          </div>
         </div>
       </footer>
-    </div>
+    </div>,
+    document.body,
   )
 }
