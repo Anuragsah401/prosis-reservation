@@ -161,6 +161,8 @@
       "showPassword": "Show password",
       "hidePassword": "Hide password",
       "restaurantName": "Restaurant name",
+      "restaurantLogo": "Restaurant Logo",
+      "restaurantLogoDesc": "Upload your restaurant logo (optional) to personalize booking pages.",
       "cuisineType": "Cuisine type",
       "selectCuisine": "Select a cuisine",
       "cuisineAmerican": "American",
@@ -657,6 +659,8 @@
       "profile": {
         "title": "Restaurant Profile",
         "description": "Basic information about your restaurant.",
+        "logo": "Restaurant Logo",
+        "logoDesc": "Displayed on your booking page, dashboard header, and confirmation receipts.",
         "name": "Restaurant name",
         "slug": "Slug",
         "email": "Email",
@@ -748,6 +752,20 @@
         "twoFactor": "Two-factor authentication",
         "twoFactorDesc": "Require a verification code in addition to your password."
       }
+    }
+  },
+  "components": {
+    "logoUpload": {
+      "label": "Restaurant Logo",
+      "description": "Recommended square PNG, JPG, or SVG up to 5MB",
+      "currentLogo": "Restaurant Logo Attached",
+      "change": "Change",
+      "remove": "Remove",
+      "clickToUpload": "Click to upload",
+      "orDragAndDrop": "or drag and drop",
+      "uploadSuccess": "Logo uploaded successfully",
+      "invalidType": "Please upload a valid image file (PNG, JPG, SVG, WebP).",
+      "error": "Failed to process logo image."
     }
   }
 }

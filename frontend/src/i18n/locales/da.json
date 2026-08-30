@@ -161,6 +161,8 @@
       "showPassword": "Vis adgangskode",
       "hidePassword": "Skjul adgangskode",
       "restaurantName": "Restaurantnavn",
+      "restaurantLogo": "Restaurantlogo",
+      "restaurantLogoDesc": "Upload dit restaurantlogo (valgfrit) for at gøre bookingsider personlige.",
       "cuisineType": "Madtype",
       "selectCuisine": "Vælg en madtype",
       "cuisineAmerican": "Amerikansk",
@@ -656,6 +658,8 @@
       "profile": {
         "title": "Restaurantprofil",
         "description": "Grundlæggende oplysninger om din restaurant.",
+        "logo": "Restaurantlogo",
+        "logoDesc": "Vises på din bookingside, i dashboard-headeren og på bekræftelser.",
         "name": "Restaurantnavn",
         "slug": "Slug",
         "email": "E-mail",
@@ -747,6 +751,20 @@
         "twoFactor": "To-faktor-godkendelse",
         "twoFactorDesc": "Kræv en bekræftelseskode ud over din adgangskode."
       }
+    }
+  },
+  "components": {
+    "logoUpload": {
+      "label": "Restaurantlogo",
+      "description": "Anbefalet kvadratisk PNG, JPG eller SVG op til 5 MB",
+      "currentLogo": "Restaurantlogo tilknyttet",
+      "change": "Skift",
+      "remove": "Fjern",
+      "clickToUpload": "Klik for at uploade",
+      "orDragAndDrop": "eller træk og slip",
+      "uploadSuccess": "Logo uploadet",
+      "invalidType": "Upload venligst en gyldig billedfil (PNG, JPG, SVG, WebP).",
+      "error": "Kunne ikke behandle logobilledet."
     }
   }
 }

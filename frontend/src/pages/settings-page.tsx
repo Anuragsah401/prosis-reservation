@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils"
 import { supportedLanguages } from "@/i18n"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
+import { LogoUpload } from "@/components/ui/logo-upload"
 import { authClient } from "@/features/auth/auth-client"
 import {
   updateRestaurantProfile,
@@ -94,6 +95,7 @@ function RestaurantProfileSection() {
   const [email, setEmail] = useState(effectiveProfile?.email ?? "")
   const [phone, setPhone] = useState(effectiveProfile?.phone ?? "")
   const [address, setAddress] = useState(effectiveProfile?.address ?? "")
+  const [logoUrl, setLogoUrl] = useState<string | null>(effectiveProfile?.logoUrl ?? null)
   const [timezone, setTimezone] = useState(effectiveProfile?.timezone ?? "UTC")
   const [openingTime, setOpeningTime] = useState(
     effectiveProfile?.openingTime != null ? minutesToTimeString(effectiveProfile.openingTime) : "11:00",
@@ -110,6 +112,7 @@ function RestaurantProfileSection() {
       setEmail(effectiveProfile.email ?? "")
       setPhone(effectiveProfile.phone ?? "")
       setAddress(effectiveProfile.address ?? "")
+      setLogoUrl(effectiveProfile.logoUrl ?? null)
       setTimezone(effectiveProfile.timezone ?? "UTC")
       setOpeningTime(effectiveProfile.openingTime != null ? minutesToTimeString(effectiveProfile.openingTime) : "11:00")
       setClosingTime(effectiveProfile.closingTime != null ? minutesToTimeString(effectiveProfile.closingTime) : "23:00")
@@ -123,6 +126,7 @@ function RestaurantProfileSection() {
       setEmail(effectiveProfile.email ?? "")
       setPhone(effectiveProfile.phone ?? "")
       setAddress(effectiveProfile.address ?? "")
+      setLogoUrl(effectiveProfile.logoUrl ?? null)
       setTimezone(effectiveProfile.timezone ?? "UTC")
       setOpeningTime(effectiveProfile.openingTime != null ? minutesToTimeString(effectiveProfile.openingTime) : "11:00")
       setClosingTime(effectiveProfile.closingTime != null ? minutesToTimeString(effectiveProfile.closingTime) : "23:00")
@@ -152,6 +156,7 @@ function RestaurantProfileSection() {
         email: email.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
+        logoUrl: logoUrl || null,
         timezone,
         openingTime: timeStringToMinutes(openingTime),
         closingTime: timeStringToMinutes(closingTime),
@@ -202,6 +207,13 @@ function RestaurantProfileSection() {
               </a>
             </div>
           )}
+
+          <LogoUpload
+            value={logoUrl}
+            onChange={setLogoUrl}
+            label={t("pages.settings.profile.logo", "Restaurant Logo")}
+            description={t("pages.settings.profile.logoDesc", "Displayed on your booking page, dashboard header, and confirmation receipts.")}
+          />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">

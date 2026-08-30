@@ -8,6 +8,7 @@ export interface PublicRestaurant {
   email: string | null
   phone: string | null
   address: string | null
+  logoUrl?: string | null
   timezone: string
   openingTime: number
   closingTime: number

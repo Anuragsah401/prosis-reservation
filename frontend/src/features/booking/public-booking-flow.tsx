@@ -305,14 +305,23 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         jsonLd={restaurantSchema}
       />
       {/* Restaurant Title Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{restaurant.name}</h1>
-        {restaurant.address && (
-          <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
-            <MapPin className="size-3.5 shrink-0" />
-            {restaurant.address}
-          </p>
-        )}
+      <div className="flex items-center gap-4">
+        {restaurant.logoUrl ? (
+          <img
+            src={restaurant.logoUrl}
+            alt={restaurant.name}
+            className="size-14 sm:size-16 shrink-0 rounded-2xl border object-contain bg-background p-1.5 shadow-md"
+          />
+        ) : null}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{restaurant.name}</h1>
+          {restaurant.address && (
+            <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
+              <MapPin className="size-3.5 shrink-0" />
+              {restaurant.address}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Step indicator: filled+checked once done, ring when active, muted when still ahead */}

@@ -9,6 +9,7 @@ export const createRestaurantSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
+  logoUrl: z.string().optional(),
   timezone: z.string().optional(),
 })
 
@@ -17,6 +18,7 @@ export const updateRestaurantSchema = z.object({
   email: z.union([z.string().email(), z.literal(""), z.null()]).optional(),
   phone: z.union([z.string(), z.null()]).optional(),
   address: z.union([z.string(), z.null()]).optional(),
+  logoUrl: z.union([z.string(), z.null()]).optional(),
   timezone: z.string().optional(),
   /** Opening time as minutes from midnight (0-1439). */
   openingTime: z.number().int().min(0).max(1439).optional(),

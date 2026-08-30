@@ -7,6 +7,7 @@ export interface RestaurantProfile {
   email: string | null
   phone: string | null
   address: string | null
+  logoUrl: string | null
   timezone: string
   /** Opening time as minutes from midnight (e.g. 11:00 = 660). */
   openingTime: number
@@ -30,6 +31,7 @@ export async function updateRestaurantProfile(
     email: string | null
     phone: string | null
     address: string | null
+    logoUrl: string | null
     timezone: string
     openingTime: number
     closingTime: number

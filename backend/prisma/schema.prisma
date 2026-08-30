@@ -20,6 +20,7 @@ model Restaurant {
   email     String?
   phone     String?
   address   String?
+  logoUrl   String?  @db.Text
   timezone  String   @default("UTC")
   /** Restaurant opening time as minutes from midnight (e.g. 11:00 = 660). */
   openingTime Int      @default(660)

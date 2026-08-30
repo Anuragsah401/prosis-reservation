@@ -52,7 +52,15 @@ export function DashboardHeader() {
         <SheetContent side="left" className="w-64 p-0">
           <SheetHeader className="border-b px-4 py-3">
             <SheetTitle className="flex items-center gap-2 text-base font-semibold">
-              <Store className="text-primary size-4" />
+              {profile?.logoUrl ? (
+                <img
+                  src={profile.logoUrl}
+                  alt={restaurantDisplayName}
+                  className="size-6 shrink-0 rounded-md border object-contain bg-background"
+                />
+              ) : (
+                <Store className="text-primary size-4" />
+              )}
               <span className="truncate">{restaurantDisplayName}</span>
             </SheetTitle>
           </SheetHeader>
@@ -63,10 +71,18 @@ export function DashboardHeader() {
       </Sheet>
 
       {/* Restaurant Name in Nav Bar */}
-      <div className="flex min-w-0 items-center gap-2">
-        <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20">
-          <Store className="size-4" />
-        </div>
+      <div className="flex min-w-0 items-center gap-2.5">
+        {profile?.logoUrl ? (
+          <img
+            src={profile.logoUrl}
+            alt={restaurantDisplayName}
+            className="size-8 shrink-0 rounded-lg border object-contain bg-background shadow-2xs"
+          />
+        ) : (
+          <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20">
+            <Store className="size-4" />
+          </div>
+        )}
         <span className="truncate text-sm font-semibold tracking-tight sm:text-base">
           {restaurantDisplayName}
         </span>

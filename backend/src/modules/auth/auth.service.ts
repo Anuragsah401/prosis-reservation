@@ -68,6 +68,7 @@ export const authService = {
             name: data.restaurantName!,
             slug,
             phone: data.restaurantPhone,
+            logoUrl: data.restaurantLogoUrl || null,
             timezone: data.restaurantTimezone || "UTC",
             email: data.email,
             openingTime: data.restaurantOpeningTime ?? 660, // 11:00 AM default

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { LogoUpload } from "@/components/ui/logo-upload"
 import { cn } from "@/lib/utils"
 import { authClient, AuthError } from "@/features/auth/auth-client"
 import { usePersistedFormState } from "@/hooks/use-form-persistence"
@@ -63,6 +64,7 @@ export function SignupPage() {
     restaurantName: "",
     cuisine: "",
     phone: undefined as string | undefined,
+    logoUrl: null as string | null,
     tableCount: "",
     openTime: "17:00",
     closeTime: "23:00",
@@ -75,13 +77,14 @@ export function SignupPage() {
       step: typeof updater === "function" ? (updater as (s: number) => number)(d.step) : updater,
     }))
 
-  const { name, email, password, restaurantName, cuisine, phone, tableCount, openTime, closeTime } = draft
+  const { name, email, password, restaurantName, cuisine, phone, logoUrl, tableCount, openTime, closeTime } = draft
   const setName = (v: string) => setDraft((d) => ({ ...d, name: v }))
   const setEmail = (v: string) => setDraft((d) => ({ ...d, email: v }))
   const setPassword = (v: string) => setDraft((d) => ({ ...d, password: v }))
   const setRestaurantName = (v: string) => setDraft((d) => ({ ...d, restaurantName: v }))
   const setCuisine = (v: string) => setDraft((d) => ({ ...d, cuisine: v }))
   const setPhone = (v: string | undefined) => setDraft((d) => ({ ...d, phone: v }))
+  const setLogoUrl = (v: string | null) => setDraft((d) => ({ ...d, logoUrl: v }))
   const setTableCount = (v: string) => setDraft((d) => ({ ...d, tableCount: v }))
   const setOpenTime = (v: string) => setDraft((d) => ({ ...d, openTime: v }))
   const setCloseTime = (v: string) => setDraft((d) => ({ ...d, closeTime: v }))
@@ -155,6 +158,7 @@ export function SignupPage() {
         password,
         restaurantName: restaurantName.trim(),
         restaurantPhone: phone?.trim() || undefined,
+        restaurantLogoUrl: logoUrl || undefined,
         restaurantOpeningTime: openingMinutes,
         restaurantClosingTime: closingMinutes,
       })
@@ -432,6 +436,14 @@ export function SignupPage() {
                           onChange={setPhone}
                         />
                       </div>
+
+                      <LogoUpload
+                        value={logoUrl}
+                        onChange={setLogoUrl}
+                        optional
+                        label={t("auth.signup.restaurantLogo", "Restaurant Logo")}
+                        description={t("auth.signup.restaurantLogoDesc", "Upload your restaurant logo (optional) to personalize booking pages.")}
+                      />
                     </>
                   )}
 

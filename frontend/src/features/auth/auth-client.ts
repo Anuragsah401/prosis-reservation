@@ -87,6 +87,7 @@ export interface RegisterPayload {
   password: string
   restaurantName?: string
   restaurantPhone?: string
+  restaurantLogoUrl?: string
   restaurantTimezone?: string
   restaurantOpeningTime?: number
   restaurantClosingTime?: number

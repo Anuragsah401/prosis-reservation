@@ -23,6 +23,7 @@ export const restaurantService = {
     email?: string
     phone?: string
     address?: string
+    logoUrl?: string
     timezone?: string
   }) {
     const existing = await prisma.restaurant.findUnique({ where: { slug: data.slug } })
@@ -39,6 +40,7 @@ export const restaurantService = {
       email: string | null
       phone: string | null
       address: string | null
+      logoUrl: string | null
       timezone: string
       openingTime: number
       closingTime: number
@@ -54,6 +56,7 @@ export const restaurantService = {
     if (data.email !== undefined) updateData.email = data.email ? data.email.trim() : null
     if (data.phone !== undefined) updateData.phone = data.phone ? data.phone.trim() : null
     if (data.address !== undefined) updateData.address = data.address ? data.address.trim() : null
+    if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl ? data.logoUrl.trim() : null
     if (data.timezone !== undefined) updateData.timezone = data.timezone
     if (data.openingTime !== undefined) updateData.openingTime = data.openingTime
     if (data.closingTime !== undefined) updateData.closingTime = data.closingTime

@@ -25,6 +25,7 @@ export const registerSchema = z.object({
   // Self-signup (creates a brand-new restaurant + owner role):
   restaurantName: z.string().trim().min(1).max(120).optional(),
   restaurantPhone: z.string().trim().max(32).optional(),
+  restaurantLogoUrl: z.string().optional(),
   restaurantTimezone: z.string().trim().max(64).optional(),
   // Restaurant opening/closing hours as minutes from midnight (optional)
   restaurantOpeningTime: z.number().int().min(0).max(1439).optional(),

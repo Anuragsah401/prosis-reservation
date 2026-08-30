@@ -161,6 +161,8 @@
       "showPassword": "Şifreyi göster",
       "hidePassword": "Şifreyi gizle",
       "restaurantName": "Restoran adı",
+      "restaurantLogo": "Restoran Logosu",
+      "restaurantLogoDesc": "Rezervasyon sayfalarını kişiselleştirmek için restoran logonuzu yükleyin (isteğe bağlı).",
       "cuisineType": "Mutfak türü",
       "selectCuisine": "Bir mutfak seçin",
       "cuisineAmerican": "Amerikan",
@@ -656,6 +658,8 @@
       "profile": {
         "title": "Restoran Profili",
         "description": "Restoranınız hakkında temel bilgiler.",
+        "logo": "Restoran Logosu",
+        "logoDesc": "Rezervasyon sayfanızda, kontrol paneli başlığında ve onay belgelerinde gösterilir.",
         "name": "Restoran adı",
         "slug": "Slug",
         "email": "E-posta",
@@ -747,6 +751,20 @@
         "twoFactor": "İki faktörlü kimlik doğrulama",
         "twoFactorDesc": "Şifrenize ek olarak bir doğrulama kodu isteyin."
       }
+    }
+  },
+  "components": {
+    "logoUpload": {
+      "label": "Restoran Logosu",
+      "description": "Önerilen kare PNG, JPG veya SVG (en fazla 5 MB)",
+      "currentLogo": "Restoran Logosu Eklendi",
+      "change": "Değiştir",
+      "remove": "Kaldır",
+      "clickToUpload": "Yüklemek için tıklayın",
+      "orDragAndDrop": "veya sürükleyip bırakın",
+      "uploadSuccess": "Logo başarıyla yüklendi",
+      "invalidType": "Lütfen geçerli bir resim dosyası yükleyin (PNG, JPG, SVG, WebP).",
+      "error": "Logo resmi işlenemedi."
     }
   }
 }
