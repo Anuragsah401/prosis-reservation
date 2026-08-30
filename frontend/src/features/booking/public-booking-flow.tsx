@@ -831,15 +831,15 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
           {/* Dialog Container */}
           <div className="relative z-10 flex flex-col w-full h-full sm:h-[90vh] sm:max-h-[850px] max-w-5xl bg-background sm:rounded-3xl border border-border shadow-2xl overflow-hidden">
-            {/* Header Row 1: Title, Summary & Close */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/80 bg-card shrink-0">
+            {/* Header: Title, Reservation Context, View Switcher & Close */}
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/80 bg-card shrink-0 gap-3">
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-bold text-foreground truncate">
+                  <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
                     {t("publicBooking.step2.floorPlanTitle", "Select Your Table")}
                   </h2>
                   {selectedTableObj && (
-                    <Badge variant="default" className="text-xs font-semibold shrink-0">
+                    <Badge variant="default" className="text-[11px] font-semibold shrink-0">
                       {getTableDisplayName(selectedTableObj)} ({selectedTableObj.capacity} seats)
                     </Badge>
                   )}
@@ -849,75 +849,76 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsFloorPlanModalOpen(false)}
-                className="size-9 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shrink-0 ml-2"
-                aria-label="Close"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            {/* Header Row 2: Controls Subheader (Floors on Left, Map/List Switcher on Right) */}
-            <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 border-b border-border/60 bg-muted/30 gap-2 shrink-0">
-              {/* Left: Floor Selector Pills */}
-              {floors.length > 1 ? (
-                <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-[55%] sm:max-w-none no-scrollbar">
-                  {floors.map((fl) => (
-                    <button
-                      key={fl}
-                      type="button"
-                      onClick={() => setActiveFloor(fl)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap",
-                        (activeFloor || floors[0]) === fl
-                          ? "bg-primary text-primary-foreground shadow-xs"
-                          : "bg-background border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                      )}
-                    >
-                      {fl}
-                    </button>
-                  ))}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Segmented Map vs List View Switcher */}
+                <div className="flex items-center rounded-full border border-border/80 bg-muted/40 p-0.5 text-xs shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setTablePickerView("MAP")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all font-semibold",
+                      tablePickerView === "MAP"
+                        ? "bg-background text-foreground shadow-xs font-bold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <LayoutGrid className="size-3.5" />
+                    <span>Map</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTablePickerView("LIST")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all font-semibold",
+                      tablePickerView === "LIST"
+                        ? "bg-background text-foreground shadow-xs font-bold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <List className="size-3.5" />
+                    <span>List ({availableTablesList.length})</span>
+                  </button>
                 </div>
-              ) : floors.length === 1 ? (
-                <div className="text-xs font-semibold text-muted-foreground">
-                  <span>{floors[0]}</span>
-                </div>
-              ) : (
-                <div />
-              )}
 
-              {/* Right: Map vs List Switcher */}
-              <div className="flex items-center rounded-full border border-border/80 bg-background p-0.5 text-xs shadow-2xs ml-auto shrink-0">
                 <button
                   type="button"
-                  onClick={() => setTablePickerView("MAP")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 rounded-full transition-all font-semibold",
-                    tablePickerView === "MAP"
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                  onClick={() => setIsFloorPlanModalOpen(false)}
+                  className="size-9 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shrink-0"
+                  aria-label="Close"
                 >
-                  <LayoutGrid className="size-3.5" />
-                  <span>Map</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTablePickerView("LIST")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 rounded-full transition-all font-semibold",
-                    tablePickerView === "LIST"
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <List className="size-3.5" />
-                  <span>List ({availableTablesList.length})</span>
+                  <X className="size-4" />
                 </button>
               </div>
             </div>
+
+            {/* Dedicated Floor Selector Strip (Only shown when multiple floors exist) */}
+            {floors.length > 1 && (
+              <div className="flex items-center gap-2 px-4 py-2 sm:px-6 border-b border-border/60 bg-muted/20 overflow-x-auto no-scrollbar shrink-0">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0">
+                  Floor:
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {floors.map((fl) => {
+                    const isActive = (activeFloor || floors[0]) === fl
+                    return (
+                      <button
+                        key={fl}
+                        type="button"
+                        onClick={() => setActiveFloor(fl)}
+                        className={cn(
+                          "px-3.5 py-1 rounded-full text-xs font-semibold transition-all whitespace-nowrap",
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-xs"
+                            : "bg-background border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        )}
+                      >
+                        {fl}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Modal Body */}
             <div className="flex-1 relative overflow-hidden bg-muted/15 flex flex-col min-h-0">
