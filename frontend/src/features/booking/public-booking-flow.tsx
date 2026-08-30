@@ -13,6 +13,9 @@ import {
   Layers,
   AlertCircle,
   Check,
+  Store,
+  LayoutGrid,
+  List,
 } from "lucide-react"
 import {
   Card,
@@ -48,6 +51,12 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function addDaysIso(days: number) {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 interface PublicBookingFlowProps {
   restaurantId: string
 }
@@ -75,6 +84,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
   // Step 2 values
   const [tableChoiceMode, setTableChoiceMode] = useState<"AUTO" | "CHOOSE">("AUTO")
+  const [tablePickerView, setTablePickerView] = useState<"MAP" | "LIST">("MAP")
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [floorPlanTables, setFloorPlanTables] = useState<FloorPlanViewerTable[]>([])
   const [isLoadingTables, setIsLoadingTables] = useState(false)
@@ -154,7 +164,6 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         .then((tables) => {
           if (!cancelled) {
             setFloorPlanTables(tables)
-            // If the previously selected table is not available, deselect it
             if (selectedTableId) {
               const current = tables.find((t) => t.id === selectedTableId)
               if (!current || !current.available) {
@@ -183,6 +192,10 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
     return floorPlanTables.find((t) => t.id === selectedTableId) ?? null
   }, [selectedTableId, floorPlanTables])
 
+  const availableTablesList = useMemo(() => {
+    return floorPlanTables.filter((t) => t.available)
+  }, [floorPlanTables])
+
   function handleDateChange(nextDate: string) {
     setDate(nextDate)
     setSelectedTime(null)
@@ -202,10 +215,12 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   function goToStep2() {
     if (!selectedTime) return
     setStep(2)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   function goToStep3() {
     setStep(3)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   function validateContactForm(): boolean {
@@ -220,8 +235,8 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
     return Object.keys(errors).length === 0
   }
 
-  async function handleFinalSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleFinalSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault()
     if (!validateContactForm() || !selectedTime) return
 
     setIsSubmitting(true)
@@ -242,6 +257,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
       setConfirmation(result)
       setStep(4)
+      window.scrollTo({ top: 0, behavior: "smooth" })
       toast.success(t("publicBooking.confirmed.toastSuccess", "Reservation requested! A confirmation email has been sent."))
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("publicBooking.step3.errorSubmit", "Failed to submit booking. Please try again.")
@@ -259,13 +275,14 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
     setTableChoiceMode("AUTO")
     setNotes("")
     setStep(1)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   if (isLoadingRestaurant) {
     return (
       <div className="mx-auto flex min-h-[60vh] w-full max-w-2xl flex-col items-center justify-center gap-3 p-4">
         <Loader2 className="text-primary size-8 animate-spin" />
-        <p className="text-muted-foreground text-sm">{t("publicBooking.loading", "Loading restaurant details…")}</p>
+        <p className="text-muted-foreground text-sm font-medium">{t("publicBooking.loading", "Loading restaurant details…")}</p>
       </div>
     )
   }
@@ -284,8 +301,8 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
   const stepsList = [
     { s: 1, label: t("publicBooking.steps.dateTime", "Date & Time") },
-    { s: 2, label: t("publicBooking.steps.chooseTable", "Choose Table") },
-    { s: 3, label: t("publicBooking.steps.yourDetails", "Your Details") },
+    { s: 2, label: t("publicBooking.steps.chooseTable", "Table") },
+    { s: 3, label: t("publicBooking.steps.yourDetails", "Details") },
   ]
 
   const restaurantSchema = generateRestaurantSchema({
@@ -296,7 +313,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   })
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:py-12">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-3.5 py-5 sm:px-6 sm:py-10 pb-28 sm:pb-12">
       <SEOHead
         title={`Reserve a Table at ${restaurant.name}`}
         description={`Book your table online at ${restaurant.name}${restaurant.address ? ` in ${restaurant.address}` : ""}. Instant confirmation, seating layout selection, and special requests.`}
@@ -304,99 +321,167 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         ogType="restaurant.restaurant"
         jsonLd={restaurantSchema}
       />
-      {/* Restaurant Title Header */}
-      <div className="flex items-center gap-4">
-        {restaurant.logoUrl ? (
-          <img
-            src={restaurant.logoUrl}
-            alt={restaurant.name}
-            className="size-14 sm:size-16 shrink-0 rounded-2xl border object-contain bg-background p-1.5 shadow-md"
-          />
-        ) : null}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{restaurant.name}</h1>
-          {restaurant.address && (
-            <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
-              <MapPin className="size-3.5 shrink-0" />
-              {restaurant.address}
-            </p>
+
+      {/* Restaurant Hero Card */}
+      <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 shadow-xs backdrop-blur-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0">
+          {restaurant.logoUrl ? (
+            <img
+              src={restaurant.logoUrl}
+              alt={restaurant.name}
+              className="size-13 sm:size-15 shrink-0 rounded-2xl border border-border/80 object-contain bg-background p-1 shadow-xs"
+            />
+          ) : (
+            <div className="size-13 sm:size-15 shrink-0 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shadow-xs">
+              <Store className="size-6" />
+            </div>
           )}
+
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
+                {restaurant.name}
+              </h1>
+              <Badge variant="secondary" className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 border-emerald-500/20 shrink-0">
+                <CheckCircle2 className="size-3 mr-1" />
+                Verified Partner
+              </Badge>
+            </div>
+
+            {restaurant.address && (
+              <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs truncate">
+                <MapPin className="size-3.5 shrink-0" />
+                <span className="truncate">{restaurant.address}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Badge variant="outline" className="text-xs font-medium text-muted-foreground gap-1">
+            <Clock className="size-3" />
+            <span>
+              {formatDisplayTime(slots[0] || "11:00")} – {formatDisplayTime(slots[slots.length - 1] || "22:30")}
+            </span>
+          </Badge>
         </div>
       </div>
 
-      {/* Step indicator: filled+checked once done, ring when active, muted when still ahead */}
+      {/* Connected Step Bar */}
       {step !== 4 && (
-        <div className="flex items-center gap-2 px-1">
-          {stepsList.map(({ s, label }) => (
-            <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
-              <div
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium transition-colors",
-                  s < step && "border-primary bg-primary text-primary-foreground",
-                  s === step && "border-primary text-primary font-semibold ring-2 ring-primary/20 bg-primary/5",
-                  s > step && "border-border bg-muted text-muted-foreground",
-                )}
-              >
-                {s < step ? <Check className="size-3.5" /> : s}
+        <div className="flex items-center justify-between relative px-2 py-1">
+          <div className="absolute left-6 right-6 top-4 -translate-y-1/2 h-0.5 bg-border -z-0" />
+          {stepsList.map(({ s, label }) => {
+            const isCompleted = s < step
+            const isCurrent = s === step
+
+            return (
+              <div key={label} className="relative z-10 flex flex-col items-center gap-1">
+                <div
+                  className={cn(
+                    "flex size-8 items-center justify-center rounded-full text-xs font-bold transition-all",
+                    isCompleted && "bg-primary text-primary-foreground shadow-sm",
+                    isCurrent && "border-2 border-primary bg-background text-primary ring-4 ring-primary/15 font-extrabold shadow-sm scale-110",
+                    !isCompleted && !isCurrent && "border border-border bg-muted text-muted-foreground",
+                  )}
+                >
+                  {isCompleted ? <Check className="size-4 stroke-[3]" /> : s}
+                </div>
+                <span
+                  className={cn(
+                    "text-[11px] font-semibold tracking-tight text-center whitespace-nowrap",
+                    isCurrent ? "text-foreground font-bold" : "text-muted-foreground",
+                  )}
+                >
+                  {label}
+                </span>
               </div>
-              <span
-                className={cn(
-                  "text-xs text-center line-clamp-1",
-                  s === step ? "text-foreground font-medium" : "text-muted-foreground",
-                )}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {/* STEP 1: DATE, GUESTS & TIME */}
       {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("publicBooking.step1.title", "Select Date, Guests & Time")}</CardTitle>
-            <CardDescription>
-              {t("publicBooking.serviceHours", "Service hours: {{open}} – {{close}}", {
-                open: formatDisplayTime(slots[0] || "11:00"),
-                close: formatDisplayTime(slots[slots.length - 1] || "22:30"),
-              })}
+        <Card className="shadow-xs">
+          <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+            <CardTitle className="text-lg sm:text-xl">
+              {t("publicBooking.step1.title", "Select Date, Guests & Time")}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              {t("publicBooking.step1.subtitle", "Pick your reservation details below.")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="booking-date" className="flex items-center gap-1.5 font-medium">
-                  <CalendarDays className="size-4 text-primary" />
-                  {t("publicBooking.step1.date", "Date")}
-                </Label>
-                <Input
-                  id="booking-date"
-                  type="date"
-                  value={date}
-                  min={todayIso()}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="cursor-pointer"
-                />
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <Label className="flex items-center gap-1.5 font-medium">
-                  <Users className="size-4 text-primary" />
-                  {t("publicBooking.step1.guests", "Number of Guests")}
-                </Label>
-                <GuestSelector value={guests} onChange={handleGuestsChange} max={8} />
+          <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-5">
+            {/* Quick Date Shortcuts & Date Input */}
+            <div className="flex flex-col gap-2.5">
+              <Label htmlFor="booking-date" className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <CalendarDays className="size-3.5 text-primary" />
+                <span>{t("publicBooking.step1.date", "Date")}</span>
+              </Label>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                {[
+                  { label: "Today", val: todayIso() },
+                  { label: "Tomorrow", val: addDaysIso(1) },
+                  { label: "In 2 Days", val: addDaysIso(2) },
+                ].map((item) => (
+                  <Button
+                    key={item.label}
+                    type="button"
+                    variant={date === item.val ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "h-9 text-xs rounded-xl font-medium",
+                      date === item.val && "shadow-xs",
+                    )}
+                    onClick={() => handleDateChange(item.val)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+
+                <div className="relative col-span-3 sm:col-span-1">
+                  <Input
+                    id="booking-date"
+                    type="date"
+                    value={date}
+                    min={todayIso()}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="h-9 text-xs rounded-xl cursor-pointer font-medium"
+                  />
+                </div>
               </div>
             </div>
 
             <Separator />
 
-            <div className="flex flex-col gap-3">
-              <Label className="flex items-center gap-1.5 font-medium">
-                <Clock className="size-4 text-primary" />
-                {t("publicBooking.step1.availableTimes", "Available Times")}
+            {/* Guest Selector */}
+            <div className="flex flex-col gap-2.5">
+              <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <Users className="size-3.5 text-primary" />
+                <span>{t("publicBooking.step1.guests", "Number of Guests")}</span>
               </Label>
+              <GuestSelector value={guests} onChange={handleGuestsChange} max={20} />
+            </div>
+
+            <Separator />
+
+            {/* Time Slot Grid */}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Clock className="size-3.5 text-primary" />
+                  <span>{t("publicBooking.step1.availableTimes", "Available Times")}</span>
+                </Label>
+                {selectedTime && (
+                  <Badge variant="default" className="text-xs font-semibold">
+                    {formatDisplayTime(selectedTime)}
+                  </Badge>
+                )}
+              </div>
+
               <TimeSlotGrid
                 slots={slots}
                 disabledSlots={disabledSlots}
@@ -405,8 +490,14 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
               />
             </div>
           </CardContent>
-          <CardFooter className="justify-end border-t pt-4">
-            <Button onClick={goToStep2} disabled={!selectedTime} className="gap-2">
+
+          <CardFooter className="justify-end border-t p-4 sm:p-6">
+            <Button
+              onClick={goToStep2}
+              disabled={!selectedTime}
+              size="lg"
+              className="w-full sm:w-auto gap-2 font-semibold shadow-xs"
+            >
               <span>{t("publicBooking.step1.next", "Next: Choose Table")}</span>
               <ChevronRight className="size-4" />
             </Button>
@@ -414,12 +505,14 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
         </Card>
       )}
 
-      {/* STEP 2: TABLE SELECTION (WITH INTERACTIVE FLOOR PLAN) */}
+      {/* STEP 2: TABLE SELECTION (WITH MOBILE LIST & MAP VIEWS) */}
       {step === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("publicBooking.step2.title", "Select Table Preference")}</CardTitle>
-            <CardDescription>
+        <Card className="shadow-xs">
+          <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+            <CardTitle className="text-lg sm:text-xl">
+              {t("publicBooking.step2.title", "Select Table Preference")}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {t("publicBooking.step2.subtitle", "Reservation for {{guests}} guests on {{date}} at {{time}}", {
                 guests,
                 date,
@@ -427,9 +520,10 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
               })}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            {/* Table mode options */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+          <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-5">
+            {/* Table Choice Modes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -437,18 +531,18 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                   setSelectedTableId(null)
                 }}
                 className={cn(
-                  "flex flex-col items-start gap-1.5 rounded-lg border p-4 text-left transition-all",
+                  "flex flex-col items-start gap-1.5 rounded-2xl border p-4 text-left transition-all",
                   tableChoiceMode === "AUTO"
-                    ? "border-primary bg-primary/10 ring-2 ring-primary/20"
-                    : "border-muted hover:border-border bg-card",
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/20 shadow-xs"
+                    : "border-border hover:bg-muted/50 bg-card",
                 )}
               >
-                <div className="flex items-center gap-2 font-medium">
-                  <Sparkles className="size-4 text-primary" />
+                <div className="flex items-center gap-2 font-semibold text-sm w-full">
+                  <Sparkles className="size-4 text-primary shrink-0" />
                   <span>{t("publicBooking.step2.autoTitle", "Restaurant's Choice")}</span>
                   {tableChoiceMode === "AUTO" && <Check className="size-4 text-primary ml-auto" />}
                 </div>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-muted-foreground text-xs leading-relaxed">
                   {t("publicBooking.step2.autoHint", "We'll automatically assign the best available table for your party upon arrival.")}
                 </p>
               </button>
@@ -457,59 +551,132 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                 type="button"
                 onClick={() => setTableChoiceMode("CHOOSE")}
                 className={cn(
-                  "flex flex-col items-start gap-1.5 rounded-lg border p-4 text-left transition-all",
+                  "flex flex-col items-start gap-1.5 rounded-2xl border p-4 text-left transition-all",
                   tableChoiceMode === "CHOOSE"
-                    ? "border-primary bg-primary/10 ring-2 ring-primary/20"
-                    : "border-muted hover:border-border bg-card",
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/20 shadow-xs"
+                    : "border-border hover:bg-muted/50 bg-card",
                 )}
               >
-                <div className="flex items-center gap-2 font-medium">
-                  <Layers className="size-4 text-primary" />
+                <div className="flex items-center gap-2 font-semibold text-sm w-full">
+                  <Layers className="size-4 text-primary shrink-0" />
                   <span>{t("publicBooking.step2.chooseTitle", "Choose from Floor Plan")}</span>
                   {tableChoiceMode === "CHOOSE" && <Check className="size-4 text-primary ml-auto" />}
                 </div>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-muted-foreground text-xs leading-relaxed">
                   {t("publicBooking.step2.chooseHint", "Pick your favorite available table directly on our interactive restaurant layout.")}
                 </p>
               </button>
             </div>
 
-            {/* Embedded Floor Plan Viewer */}
+            {/* Interactive Floor Plan / Table Picker */}
             {tableChoiceMode === "CHOOSE" && (
-              <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                    <Layers className="size-4 text-primary" />
-                    <span>{t("publicBooking.step2.floorPlanTitle", "Restaurant Floor Plan")}</span>
-                  </h3>
+              <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-3.5 sm:p-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
+                      <Layers className="size-4 text-primary" />
+                      <span>{t("publicBooking.step2.floorPlanTitle", "Restaurant Tables")}</span>
+                    </h3>
+
+                    {/* View Switcher (Map vs List) */}
+                    <div className="flex items-center rounded-lg border bg-background p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setTablePickerView("MAP")}
+                        className={cn(
+                          "flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium",
+                          tablePickerView === "MAP"
+                            ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <LayoutGrid className="size-3.5" />
+                        <span>Map</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTablePickerView("LIST")}
+                        className={cn(
+                          "flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium",
+                          tablePickerView === "LIST"
+                            ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <List className="size-3.5" />
+                        <span>List ({availableTablesList.length})</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {selectedTableObj ? (
-                    <Badge variant="default" className="gap-1">
-                      {t("publicBooking.step2.selectedBadge", "Selected: {{table}} · {{seats}} seats", {
-                        table: getTableDisplayName(selectedTableObj, t("publicBooking.step2.autoTitle")),
-                        seats: selectedTableObj.capacity,
-                      })}
+                    <Badge variant="default" className="text-xs font-semibold shadow-xs">
+                      {getTableDisplayName(selectedTableObj, t("publicBooking.step2.autoTitle"))} ({selectedTableObj.capacity} seats)
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      {t("publicBooking.step2.selectBadge", "Click an available table below")}
+                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                      {t("publicBooking.step2.selectBadge", "Select a table")}
                     </Badge>
                   )}
                 </div>
 
                 {isLoadingTables ? (
-                  <div className="flex h-72 items-center justify-center rounded-md border bg-background">
+                  <div className="flex h-72 items-center justify-center rounded-xl border bg-background">
                     <Loader2 className="size-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : floorPlanTables.length === 0 ? (
-                  <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-md border bg-background p-4 text-center">
+                  <div className="flex h-44 flex-col items-center justify-center gap-2 rounded-xl border bg-background p-4 text-center">
                     <AlertCircle className="size-8 text-muted-foreground" />
-                    <p className="text-muted-foreground text-sm">
-                      {t("publicBooking.step2.noTables", "No tables found on the floor plan for this restaurant. You can continue with Restaurant Choice.")}
+                    <p className="text-muted-foreground text-xs">
+                      {t("publicBooking.step2.noTables", "No tables found on the floor plan. You can continue with Restaurant Choice.")}
                     </p>
                   </div>
+                ) : tablePickerView === "LIST" ? (
+                  /* Mobile-Friendly Table List */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                    {floorPlanTables.map((tbl) => {
+                      const isAvailable = tbl.available
+                      const isSelected = selectedTableId === tbl.id
+
+                      return (
+                        <button
+                          key={tbl.id}
+                          type="button"
+                          disabled={!isAvailable}
+                          onClick={() => setSelectedTableId(tbl.id)}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-xl border text-left transition-all touch-manipulation",
+                            isSelected
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/25 shadow-xs font-semibold"
+                              : isAvailable
+                                ? "border-border/80 bg-background hover:bg-muted/60 active:scale-[0.98]"
+                                : "opacity-40 bg-muted/40 cursor-not-allowed border-border/40",
+                          )}
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-foreground">
+                              {getTableDisplayName(tbl)}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {tbl.capacity} seats {tbl.floor ? `• ${tbl.floor}` : ""}
+                            </span>
+                          </div>
+
+                          {isSelected ? (
+                            <Badge variant="default" className="text-[10px]">Selected</Badge>
+                          ) : isAvailable ? (
+                            <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">Available</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Unavailable</Badge>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 ) : (
+                  /* Map / Floor Plan View */
                   <>
-                    <div className="h-[360px] w-full rounded-md border bg-background overflow-hidden">
+                    <div className="h-[320px] sm:h-[380px] w-full rounded-xl border bg-background overflow-hidden shadow-xs">
                       <FloorPlanViewer
                         tables={floorPlanTables}
                         selectedTableId={selectedTableId}
@@ -519,17 +686,17 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                       />
                     </div>
 
-                    <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs">
+                    <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-[11px]">
                       <span className="flex items-center gap-1.5">
                         <span className="bg-card inline-block size-3 rounded-sm border-2 border-emerald-500/60" />
-                        {t("publicBooking.step2.legendAvailable", "Available for {{guests}} guests", { guests })}
+                        {t("publicBooking.step2.legendAvailable", "Available ({{guests}}+ seats)", { guests })}
                       </span>
                       <span className="flex items-center gap-1.5">
                         <span className="bg-muted inline-block size-3 rounded-sm border-2 opacity-40" />
-                        {t("publicBooking.step2.legendUnavailable", "Reserved / Too Small")}
+                        {t("publicBooking.step2.legendUnavailable", "Unavailable")}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="border-primary bg-primary/10 inline-block size-3 rounded-sm border-2" />
+                        <span className="border-primary bg-primary/20 inline-block size-3 rounded-sm border-2" />
                         {t("publicBooking.step2.legendSelected", "Selected")}
                       </span>
                     </div>
@@ -538,15 +705,18 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
               </div>
             )}
           </CardContent>
-          <CardFooter className="justify-between border-t pt-4">
+
+          <CardFooter className="justify-between border-t p-4 sm:p-6">
             <Button variant="outline" onClick={() => setStep(1)} className="gap-2">
               <ChevronLeft className="size-4" />
               <span>{t("publicBooking.step2.back", "Back")}</span>
             </Button>
+
             <Button
               onClick={goToStep3}
               disabled={tableChoiceMode === "CHOOSE" && !selectedTableId}
-              className="gap-2"
+              size="lg"
+              className="gap-2 font-semibold shadow-xs"
             >
               <span>{t("publicBooking.step2.next", "Next: Your Details")}</span>
               <ChevronRight className="size-4" />
@@ -557,39 +727,45 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
       {/* STEP 3: GUEST CONTACT DETAILS & SUBMIT */}
       {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("publicBooking.step3.title", "Guest Information")}</CardTitle>
-            <CardDescription>
-              {t("publicBooking.step3.subtitle", "Please provide your contact details to confirm the reservation.")}
+        <Card className="shadow-xs">
+          <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+            <CardTitle className="text-lg sm:text-xl">
+              {t("publicBooking.step3.title", "Guest Information")}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              {t("publicBooking.step3.subtitle", "Provide your contact details to receive booking confirmation.")}
             </CardDescription>
           </CardHeader>
+
           <form onSubmit={(e) => void handleFinalSubmit(e)}>
-            <CardContent className="flex flex-col gap-5">
-              {/* Summary Pill */}
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="size-3.5 text-primary" />
-                  <span className="font-semibold">{date}</span>
-                  <span>{t("publicBooking.step3.at", "at")}</span>
-                  <span className="font-semibold">{selectedTime && formatDisplayTime(selectedTime)}</span>
+            <CardContent className="p-4 sm:p-6 pt-0 flex flex-col gap-4 sm:gap-5">
+              {/* Summary Card */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-2xl border bg-muted/30 p-3.5 text-xs">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Date</span>
+                  <span className="font-semibold text-foreground mt-0.5">{date}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users className="size-3.5 text-primary" />
-                  <span>{t("publicBooking.step3.guestsCount", "{{count}} guests", { count: guests })}</span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Time</span>
+                  <span className="font-semibold text-foreground mt-0.5">{selectedTime && formatDisplayTime(selectedTime)}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Layers className="size-3.5 text-primary" />
-                  <span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Party</span>
+                  <span className="font-semibold text-foreground mt-0.5">{guests} guests</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Table</span>
+                  <span className="font-semibold text-foreground mt-0.5 truncate">
                     {tableChoiceMode === "CHOOSE" && selectedTableObj
-                      ? getTableDisplayName(selectedTableObj, t("publicBooking.step2.autoTitle"))
-                      : t("publicBooking.step2.autoTitle", "Restaurant's choice")}
+                      ? getTableDisplayName(selectedTableObj)
+                      : "Restaurant's choice"}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="booking-name" className="font-medium">
+              {/* Full Name */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="booking-name" className="text-xs font-semibold">
                   {t("publicBooking.step3.fullName", "Full Name")} <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -597,43 +773,54 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t("publicBooking.step3.fullNamePlaceholder", "Jane Doe")}
+                  autoComplete="name"
+                  autoCapitalize="words"
+                  className="h-11 rounded-xl"
                   required
                 />
                 {formErrors.name && <p className="text-destructive text-xs">{formErrors.name}</p>}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="booking-email" className="font-medium">
+              {/* Email & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="booking-email" className="text-xs font-semibold">
                     {t("publicBooking.step3.email", "Email Address")} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="booking-email"
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t("publicBooking.step3.emailPlaceholder", "jane@example.com")}
+                    className="h-11 rounded-xl"
                     required
                   />
                   {formErrors.email && <p className="text-destructive text-xs">{formErrors.email}</p>}
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="booking-phone" className="font-medium">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="booking-phone" className="text-xs font-semibold">
                     {t("publicBooking.step3.phone", "Phone Number")}
                   </Label>
                   <Input
                     id="booking-phone"
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder={t("publicBooking.step3.phonePlaceholder", "+1 555 0100")}
+                    placeholder={t("publicBooking.step3.phonePlaceholder", "+45 20 12 34 56")}
+                    className="h-11 rounded-xl"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="booking-notes" className="font-medium">
+              {/* Special Requests */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="booking-notes" className="text-xs font-semibold">
                   {t("publicBooking.step3.notes", "Special Requests & Dietary Notes")}{" "}
                   <span className="text-muted-foreground font-normal">
                     {t("publicBooking.step3.notesOptional", "(optional)")}
@@ -643,19 +830,21 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                   id="booking-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t("publicBooking.step3.notesPlaceholder", "Allergies, high chairs, birthday celebration, seating requests...")}
+                  placeholder={t("publicBooking.step3.notesPlaceholder", "Allergies, high chairs, birthday celebration, quiet table...")}
                   rows={3}
+                  className="rounded-xl resize-none text-sm"
                 />
               </div>
 
               {submitError && (
-                <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
                   <AlertCircle className="size-4 shrink-0" />
                   <span>{submitError}</span>
                 </div>
               )}
             </CardContent>
-            <CardFooter className="justify-between border-t pt-4">
+
+            <CardFooter className="justify-between border-t p-4 sm:p-6">
               <Button
                 type="button"
                 variant="outline"
@@ -666,7 +855,8 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                 <ChevronLeft className="size-4" />
                 <span>{t("publicBooking.step3.back", "Back")}</span>
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="gap-2">
+
+              <Button type="submit" disabled={isSubmitting} size="lg" className="gap-2 font-semibold shadow-xs">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
@@ -686,16 +876,18 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
       {/* STEP 4: CONFIRMATION */}
       {step === 4 && confirmation && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("publicBooking.confirmed.title", "Booking Requested!")}</CardTitle>
-            <CardDescription>
+        <Card className="shadow-xs">
+          <CardHeader className="p-4 sm:p-6 pb-2 text-center">
+            <CardTitle className="text-xl sm:text-2xl font-bold">
+              {t("publicBooking.confirmed.title", "Booking Confirmed!")}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {t("publicBooking.confirmed.subtitle", "We've received your reservation request at {{restaurant}}.", {
                 restaurant: restaurant.name,
               })}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <BookingConfirmed
               confirmation={confirmation}
               restaurantName={restaurant.name}
@@ -704,7 +896,61 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Mobile Sticky Bottom Action Bar */}
+      {step !== 4 && (
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md p-3 sm:hidden shadow-lg flex items-center justify-between gap-3">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold truncate text-foreground">
+              {guests} guests • {date}
+            </span>
+            <span className="text-[11px] text-muted-foreground truncate">
+              {selectedTime ? formatDisplayTime(selectedTime) : "Select a time"}
+              {tableChoiceMode === "CHOOSE" && selectedTableObj ? ` • ${getTableDisplayName(selectedTableObj)}` : ""}
+            </span>
+          </div>
+
+          {step === 1 && (
+            <Button
+              onClick={goToStep2}
+              disabled={!selectedTime}
+              size="default"
+              className="h-10 px-4 font-semibold shrink-0 gap-1.5 shadow-sm"
+            >
+              <span>Next</span>
+              <ChevronRight className="size-4" />
+            </Button>
+          )}
+
+          {step === 2 && (
+            <Button
+              onClick={goToStep3}
+              disabled={tableChoiceMode === "CHOOSE" && !selectedTableId}
+              size="default"
+              className="h-10 px-4 font-semibold shrink-0 gap-1.5 shadow-sm"
+            >
+              <span>Next</span>
+              <ChevronRight className="size-4" />
+            </Button>
+          )}
+
+          {step === 3 && (
+            <Button
+              onClick={() => void handleFinalSubmit()}
+              disabled={isSubmitting}
+              size="default"
+              className="h-10 px-4 font-semibold shrink-0 gap-1.5 shadow-sm"
+            >
+              {isSubmitting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-4" />
+              )}
+              <span>Book</span>
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
-
