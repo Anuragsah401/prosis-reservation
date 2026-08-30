@@ -87,6 +87,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
   const [tableChoiceMode, setTableChoiceMode] = useState<"AUTO" | "CHOOSE">("AUTO")
   const [tablePickerView, setTablePickerView] = useState<"MAP" | "LIST">("MAP")
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
+  const [activeFloor, setActiveFloor] = useState<string>("")
   const [isFloorPlanModalOpen, setIsFloorPlanModalOpen] = useState(false)
   const [floorPlanTables, setFloorPlanTables] = useState<FloorPlanViewerTable[]>([])
   const [isLoadingTables, setIsLoadingTables] = useState(false)
@@ -189,14 +190,30 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
     }
   }, [step, restaurantId, reservedForIso, guests])
 
+  const floors = useMemo(
+    () => [...new Set(floorPlanTables.map((t) => t.floor).filter((f): f is string => Boolean(f)))],
+    [floorPlanTables],
+  )
+
+  useEffect(() => {
+    if (floors.length > 0 && (!activeFloor || !floors.includes(activeFloor))) {
+      setActiveFloor(floors[0])
+    }
+  }, [floors, activeFloor])
+
   const selectedTableObj = useMemo(() => {
     if (!selectedTableId) return null
     return floorPlanTables.find((t) => t.id === selectedTableId) ?? null
   }, [selectedTableId, floorPlanTables])
 
+  const filteredFloorTables = useMemo(() => {
+    if (!activeFloor || floors.length <= 1) return floorPlanTables
+    return floorPlanTables.filter((t) => t.floor === activeFloor)
+  }, [floorPlanTables, activeFloor, floors.length])
+
   const availableTablesList = useMemo(() => {
-    return floorPlanTables.filter((t) => t.available)
-  }, [floorPlanTables])
+    return filteredFloorTables.filter((t) => t.available)
+  }, [filteredFloorTables])
 
   function handleDateChange(nextDate: string) {
     setDate(nextDate)
@@ -814,8 +831,8 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
 
           {/* Dialog Container */}
           <div className="relative z-10 flex flex-col w-full h-full sm:h-[90vh] sm:max-h-[850px] max-w-5xl bg-background sm:rounded-3xl border border-border shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-border/80 bg-card/80 backdrop-blur-md shrink-0">
+            {/* Header Row 1: Title, Summary & Close */}
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/80 bg-card shrink-0">
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-base sm:text-lg font-bold text-foreground truncate">
@@ -827,49 +844,77 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
                   {restaurant.name} • {guests} guests • {date} at {selectedTime && formatDisplayTime(selectedTime)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Mode Switcher */}
-                <div className="flex items-center rounded-xl border bg-muted/40 p-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setTablePickerView("MAP")}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-medium",
-                      tablePickerView === "MAP"
-                        ? "bg-background text-foreground shadow-xs font-semibold"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <LayoutGrid className="size-3.5" />
-                    <span>Map</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTablePickerView("LIST")}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-medium",
-                      tablePickerView === "LIST"
-                        ? "bg-background text-foreground shadow-xs font-semibold"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <List className="size-3.5" />
-                    <span>List ({availableTablesList.length})</span>
-                  </button>
-                </div>
+              <button
+                type="button"
+                onClick={() => setIsFloorPlanModalOpen(false)}
+                className="size-9 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shrink-0 ml-2"
+                aria-label="Close"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
 
+            {/* Header Row 2: Controls Subheader (Floors on Left, Map/List Switcher on Right) */}
+            <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 border-b border-border/60 bg-muted/30 gap-2 shrink-0">
+              {/* Left: Floor Selector Pills */}
+              {floors.length > 1 ? (
+                <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-[55%] sm:max-w-none no-scrollbar">
+                  {floors.map((fl) => (
+                    <button
+                      key={fl}
+                      type="button"
+                      onClick={() => setActiveFloor(fl)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap",
+                        (activeFloor || floors[0]) === fl
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "bg-background border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      )}
+                    >
+                      {fl}
+                    </button>
+                  ))}
+                </div>
+              ) : floors.length === 1 ? (
+                <div className="text-xs font-semibold text-muted-foreground">
+                  <span>{floors[0]}</span>
+                </div>
+              ) : (
+                <div />
+              )}
+
+              {/* Right: Map vs List Switcher */}
+              <div className="flex items-center rounded-full border border-border/80 bg-background p-0.5 text-xs shadow-2xs ml-auto shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsFloorPlanModalOpen(false)}
-                  className="size-9 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all"
-                  aria-label="Close"
+                  onClick={() => setTablePickerView("MAP")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full transition-all font-semibold",
+                    tablePickerView === "MAP"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <X className="size-4" />
+                  <LayoutGrid className="size-3.5" />
+                  <span>Map</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTablePickerView("LIST")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full transition-all font-semibold",
+                    tablePickerView === "LIST"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <List className="size-3.5" />
+                  <span>List ({availableTablesList.length})</span>
                 </button>
               </div>
             </div>
@@ -894,7 +939,7 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
               ) : tablePickerView === "LIST" ? (
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {floorPlanTables.map((tbl) => {
+                    {filteredFloorTables.map((tbl) => {
                       const isAvailable = tbl.available
                       const isSelected = selectedTableId === tbl.id
 
@@ -940,6 +985,9 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                     <FloorPlanViewer
                       tables={floorPlanTables}
                       selectedTableId={selectedTableId}
+                      activeFloor={activeFloor || floors[0]}
+                      onFloorChange={setActiveFloor}
+                      hideFloorTabs={true}
                       onSelect={setSelectedTableId}
                       seatsLabel={t("reservationConfirm.seats", "seats")}
                       showFullscreen={false}

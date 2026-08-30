@@ -40,6 +40,9 @@ interface FloorPlanViewerProps {
   /** Hide the maximize control. Used where the viewer already fills its
    *  container (e.g. the table picker dialog), making fullscreen pointless. */
   showFullscreen?: boolean
+  activeFloor?: string
+  onFloorChange?: (floor: string) => void
+  hideFloorTabs?: boolean
 }
 
 const DEFAULT_W = 140
@@ -62,12 +65,16 @@ export function FloorPlanViewer({
   seatsLabel,
   onFullscreenChange,
   showFullscreen = true,
+  activeFloor: controlledActiveFloor,
+  onFloorChange,
+  hideFloorTabs = false,
 }: FloorPlanViewerProps) {
   const floors = useMemo(
     () => [...new Set(tables.map((t) => t.floor).filter((f): f is string => Boolean(f)))],
     [tables],
   )
-  const [activeFloor, setActiveFloor] = useState(floors[0] ?? "Main Floor")
+  const [internalActiveFloor, setInternalActiveFloor] = useState(floors[0] ?? "Main Floor")
+  const activeFloor = controlledActiveFloor ?? internalActiveFloor
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
@@ -80,6 +87,15 @@ export function FloorPlanViewer({
   // Active pointers, so two fingers can be distinguished from one for pinch.
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const pinchStart = useRef<{ distance: number; zoom: number } | null>(null)
+
+  const handleFloorChange = useCallback((floor: string) => {
+    if (onFloorChange) onFloorChange(floor)
+    else setInternalActiveFloor(floor)
+    setDragging(false)
+    setPinching(false)
+    pointers.current.clear()
+    pinchStart.current = null
+  }, [onFloorChange])
 
   const displayedFloor = floors.includes(activeFloor)
     ? activeFloor
@@ -213,22 +229,13 @@ export function FloorPlanViewer({
       )}
       style={fullscreen ? { pointerEvents: "auto" } : undefined}
     >
-      {/* Always shown so the current floor is visible even with a single
-          floor — without this, one-floor plans gave no indication which
-          floor's tables were on display. */}
-      {floors.length > 0 && (
+      {!hideFloorTabs && floors.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 rounded-md border p-0.5 self-start shrink-0">
           {floors.map((floor) => (
             <button
               key={floor}
               type="button"
-              onClick={() => {
-                setActiveFloor(floor)
-                setDragging(false)
-                setPinching(false)
-                pointers.current.clear()
-                pinchStart.current = null
-              }}
+              onClick={() => handleFloorChange(floor)}
               className={cn(
                 "rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
                 displayedFloor === floor
