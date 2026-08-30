@@ -42,11 +42,11 @@ interface FloorPlanViewerProps {
   showFullscreen?: boolean
 }
 
-const PADDING = 24
+const PADDING = 20
 const DEFAULT_W = 140
 const DEFAULT_H = 90
-const MIN_ZOOM = 0.4
-const MAX_ZOOM = 2.5
+const MIN_ZOOM = 0.1
+const MAX_ZOOM = 3.0
 
 /**
  * Read-only, scaled-to-fit rendering of the restaurant's planned floor
@@ -103,10 +103,14 @@ export function FloorPlanViewer({
   }, [tables, displayedFloor])
 
   const bounds = useMemo(() => {
-    if (floorTables.length === 0) return { width: 400, height: 200 }
-    const maxX = Math.max(...floorTables.map((t) => t.positionX! + (t.width || DEFAULT_W)))
-    const maxY = Math.max(...floorTables.map((t) => t.positionY! + (t.height || DEFAULT_H)))
-    return { width: maxX + PADDING, height: maxY + PADDING }
+    if (floorTables.length === 0) return { minX: 0, minY: 0, width: 400, height: 200 }
+    const minX = Math.min(...floorTables.map((t) => t.positionX ?? 0))
+    const minY = Math.min(...floorTables.map((t) => t.positionY ?? 0))
+    const maxX = Math.max(...floorTables.map((t) => (t.positionX ?? 0) + (t.width || DEFAULT_W)))
+    const maxY = Math.max(...floorTables.map((t) => (t.positionY ?? 0) + (t.height || DEFAULT_H)))
+    const width = Math.max(100, maxX - minX + PADDING * 2)
+    const height = Math.max(100, maxY - minY + PADDING * 2)
+    return { minX, minY, maxX, maxY, width, height }
   }, [floorTables])
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -120,16 +124,16 @@ export function FloorPlanViewer({
     const { clientWidth, clientHeight } = containerRef.current
     if (clientWidth <= 0 || clientHeight <= 0) return
 
-    const pad = 24
+    const pad = clientWidth < 640 ? 10 : 20
     const availableWidth = clientWidth - pad * 2
     const availableHeight = clientHeight - pad * 2
 
     const scaleX = availableWidth / bounds.width
     const scaleY = availableHeight / bounds.height
-    const initialScale = Math.min(1.15, Math.max(MIN_ZOOM, Math.min(scaleX, scaleY)))
+    const initialScale = Math.min(1.0, Math.max(0.1, Math.min(scaleX, scaleY)))
 
-    const centeredX = (clientWidth - bounds.width * initialScale) / 2
-    const centeredY = (clientHeight - bounds.height * initialScale) / 2
+    const centeredX = (clientWidth - bounds.width * initialScale) / 2 - (bounds.minX - PADDING) * initialScale
+    const centeredY = (clientHeight - bounds.height * initialScale) / 2 - (bounds.minY - PADDING) * initialScale
 
     setZoom(initialScale)
     setPan({ x: Math.round(centeredX), y: Math.round(centeredY) })
