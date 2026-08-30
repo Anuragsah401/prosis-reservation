@@ -599,34 +599,6 @@ export function PublicBookingFlow({ restaurantId }: PublicBookingFlowProps) {
                 </div>
               </button>
             </div>
-
-            {/* Selected Table Summary Banner */}
-            {tableChoiceMode === "CHOOSE" && (
-              <div className="flex items-center justify-between p-4 rounded-2xl border border-primary/30 bg-primary/5 flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
-                    <Store className="size-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-muted-foreground font-medium">Selected Table</span>
-                    <span className="text-sm font-bold text-foreground">
-                      {selectedTableObj ? `${getTableDisplayName(selectedTableObj)} (${selectedTableObj.capacity} seats)` : "No table selected yet"}
-                    </span>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsFloorPlanModalOpen(true)}
-                  className="gap-1.5 font-semibold text-xs rounded-xl"
-                >
-                  <Layers className="size-3.5" />
-                  <span>{selectedTableObj ? "Change Table" : "Open Floor Plan"}</span>
-                </Button>
-              </div>
-            )}
           </CardContent>
 
           <CardFooter className="justify-between border-t p-4 sm:p-6">
