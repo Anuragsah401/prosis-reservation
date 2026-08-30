@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react"
-import { createPortal } from "react-dom"
 import { QRCodeSVG } from "qrcode.react"
 import {
   Sparkles,
@@ -149,7 +148,7 @@ export function ScreenSaverOverlay() {
   const currentSlideData = PROMO_SLIDES[activeSlide]
   const SlideIcon = currentSlideData.icon
 
-  return createPortal(
+  return (
     <div
       onClick={dismissScreenSaver}
       className={cn(
@@ -396,7 +395,6 @@ export function ScreenSaverOverlay() {
           <ChevronRight className="size-3.5" />
         </div>
       </footer>
-    </div>,
-    document.body,
+    </div>
   )
 }
