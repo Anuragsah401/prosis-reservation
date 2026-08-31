@@ -178,9 +178,9 @@ export function ReservationsTable({
       <CardContent className="px-0">
         <div
           ref={listScrollRef}
-          className="max-h-[calc(100vh-21rem)] overflow-y-auto *:data-[slot=table-container]:overflow-visible"
+          className="max-h-[calc(100vh-21rem)] overflow-y-auto overflow-x-auto"
         >
-          <Table>
+          <Table className="min-w-[760px] w-full">
             <TableHeader className="bg-muted/40 sticky top-0 z-10 backdrop-blur-xs">
               <TableRow className="border-b border-border/80">
                 <TableHead className="w-10 pl-4 pr-0">
@@ -195,14 +195,14 @@ export function ReservationsTable({
                     aria-label={t("pages.reservations.serviceTools.selectAll", "Select all")}
                   />
                 </TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colCustomer")}</TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colPhone")}</TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colTime")}</TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colParty")}</TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colTable")}</TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colEventsNotes", "Events & Notes")}</TableHead>
-                <TableHead className="font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colStatus")}</TableHead>
-                <TableHead className="w-24 text-right pr-4 font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colActions")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[150px]">{t("pages.reservations.colCustomer")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[110px]">{t("pages.reservations.colPhone")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[100px]">{t("pages.reservations.colTime")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[60px]">{t("pages.reservations.colParty")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[90px]">{t("pages.reservations.colTable")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[130px]">{t("pages.reservations.colEventsNotes", "Events & Notes")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[110px]">{t("pages.reservations.colStatus")}</TableHead>
+                <TableHead className="w-20 text-right pr-4 font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
