@@ -39,7 +39,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Save,
   RotateCcw,
   Loader2,
   Plus,
@@ -1288,7 +1287,11 @@ function FloorPlanBuilderInner() {
                 toast.info("Floor plan unlocked. You can now drag, resize, and arrange tables.")
               } else {
                 setIsLayoutLocked(true)
-                toast.success("Floor plan layout locked. Table positions are protected.")
+                if (isDirtyRef.current) {
+                  void handleSaveRef.current({ isAuto: false })
+                } else {
+                  toast.success("Floor plan layout locked. Table positions are protected.")
+                }
               }
             }}
             className={cn(
@@ -1332,10 +1335,6 @@ function FloorPlanBuilderInner() {
             }
           >
             {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
-          </Button>
-          <Button onClick={() => void handleSave({ isAuto: false })} disabled={isSaving}>
-            {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            {t("pages.floorPlan.saveLayout")}
           </Button>
         </div>
       </div>
