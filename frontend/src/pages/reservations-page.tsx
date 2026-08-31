@@ -218,7 +218,7 @@ export function ReservationsPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {/* Top Header & Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -247,78 +247,76 @@ export function ReservationsPage() {
         totalCount={filteredReservations.length}
       />
 
+      {/* Status Filter Tabs & Search Bar (Moved Up) */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        {/* Status Filter Chips with Counts */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 flex-nowrap sm:flex-wrap">
+          {statusFilterTabs.map((tabItem) => {
+            const isActive = statusFilter === tabItem.id
+            return (
+              <button
+                key={tabItem.id}
+                type="button"
+                onClick={() => setStatusFilter(tabItem.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer shrink-0",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <span>{tabItem.label}</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.2 text-[10px] font-bold leading-tight",
+                    isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {tabItem.count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Search Bar with Clear Button */}
+        <div className="relative w-full sm:w-64 shrink-0">
+          <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+          <Input
+            placeholder={t("pages.reservations.searchPlaceholder", "Search reservations...")}
+            className="h-8 pl-8 pr-8 text-xs bg-card"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer"
+              aria-label="Clear search"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Area: Mini Calendar and Reservation Table on the same line */}
       {tab === "calendar" ? (
         <ReservationsCalendar />
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[230px_1fr]">
-          {/* Left Mini Calendar & Date Shortcuts */}
-          <div className="flex flex-col gap-3">
-            <div className="bg-card rounded-xl border border-border/80 p-2 shadow-xs">
-              <MiniMonthCalendar
-                selectedDate={selectedDate}
-                onSelect={setSelectedDate}
-                highlightedDates={bookedDates}
-              />
-            </div>
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[240px_1fr]">
+          {/* Left Mini Calendar */}
+          <div className="bg-card rounded-xl border border-border/80 p-2.5 shadow-xs">
+            <MiniMonthCalendar
+              selectedDate={selectedDate}
+              onSelect={setSelectedDate}
+              highlightedDates={bookedDates}
+            />
           </div>
 
-          {/* Right Main Table & Filters Area */}
-          <div className="flex flex-col gap-3">
-            {/* Status Filter Tabs & Search Bar */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Status Chips */}
-              <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-                {statusFilterTabs.map((tabItem) => {
-                  const isActive = statusFilter === tabItem.id
-                  return (
-                    <button
-                      key={tabItem.id}
-                      type="button"
-                      onClick={() => setStatusFilter(tabItem.id)}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-xs"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      <span>{tabItem.label}</span>
-                      <span
-                        className={cn(
-                          "rounded-full px-1.5 py-0.2 text-[10px] font-bold leading-tight",
-                          isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {tabItem.count}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Search Bar with Clear Button */}
-              <div className="relative w-full sm:w-64">
-                <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-                <Input
-                  placeholder={t("pages.reservations.searchPlaceholder", "Search reservations...")}
-                  className="h-8 pl-8 pr-8 text-xs bg-card"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer"
-                    aria-label="Clear search"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Error or Loading or Table */}
+          {/* Right Main Table */}
+          <div className="min-w-0">
             {loadError ? (
               <div className="border-destructive/50 bg-destructive/5 text-destructive flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
                 <span>{loadError}</span>
