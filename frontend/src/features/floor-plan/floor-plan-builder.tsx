@@ -406,8 +406,8 @@ function FloorPlanBuilderInner() {
     setFloors(previous.floors)
     setActiveFloor(previous.activeFloor)
     setIsDirty(true)
-    toast.info("Undo: Reverted action", { duration: 1500 })
-  }, [past])
+    toast.info(t("pages.floorPlan.toasts.undo", "Undo: Reverted action"), { duration: 1500 })
+  }, [past, t])
 
   const handleRedo = useCallback(() => {
     if (future.length === 0) return
@@ -492,8 +492,8 @@ function FloorPlanBuilderInner() {
     setFloors(next.floors)
     setActiveFloor(next.activeFloor)
     setIsDirty(true)
-    toast.info("Redo: Restored action", { duration: 1500 })
-  }, [future])
+    toast.info(t("pages.floorPlan.toasts.redo", "Redo: Restored action"), { duration: 1500 })
+  }, [future, t])
 
   // Global Keyboard Shortcuts (Cmd+Z / Ctrl+Z for Undo, Cmd+Shift+Z / Ctrl+Shift+Z / Ctrl+Y for Redo)
   useEffect(() => {
@@ -616,8 +616,8 @@ function FloorPlanBuilderInner() {
       return next
     })
     setIsDirty(true)
-    toast.success("Table ungrouped")
-  }, [takeSnapshot])
+    toast.success(t("pages.floorPlan.toasts.tableUngrouped", "Table ungrouped"))
+  }, [takeSnapshot, t])
 
   const handleSelectGroup = useCallback((groupId: string) => {
     setNodesByFloor((current) => {
@@ -800,7 +800,7 @@ function FloorPlanBuilderInner() {
 
     setIsDirty(true)
     setIsEditDialogOpen(false)
-    toast.success(`Table "${finalName}" updated`)
+    toast.success(t("pages.floorPlan.toasts.tableUpdated", { name: finalName }))
   }, [
     editTableId,
     editTableName,
@@ -811,6 +811,7 @@ function FloorPlanBuilderInner() {
     editTableWidth,
     editTableHeight,
     takeSnapshot,
+    t,
   ])
 
   const handleResizeStart = useCallback(
@@ -1008,7 +1009,7 @@ function FloorPlanBuilderInner() {
     setActiveFloor(trimmed)
     setIsDirty(true)
     setIsAddFloorDialogOpen(false)
-    toast.success(`Floor "${trimmed}" added!`)
+    toast.success(t("pages.floorPlan.toasts.floorAdded", { floor: trimmed }))
   }, [newFloorName, floors, t])
 
   // Delete Floor Dialog state
@@ -1049,9 +1050,9 @@ function FloorPlanBuilderInner() {
     }
     setIsDirty(true)
     setIsDeleteFloorDialogOpen(false)
-    toast.success(`Floor "${floorToDelete}" deleted`)
+    toast.success(t("pages.floorPlan.toasts.floorDeleted", { floor: floorToDelete }))
     setFloorToDelete(null)
-  }, [floorToDelete, floors, activeFloor, takeSnapshot])
+  }, [floorToDelete, floors, activeFloor, takeSnapshot, t])
 
 
   const getFloorNodes = useCallback(
@@ -1116,8 +1117,8 @@ function FloorPlanBuilderInner() {
 
     setIsDirty(true)
     setIsGroupDialogOpen(false)
-    toast.success(`Grouped ${selectedTableNodes.length} tables as "${finalGroupName}" (${totalSelectedCapacity} seats)`)
-  }, [selectedTableNodes, customGroupName, totalSelectedCapacity, takeSnapshot])
+    toast.success(t("pages.floorPlan.toasts.tablesGrouped", { count: selectedTableNodes.length, name: finalGroupName, seats: totalSelectedCapacity }))
+  }, [selectedTableNodes, customGroupName, totalSelectedCapacity, takeSnapshot, t])
 
   const handleUngroupSelectedTables = useCallback(() => {
     takeSnapshot()
@@ -1139,8 +1140,8 @@ function FloorPlanBuilderInner() {
       }),
     )
     setIsDirty(true)
-    toast.success("Tables ungrouped")
-  }, [selectedTableNodes, takeSnapshot])
+    toast.success(t("pages.floorPlan.toasts.tablesUngrouped", "Tables ungrouped"))
+  }, [selectedTableNodes, takeSnapshot, t])
 
   const handleDeselectAll = useCallback(() => {
     setActiveFloorNodes((current) => current.map((n) => ({ ...n, selected: false })))
@@ -1227,7 +1228,7 @@ function FloorPlanBuilderInner() {
     setActiveFloorNodes((current) => [...current.map((n) => ({ ...n, selected: false })), newNode])
     setIsDirty(true)
     setIsAddDialogOpen(false)
-    toast.success(`Table "${newTableName.trim() || `T${tableCounter}`}" added to ${activeFloor}`)
+    toast.success(t("pages.floorPlan.toasts.tableAdded", { name: newTableName.trim() || `T${tableCounter}`, floor: activeFloor }))
   }, [
     nodes.length,
     newTableName,
@@ -1240,6 +1241,7 @@ function FloorPlanBuilderInner() {
     handlers,
     setActiveFloorNodes,
     takeSnapshot,
+    t,
   ])
 
   const handleCreateFacility = useCallback(() => {
@@ -1267,7 +1269,7 @@ function FloorPlanBuilderInner() {
     setActiveFloorNodes((current) => [...current.map((n) => ({ ...n, selected: false })), newNode])
     setIsDirty(true)
     setIsAddFacilityDialogOpen(false)
-    toast.success(`Facility "${finalName}" added to ${activeFloor}`)
+    toast.success(t("pages.floorPlan.toasts.facilityAdded", { name: finalName, floor: activeFloor }))
   }, [
     selectedFacilityType,
     facilityCustomName,
@@ -1278,6 +1280,7 @@ function FloorPlanBuilderInner() {
     handleResizeEnd,
     setActiveFloorNodes,
     takeSnapshot,
+    t,
   ])
 
   const handleSave = useCallback(async (options?: { isAuto?: boolean }) => {
@@ -1389,17 +1392,17 @@ function FloorPlanBuilderInner() {
         setLastSaveResult("server")
       }
       if (!options?.isAuto) {
-        toast.success(serverSynced ? "Floor plan saved to server successfully!" : "Floor plan layout saved locally!")
+        toast.success(serverSynced ? t("pages.floorPlan.toasts.savedServer", "Floor plan saved to server successfully!") : t("pages.floorPlan.toasts.savedLocal", "Floor plan layout saved locally!"))
       }
     } catch (err) {
       console.error("[floor-plan] Save error:", err)
       if (!options?.isAuto) {
-        toast.error("Failed to save floor plan. Please try again.")
+        toast.error(t("pages.floorPlan.toasts.saveError", "Failed to save floor plan. Please try again."))
       }
     } finally {
       setIsSaving(false)
     }
-  }, [])
+  }, [t])
 
   const handleSaveRef = useRef(handleSave)
   handleSaveRef.current = handleSave
@@ -1543,7 +1546,7 @@ function FloorPlanBuilderInner() {
               className="gap-1.5 text-xs text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10"
             >
               <Loader2 className="size-3 animate-spin" />
-              <span>Saving changes...</span>
+              <span>{t("pages.floorPlan.savingChanges", "Saving changes...")}</span>
             </Badge>
           ) : isDirty ? (
             <Badge
@@ -1551,7 +1554,7 @@ function FloorPlanBuilderInner() {
               className="gap-1.5 text-xs text-muted-foreground border-dashed"
             >
               <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-              <span>Unsaved changes</span>
+              <span>{t("pages.floorPlan.unsavedChanges", "Unsaved changes")}</span>
             </Badge>
           ) : lastSaveResult ? (
             <Badge
@@ -1560,7 +1563,7 @@ function FloorPlanBuilderInner() {
             >
               <CheckCircle2 className="size-3" />
               <span>
-                {lastSaveResult === "server" ? "Auto-saved to server" : "Auto-saved"}
+                {lastSaveResult === "server" ? t("pages.floorPlan.autoSavedServer", "Auto-saved to server") : t("pages.floorPlan.autoSavedLocal", "Auto-saved")}
               </span>
             </Badge>
           ) : null}
@@ -1573,13 +1576,13 @@ function FloorPlanBuilderInner() {
             onClick={() => {
               if (isLayoutLocked) {
                 setIsLayoutLocked(false)
-                toast.info("Floor plan unlocked. You can now drag, resize, and arrange tables.")
+                toast.info(t("pages.floorPlan.toasts.unlocked", "Floor plan unlocked. You can now drag, resize, and arrange tables."))
               } else {
                 setIsLayoutLocked(true)
                 if (isDirtyRef.current) {
                   void handleSaveRef.current({ isAuto: false })
                 } else {
-                  toast.success("Floor plan layout locked. Table positions are protected.")
+                  toast.success(t("pages.floorPlan.toasts.locked", "Floor plan layout locked. Table positions are protected."))
                 }
               }
             }}
@@ -1591,19 +1594,19 @@ function FloorPlanBuilderInner() {
             )}
             title={
               isLayoutLocked
-                ? "Layout is locked (Safe Mode). Click to unlock and edit tables."
-                : "Layout is unlocked for editing. Click to lock and protect table positions."
+                ? t("pages.floorPlan.lockTooltip", "Layout is locked (Safe Mode). Click to unlock and edit tables.")
+                : t("pages.floorPlan.unlockTooltip", "Layout is unlocked for editing. Click to lock and protect table positions.")
             }
           >
             {isLayoutLocked ? (
               <>
                 <Lock className="size-3.5 shrink-0 text-amber-500" />
-                <span>Layout Locked</span>
+                <span>{t("pages.floorPlan.layoutLocked", "Layout Locked")}</span>
               </>
             ) : (
               <>
                 <Unlock className="size-3.5 shrink-0 animate-pulse" />
-                <span>Editing Layout (Lock)</span>
+                <span>{t("pages.floorPlan.editingLayout", "Editing Layout (Lock)")}</span>
               </>
             )}
           </Button>
@@ -1617,10 +1620,10 @@ function FloorPlanBuilderInner() {
               onClick={handleUndo}
               disabled={past.length === 0}
               className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
-              title="Undo (Ctrl+Z / ⌘Z)"
+              title={t("pages.floorPlan.undoTooltip", "Undo (Ctrl+Z / ⌘Z)")}
             >
               <Undo2 className="size-3.5" />
-              <span>Undo</span>
+              <span>{t("pages.floorPlan.undo", "Undo")}</span>
             </Button>
             <Button
               type="button"
@@ -1629,10 +1632,10 @@ function FloorPlanBuilderInner() {
               onClick={handleRedo}
               disabled={future.length === 0}
               className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
-              title="Redo (Ctrl+Shift+Z / ⌘⇧Z)"
+              title={t("pages.floorPlan.redoTooltip", "Redo (Ctrl+Shift+Z / ⌘⇧Z)")}
             >
               <Redo2 className="size-3.5" />
-              <span>Redo</span>
+              <span>{t("pages.floorPlan.redo", "Redo")}</span>
             </Button>
           </div>
 
@@ -1776,17 +1779,17 @@ function FloorPlanBuilderInner() {
         {isLayoutLocked && !isLoadingPlan && (
           <div className="absolute top-3 left-3 z-30 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-background/90 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 shadow-md backdrop-blur-md">
             <Lock className="size-3.5 text-amber-500 shrink-0" />
-            <span>Layout Locked (Safe Mode)</span>
-            <span className="text-muted-foreground font-normal text-[11px] hidden sm:inline">• Positions protected</span>
+            <span>{t("pages.floorPlan.layoutLockedSafeMode", "Layout Locked (Safe Mode)")}</span>
+            <span className="text-muted-foreground font-normal text-[11px] hidden sm:inline">{t("pages.floorPlan.positionsProtected", "• Positions protected")}</span>
             <button
               type="button"
               onClick={() => {
                 setIsLayoutLocked(false)
-                toast.info("Floor plan unlocked for editing.")
+                toast.info(t("pages.floorPlan.toasts.unlockedEdit", "Floor plan unlocked for editing."))
               }}
               className="ml-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[11px] font-bold transition-colors cursor-pointer"
             >
-              Unlock
+              {t("pages.floorPlan.unlock", "Unlock")}
             </button>
           </div>
         )}
@@ -1844,8 +1847,8 @@ function FloorPlanBuilderInner() {
             >
               <ControlButton
                 onClick={handleFitView}
-                title="Fit & Center Floor Plan"
-                aria-label="Fit View"
+                title={t("pages.floorPlan.fitViewTooltip", "Fit & Center Floor Plan")}
+                aria-label={t("pages.floorPlan.fitView", "Fit View")}
                 className="hover:bg-muted! text-foreground! flex items-center justify-center cursor-pointer"
               >
                 <Focus className="size-4 text-primary" />
@@ -1875,9 +1878,9 @@ function FloorPlanBuilderInner() {
                 <span className="font-semibold text-foreground">
                   {selectedTableNodes.length === 1
                     ? (selectedTableNodes[0].data as TableNodeData).name
-                    : `${selectedTableNodes.length} tables selected`}
+                    : t("pages.floorPlan.tablesSelected", { count: selectedTableNodes.length })}
                 </span>
-                <span className="text-muted-foreground ml-1.5 font-medium">({totalSelectedCapacity} seats)</span>
+                <span className="text-muted-foreground ml-1.5 font-medium">{t("pages.floorPlan.seatsCount", { count: totalSelectedCapacity })}</span>
               </div>
             </div>
 
@@ -1889,7 +1892,7 @@ function FloorPlanBuilderInner() {
                   className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold"
                 >
                   <Pencil className="size-3.5" />
-                  <span>Edit Table</span>
+                  <span>{t("pages.floorPlan.editTable", "Edit Table")}</span>
                 </Button>
               )}
 
@@ -1900,7 +1903,7 @@ function FloorPlanBuilderInner() {
                   className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white shadow-xs font-semibold"
                 >
                   <Link2 className="size-3.5" />
-                  <span>Group Tables</span>
+                  <span>{t("pages.floorPlan.groupTables", "Group Tables")}</span>
                 </Button>
               )}
 
@@ -1912,7 +1915,7 @@ function FloorPlanBuilderInner() {
                   className="gap-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
                 >
                   <Unlink className="size-3.5" />
-                  <span>Ungroup</span>
+                  <span>{t("pages.floorPlan.ungroup", "Ungroup")}</span>
                 </Button>
               )}
 
@@ -1921,7 +1924,7 @@ function FloorPlanBuilderInner() {
                 variant="ghost"
                 onClick={handleDeselectAll}
                 className="size-8 p-0 text-muted-foreground hover:text-foreground"
-                title="Clear selection"
+                title={t("pages.floorPlan.clearSelection", "Clear selection")}
               >
                 <X className="size-4" />
               </Button>
@@ -1936,10 +1939,10 @@ function FloorPlanBuilderInner() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-violet-600 dark:text-violet-400">
               <Link2 className="size-5" />
-              Group Selected Tables
+              {t("pages.floorPlan.groupDialog.title", "Group Selected Tables")}
             </DialogTitle>
             <DialogDescription>
-              Combine {selectedTableNodes.length} tables on {activeFloor} into a single bookable group.
+              {t("pages.floorPlan.groupDialog.description", { count: selectedTableNodes.length, floor: activeFloor })}
             </DialogDescription>
           </DialogHeader>
 
@@ -1951,33 +1954,33 @@ function FloorPlanBuilderInner() {
             className="grid gap-4 py-2"
           >
             <div className="grid gap-2">
-              <Label htmlFor="group-name">Group Name</Label>
+              <Label htmlFor="group-name">{t("pages.floorPlan.groupDialog.groupName", "Group Name")}</Label>
               <Input
                 id="group-name"
                 value={customGroupName}
                 onChange={(e) => setCustomGroupName(e.target.value)}
-                placeholder="e.g. Banquet A, Party Group 1"
+                placeholder={t("pages.floorPlan.groupDialog.namePlaceholder", "e.g. Banquet A, Party Group 1")}
                 autoFocus
               />
             </div>
 
             <div className="rounded-xl border bg-muted/40 p-3 text-xs space-y-2">
               <div className="flex items-center justify-between font-semibold text-foreground border-b pb-1.5">
-                <span>Selected Tables</span>
-                <span className="text-violet-600 dark:text-violet-400 font-bold">{totalSelectedCapacity} Total Seats</span>
+                <span>{t("pages.floorPlan.groupDialog.selectedTables", "Selected Tables")}</span>
+                <span className="text-violet-600 dark:text-violet-400 font-bold">{t("pages.floorPlan.totalSeats", { count: totalSelectedCapacity })}</span>
               </div>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {selectedTableNodes.map((n) => (
                   <Badge key={n.id} variant="secondary" className="gap-1 text-xs">
                     <span className="font-semibold">{n.data.name}</span>
-                    <span className="text-muted-foreground">({n.data.capacity} seats)</span>
+                    <span className="text-muted-foreground">{t("pages.floorPlan.seatsCount", { count: n.data.capacity })}</span>
                   </Badge>
                 ))}
               </div>
             </div>
 
             <div className="grid gap-1.5">
-              <Label className="text-xs text-muted-foreground">Preset Name Suggestions</Label>
+              <Label className="text-xs text-muted-foreground">{t("pages.floorPlan.groupDialog.suggestions", "Preset Name Suggestions")}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {[
                   `Banquet (${totalSelectedCapacity}p)`,
@@ -2001,20 +2004,20 @@ function FloorPlanBuilderInner() {
             <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-3 text-xs space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-violet-700 dark:text-violet-300">
                 <Link2 className="size-3.5" />
-                <span>Linked Group Reservation</span>
+                <span>{t("pages.floorPlan.groupDialog.linkedTitle", "Linked Group Reservation")}</span>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                When a customer or staff selects any table from this group, <strong>all {selectedTableNodes.length} tables</strong> will be automatically reserved together for that booking.
+                {t("pages.floorPlan.groupDialog.linkedDesc", { count: selectedTableNodes.length })}
               </p>
             </div>
 
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setIsGroupDialogOpen(false)}>
-                Cancel
+                {t("pages.floorPlan.groupDialog.cancel", "Cancel")}
               </Button>
               <Button type="submit" className="bg-violet-600 hover:bg-violet-700 text-white">
                 <Link2 className="size-4" />
-                Group Tables Permanently
+                {t("pages.floorPlan.groupDialog.confirm", "Group Tables Permanently")}
               </Button>
             </DialogFooter>
           </form>
@@ -2124,26 +2127,26 @@ function FloorPlanBuilderInner() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="size-5 text-primary" />
-              Edit Table: {editTableName}
+              {t("pages.floorPlan.editDialog.title", { name: editTableName })}
             </DialogTitle>
             <DialogDescription>
-              Update table details, seats, shape, and status on {activeFloor}.
+              {t("pages.floorPlan.editDialog.description", { floor: activeFloor })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label htmlFor="edit-table-name">Table Name</Label>
+                <Label htmlFor="edit-table-name">{t("pages.floorPlan.editDialog.tableName", "Table Name")}</Label>
                 <Input
                   id="edit-table-name"
                   value={editTableName}
                   onChange={(e) => setEditTableName(e.target.value)}
-                  placeholder="e.g. T1"
+                  placeholder={t("pages.floorPlan.editDialog.namePlaceholder", "e.g. T1")}
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="edit-table-capacity">Seats</Label>
+                <Label htmlFor="edit-table-capacity">{t("pages.floorPlan.editDialog.seats", "Seats")}</Label>
                 <Input
                   id="edit-table-capacity"
                   type="number"
@@ -2156,37 +2159,37 @@ function FloorPlanBuilderInner() {
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="edit-table-location">Floor Location / Section</Label>
+              <Label htmlFor="edit-table-location">{t("pages.floorPlan.editDialog.location", "Floor Location / Section")}</Label>
               <Input
                 id="edit-table-location"
                 value={editTableLocation}
                 onChange={(e) => setEditTableLocation(e.target.value)}
-                placeholder="e.g. Main Floor"
+                placeholder={t("pages.floorPlan.editDialog.locationPlaceholder", "e.g. Main Floor")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label>Shape</Label>
+                <Label>{t("pages.floorPlan.editDialog.shape", "Shape")}</Label>
                 <Select value={editTableShape} onValueChange={(v) => setEditTableShape(v as TableShape)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="RECTANGLE">
-                      <RectangleHorizontal className="size-4" /> Rectangle
+                      <RectangleHorizontal className="size-4" /> {t("pages.floorPlan.editDialog.shapeRectangle", "Rectangle")}
                     </SelectItem>
                     <SelectItem value="SQUARE">
-                      <Square className="size-4" /> Square
+                      <Square className="size-4" /> {t("pages.floorPlan.editDialog.shapeSquare", "Square")}
                     </SelectItem>
                     <SelectItem value="CIRCLE">
-                      <Circle className="size-4" /> Circle
+                      <Circle className="size-4" /> {t("pages.floorPlan.editDialog.shapeCircle", "Circle")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label>Status</Label>
+                <Label>{t("pages.floorPlan.editDialog.status", "Status")}</Label>
                 <Select
                   value={editTableStatus}
                   onValueChange={(v) => setEditTableStatus(v as TableStatus)}
@@ -2208,8 +2211,8 @@ function FloorPlanBuilderInner() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="edit-table-width" className="flex items-center justify-between text-xs">
-                  <span>Width</span>
-                  <span className="text-muted-foreground font-normal">(px)</span>
+                  <span>{t("pages.floorPlan.editDialog.width", "Width")}</span>
+                  <span className="text-muted-foreground font-normal">{t("pages.floorPlan.editDialog.px", "(px)")}</span>
                 </Label>
                 <Input
                   id="edit-table-width"
@@ -2223,8 +2226,8 @@ function FloorPlanBuilderInner() {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="edit-table-height" className="flex items-center justify-between text-xs">
-                  <span>Height</span>
-                  <span className="text-muted-foreground font-normal">(px)</span>
+                  <span>{t("pages.floorPlan.editDialog.height", "Height")}</span>
+                  <span className="text-muted-foreground font-normal">{t("pages.floorPlan.editDialog.px", "(px)")}</span>
                 </Label>
                 <Input
                   id="edit-table-height"
@@ -2241,11 +2244,11 @@ function FloorPlanBuilderInner() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("pages.floorPlan.editDialog.cancel", "Cancel")}
             </Button>
             <Button onClick={handleSaveEditTable} disabled={!editTableName.trim()}>
               <CheckCircle2 className="size-4" />
-              Save Changes
+              {t("pages.floorPlan.editDialog.saveChanges", "Save Changes")}
             </Button>
           </DialogFooter>
         </DialogContent>

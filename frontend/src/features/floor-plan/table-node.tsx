@@ -1,5 +1,6 @@
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react"
 import { RotateCw, Square, RectangleHorizontal, Circle, Trash2, Unlink, Link2, Pencil } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import type { TableShape, TableStatus } from "@/features/floor-plan/floor-plan-data"
 import { TableGraphic } from "@/features/floor-plan/table-graphic"
@@ -27,6 +28,7 @@ export interface TableNodeData extends Record<string, unknown> {
 }
 
 export function TableNode({ id, data, selected, width, height }: NodeProps & { data: TableNodeData; width?: number; height?: number }) {
+  const { t } = useTranslation()
   const nodeW = width || (data.width as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : 140)
   const nodeH = height || (data.height as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : 90)
   const isLocked = Boolean(data.isLocked)
@@ -78,7 +80,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
               variant="ghost"
               size="icon"
               className="size-7 text-primary hover:bg-primary/10 cursor-pointer"
-              title="Edit Table (Name, Seats, Shape, Status)"
+              title={t("pages.floorPlan.tooltips.editTable", "Edit Table (Name, Seats, Shape, Status)")}
               onClick={(e) => {
                 e.stopPropagation()
                 data.onEdit?.(id)
@@ -92,7 +94,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
             variant="ghost"
             size="icon"
             className="size-7 cursor-pointer"
-            title="Cycle shape"
+            title={t("pages.floorPlan.tooltips.cycleShape", "Cycle shape")}
             onClick={(e) => {
               e.stopPropagation()
               data.onCycleShape(id)
@@ -107,7 +109,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
             variant="ghost"
             size="icon"
             className="size-7 cursor-pointer"
-            title="Rotate 15°"
+            title={t("pages.floorPlan.tooltips.rotate", "Rotate 15°")}
             onClick={(e) => {
               e.stopPropagation()
               data.onRotate(id)
@@ -121,7 +123,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
               variant="ghost"
               size="icon"
               className="text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 size-7 cursor-pointer"
-              title={`Select all tables in ${data.groupName || "group"}`}
+              title={t("pages.floorPlan.tooltips.selectGroup", { name: data.groupName || "group" })}
               onClick={(e) => {
                 e.stopPropagation()
                 data.onSelectGroup?.(data.groupId!)
@@ -136,7 +138,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
               variant="ghost"
               size="icon"
               className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 size-7 cursor-pointer"
-              title="Ungroup this table"
+              title={t("pages.floorPlan.tooltips.ungroupTable", "Ungroup this table")}
               onClick={(e) => {
                 e.stopPropagation()
                 data.onUngroup?.(id)
@@ -150,7 +152,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
             variant="ghost"
             size="icon"
             className="text-destructive hover:bg-destructive/10 size-7 cursor-pointer"
-            title="Delete table"
+            title={t("pages.floorPlan.tooltips.deleteTable", "Delete table")}
             onClick={(e) => {
               e.stopPropagation()
               data.onDelete(id)

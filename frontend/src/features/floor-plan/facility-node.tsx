@@ -1,5 +1,6 @@
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react"
 import { RotateCw, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import type { FacilityType } from "@/features/floor-plan/floor-plan-data"
 import { FacilityGraphic } from "@/features/floor-plan/facility-graphic"
@@ -24,6 +25,7 @@ export function FacilityNode({
   width,
   height,
 }: NodeProps & { data: FacilityNodeData; width?: number; height?: number }) {
+  const { t } = useTranslation()
   const nodeW = width || (data.width as number) || 120
   const nodeH = height || (data.height as number) || 60
   const isLocked = Boolean(data.isLocked)
@@ -65,7 +67,7 @@ export function FacilityNode({
             variant="ghost"
             size="icon"
             className="size-7"
-            title="Rotate 15°"
+            title={t("pages.floorPlan.tooltips.rotate", "Rotate 15°")}
             onClick={() => data.onRotate(id)}
           >
             <RotateCw className="size-4" />
@@ -74,7 +76,7 @@ export function FacilityNode({
             variant="ghost"
             size="icon"
             className="text-destructive hover:bg-destructive/10 size-7"
-            title="Delete element"
+            title={t("pages.floorPlan.tooltips.deleteFacility", "Delete element")}
             onClick={() => data.onDelete(id)}
           >
             <Trash2 className="size-4" />
