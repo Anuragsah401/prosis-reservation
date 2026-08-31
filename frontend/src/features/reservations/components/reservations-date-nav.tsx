@@ -44,31 +44,31 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
     }
   }
 
-  const formattedDateFull = selectedDate.toLocaleDateString(i18n.language || undefined, {
-    weekday: "short",
-    month: "short",
+  const formattedDate = selectedDate.toLocaleDateString(i18n.language || undefined, {
+    weekday: "long",
+    month: "long",
     day: "numeric",
     year: "numeric",
   })
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-xl border border-border/80 bg-card p-2.5 sm:p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 shadow-xs">
-      {/* Date jumper shortcuts with smooth horizontal scroll on mobile */}
-      <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5 sm:pb-0">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card p-3 shadow-xs">
+      {/* Left: Date jumper buttons */}
+      <div className="flex flex-wrap items-center gap-1.5">
         <Button
           variant="outline"
           size="icon"
-          className="size-7 sm:size-8 shrink-0"
+          className="size-8"
           onClick={handlePrevDay}
           title={t("pages.reservations.dateShortcuts.prevDay", "Previous day")}
         >
-          <ChevronLeft className="size-3.5 sm:size-4" />
+          <ChevronLeft className="size-4" />
         </Button>
 
         <Button
           variant={isSelectedYesterday ? "secondary" : "ghost"}
           size="sm"
-          className="h-7 sm:h-8 px-2 sm:px-3 text-xs font-medium shrink-0"
+          className="h-8 text-xs font-medium"
           onClick={() => onSelectDate(yesterday)}
         >
           {t("pages.reservations.dateShortcuts.yesterday", "Yesterday")}
@@ -77,7 +77,7 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
         <Button
           variant={isSelectedToday ? "default" : "outline"}
           size="sm"
-          className="h-7 sm:h-8 px-2.5 sm:px-3 gap-1 sm:gap-1.5 text-xs font-semibold shrink-0"
+          className="h-8 gap-1.5 text-xs font-semibold"
           onClick={() => onSelectDate(today)}
         >
           <span className={isSelectedToday ? "size-1.5 rounded-full bg-primary-foreground" : "size-1.5 rounded-full bg-primary"} />
@@ -87,7 +87,7 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
         <Button
           variant={isSelectedTomorrow ? "secondary" : "ghost"}
           size="sm"
-          className="h-7 sm:h-8 px-2 sm:px-3 text-xs font-medium shrink-0"
+          className="h-8 text-xs font-medium"
           onClick={() => onSelectDate(tomorrow)}
         >
           {t("pages.reservations.dateShortcuts.tomorrow", "Tomorrow")}
@@ -96,28 +96,26 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
         <Button
           variant="outline"
           size="icon"
-          className="size-7 sm:size-8 shrink-0"
+          className="size-8"
           onClick={handleNextDay}
           title={t("pages.reservations.dateShortcuts.nextDay", "Next day")}
         >
-          <ChevronRight className="size-3.5 sm:size-4" />
+          <ChevronRight className="size-4" />
         </Button>
       </div>
 
-      {/* Human readable date + Total result badge & native date picker */}
-      <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-border/40 pt-2 sm:border-t-0 sm:pt-0">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <CalendarDays className="size-3.5 sm:size-4 text-primary shrink-0" />
-          <span className="text-xs sm:text-sm font-bold capitalize text-foreground truncate">
-            {formattedDateFull}
-          </span>
-          <Badge variant="secondary" className="px-1.5 py-0 text-[10px] sm:text-xs font-semibold shrink-0">
+      {/* Center/Right: Human readable date + Total result badge & native date picker */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="size-4 text-primary shrink-0" />
+          <span className="text-sm font-bold capitalize text-foreground">{formattedDate}</span>
+          <Badge variant="secondary" className="text-xs font-semibold">
             {t("pages.reservations.resultCount", { count: totalCount })}
           </Badge>
         </div>
 
         {/* Native date picker jumper */}
-        <label className="relative inline-flex items-center shrink-0">
+        <label className="relative inline-flex items-center">
           <input
             type="date"
             className="sr-only"
@@ -128,7 +126,7 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
           <Button
             variant="outline"
             size="sm"
-            className="h-7 sm:h-8 px-2 sm:px-2.5 gap-1 sm:gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+            className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
             onClick={() => {
               const el = document.getElementById("reservations-date-jump") as HTMLInputElement | null
               if (el && typeof el.showPicker === "function") {
@@ -137,7 +135,7 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
             }}
           >
             <Calendar className="size-3.5" />
-            <span className="hidden md:inline">{t("pages.reservations.jumpToDate", "Jump to date")}</span>
+            <span className="hidden sm:inline">{t("pages.reservations.jumpToDate", "Jump to date")}</span>
           </Button>
         </label>
       </div>
