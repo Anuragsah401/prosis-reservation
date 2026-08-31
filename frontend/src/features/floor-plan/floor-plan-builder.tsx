@@ -237,13 +237,18 @@ function FloorPlanBuilderInner() {
   const [isDirty, setIsDirty] = useState(false)
 
   // History state for Undo & Redo (up to 30 steps)
+  // History state for Undo & Redo (up to 30 steps)
   type HistorySnapshot = {
     nodesByFloor: Record<string, Node<TableNodeData | FacilityNodeData>[]>
+    floorTables: Record<string, FloorPlanTable[]>
     floors: string[]
     activeFloor: string
   }
   const [past, setPast] = useState<HistorySnapshot[]>([])
   const [future, setFuture] = useState<HistorySnapshot[]>([])
+
+  const isLayoutLockedRef = useRef(isLayoutLocked)
+  isLayoutLockedRef.current = isLayoutLocked
 
   const nodesByFloorRef = useRef(nodesByFloor)
   nodesByFloorRef.current = nodesByFloor
@@ -260,25 +265,53 @@ function FloorPlanBuilderInner() {
   const isDirtyRef = useRef(isDirty)
   isDirtyRef.current = isDirty
 
-  // Deep-clone snapshot of current layout state before any mutation
+  const handlersRef = useRef<{
+    onCycleShape: (id: string) => void
+    onRotate: (id: string) => void
+    onDelete: (id: string) => void
+    onUngroup?: (id: string) => void
+    onSelectGroup?: (groupId: string) => void
+    onEdit?: (id: string) => void
+    onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
+  }>({
+    onCycleShape: () => {},
+    onRotate: () => {},
+    onDelete: () => {},
+  })
+
+  // Deep-clone snapshot of current layout state across all floors before any mutation
   const takeSnapshot = useCallback(() => {
     const currentNodes = nodesByFloorRef.current
     const currentFloors = floorsRef.current
     const currentActiveFloor = activeFloorRef.current
+    const currentFloorTables = floorTablesRef.current
+    const currentHandlers = handlersRef.current
 
+    // Materialize all nodes for all floors so empty nodesByFloor never loses initial positions
     const clonedNodes: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
-    for (const [f, nodes] of Object.entries(currentNodes)) {
-      clonedNodes[f] = nodes.map((n) => ({
+    for (const f of currentFloors) {
+      const sourceNodes =
+        currentNodes[f] ??
+        (currentFloorTables[f] ?? []).map((t) =>
+          nodeFromTable(t, currentHandlers, false),
+        )
+      clonedNodes[f] = sourceNodes.map((n) => ({
         ...n,
         position: { ...n.position },
         data: { ...n.data },
       }))
     }
 
+    const clonedTables: Record<string, FloorPlanTable[]> = {}
+    for (const [f, tbls] of Object.entries(currentFloorTables)) {
+      clonedTables[f] = tbls.map((t) => ({ ...t }))
+    }
+
     setPast((prev) => [
       ...prev.slice(-30),
       {
         nodesByFloor: clonedNodes,
+        floorTables: clonedTables,
         floors: [...currentFloors],
         activeFloor: currentActiveFloor,
       },
@@ -295,19 +328,38 @@ function FloorPlanBuilderInner() {
     const currentNodes = nodesByFloorRef.current
     const currentFloors = floorsRef.current
     const currentActiveFloor = activeFloorRef.current
+    const currentFloorTables = floorTablesRef.current
+    const currentHandlers = handlersRef.current
 
-    const clonedCurrent: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
-    for (const [f, nodes] of Object.entries(currentNodes)) {
-      clonedCurrent[f] = nodes.map((n) => ({
+    // Automatically unlock if locked so user can continue editing immediately
+    if (isLayoutLockedRef.current) {
+      setIsLayoutLocked(false)
+    }
+
+    // Capture current state to future stack for Redo
+    const currentClonedNodes: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const f of currentFloors) {
+      const sourceNodes =
+        currentNodes[f] ??
+        (currentFloorTables[f] ?? []).map((t) =>
+          nodeFromTable(t, currentHandlers, false),
+        )
+      currentClonedNodes[f] = sourceNodes.map((n) => ({
         ...n,
         position: { ...n.position },
         data: { ...n.data },
       }))
     }
 
+    const currentClonedTables: Record<string, FloorPlanTable[]> = {}
+    for (const [f, tbls] of Object.entries(currentFloorTables)) {
+      currentClonedTables[f] = tbls.map((t) => ({ ...t }))
+    }
+
     setFuture((prev) => [
       {
-        nodesByFloor: clonedCurrent,
+        nodesByFloor: currentClonedNodes,
+        floorTables: currentClonedTables,
         floors: [...currentFloors],
         activeFloor: currentActiveFloor,
       },
@@ -315,7 +367,38 @@ function FloorPlanBuilderInner() {
     ])
 
     setPast(newPast)
-    setNodesByFloor(previous.nodesByFloor)
+
+    // Reattach current active event handlers to restored nodes
+    const restoredNodes: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const [f, nodesList] of Object.entries(previous.nodesByFloor)) {
+      restoredNodes[f] = nodesList.map((n) => {
+        if (n.type === "facility") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              isLocked: false,
+              onRotate: currentHandlers.onRotate,
+              onDelete: currentHandlers.onDelete,
+              onResizeEnd: currentHandlers.onResizeEnd,
+            },
+          }
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            isLocked: false,
+            ...currentHandlers,
+          },
+        }
+      })
+    }
+
+    setNodesByFloor(restoredNodes)
+    if (previous.floorTables) {
+      setFloorTables(previous.floorTables)
+    }
     setFloors(previous.floors)
     setActiveFloor(previous.activeFloor)
     setIsDirty(true)
@@ -331,27 +414,76 @@ function FloorPlanBuilderInner() {
     const currentNodes = nodesByFloorRef.current
     const currentFloors = floorsRef.current
     const currentActiveFloor = activeFloorRef.current
+    const currentFloorTables = floorTablesRef.current
+    const currentHandlers = handlersRef.current
 
-    const clonedCurrent: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
-    for (const [f, nodes] of Object.entries(currentNodes)) {
-      clonedCurrent[f] = nodes.map((n) => ({
+    if (isLayoutLockedRef.current) {
+      setIsLayoutLocked(false)
+    }
+
+    // Capture current state to past stack for Undo
+    const currentClonedNodes: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const f of currentFloors) {
+      const sourceNodes =
+        currentNodes[f] ??
+        (currentFloorTables[f] ?? []).map((t) =>
+          nodeFromTable(t, currentHandlers, false),
+        )
+      currentClonedNodes[f] = sourceNodes.map((n) => ({
         ...n,
         position: { ...n.position },
         data: { ...n.data },
       }))
     }
 
+    const currentClonedTables: Record<string, FloorPlanTable[]> = {}
+    for (const [f, tbls] of Object.entries(currentFloorTables)) {
+      currentClonedTables[f] = tbls.map((t) => ({ ...t }))
+    }
+
     setPast((prev) => [
       ...prev,
       {
-        nodesByFloor: clonedCurrent,
+        nodesByFloor: currentClonedNodes,
+        floorTables: currentClonedTables,
         floors: [...currentFloors],
         activeFloor: currentActiveFloor,
       },
     ])
 
     setFuture(newFuture)
-    setNodesByFloor(next.nodesByFloor)
+
+    // Reattach current active event handlers to restored nodes
+    const restoredNodes: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const [f, nodesList] of Object.entries(next.nodesByFloor)) {
+      restoredNodes[f] = nodesList.map((n) => {
+        if (n.type === "facility") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              isLocked: false,
+              onRotate: currentHandlers.onRotate,
+              onDelete: currentHandlers.onDelete,
+              onResizeEnd: currentHandlers.onResizeEnd,
+            },
+          }
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            isLocked: false,
+            ...currentHandlers,
+          },
+        }
+      })
+    }
+
+    setNodesByFloor(restoredNodes)
+    if (next.floorTables) {
+      setFloorTables(next.floorTables)
+    }
     setFloors(next.floors)
     setActiveFloor(next.activeFloor)
     setIsDirty(true)
@@ -744,7 +876,6 @@ function FloorPlanBuilderInner() {
     [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog, handleResizeEnd],
   )
 
-  const handlersRef = useRef(handlers)
   handlersRef.current = handlers
 
   // Pull the authoritative plan from the database on initial mount.
@@ -1469,7 +1600,7 @@ function FloorPlanBuilderInner() {
               variant="outline"
               size="sm"
               onClick={handleUndo}
-              disabled={past.length === 0 || isLayoutLocked}
+              disabled={past.length === 0}
               className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
               title="Undo (Ctrl+Z / ⌘Z)"
             >
@@ -1481,7 +1612,7 @@ function FloorPlanBuilderInner() {
               variant="outline"
               size="sm"
               onClick={handleRedo}
-              disabled={future.length === 0 || isLayoutLocked}
+              disabled={future.length === 0}
               className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
               title="Redo (Ctrl+Shift+Z / ⌘⇧Z)"
             >
