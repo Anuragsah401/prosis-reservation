@@ -426,6 +426,7 @@
     "notifications": {
       "backToReservations": "Tilbage til reservationer",
       "title": "Notifikationer",
+      "unreadCount": "Du har {{count}} ulæste notifikationer.",
       "unreadCount_one": "Du har {{count}} ulæst notifikation.",
       "unreadCount_other": "Du har {{count}} ulæste notifikationer.",
       "allCaughtUp": "Du er helt opdateret.",
@@ -433,7 +434,32 @@
       "filterAll": "Alle",
       "filterUnread": "Ulæste",
       "empty": "Ingen notifikationer her.",
-      "dismiss": "Afvis notifikation"
+      "dismiss": "Afvis notifikation",
+      "viewAll": "Se alle notifikationer",
+      "time": {
+        "justNow": "lige nu",
+        "minutesAgo": "{{count}}m siden",
+        "hoursAgo": "{{count}}t siden",
+        "daysAgo": "{{count}}d siden"
+      },
+      "types": {
+        "reservation_new": "Ny reservation",
+        "reservation_confirmed": "Bekræftelse",
+        "reservation_cancelled": "Afbestilling",
+        "reservation_updated": "Opdatering",
+        "waitlist": "Venteliste",
+        "system": "System"
+      },
+      "titles": {
+        "onlineBookingReceived": "Online booking modtaget",
+        "guestSeated": "Gæst placeret ved bord",
+        "reservationCompleted": "Reservation afsluttet",
+        "noShow": "Udeblevet (No-show)",
+        "reservationCancelled": "Reservation aflyst",
+        "reservationConfirmed": "Reservation bekræftet",
+        "reservationUpdated": "Reservation opdateret",
+        "reservationDeleted": "Reservation slettet"
+      }
     },
     "reservations": {
       "title": "Reservationer",

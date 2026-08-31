@@ -20,6 +20,7 @@ import { useNotifications } from "@/features/notifications/use-notifications"
 import {
   notificationTypeLabels,
   type NotificationType,
+  getTranslatedNotificationTitle,
 } from "@/features/notifications/notification-data"
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
@@ -33,8 +34,8 @@ const typeIcons: Record<NotificationType, typeof Bell> = {
 
 type FilterOption = "all" | "unread" | NotificationType
 
-function formatFullTime(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+function formatFullTime(iso: string, locale?: string) {
+  return new Date(iso).toLocaleString(locale || undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -44,7 +45,7 @@ function formatFullTime(iso: string) {
 }
 
 export function NotificationsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { notifications, unreadCount, markRead, markAllRead, dismiss } = useNotifications()
   const [filter, setFilter] = useState<FilterOption>("all")
 
@@ -55,11 +56,11 @@ export function NotificationsPage() {
   })
 
   const filterOptions: { id: FilterOption; label: string }[] = [
-    { id: "all", label: t("pages.notifications.filterAll") },
-    { id: "unread", label: t("pages.notifications.filterUnread") },
+    { id: "all", label: t("pages.notifications.filterAll", "All") },
+    { id: "unread", label: t("pages.notifications.filterUnread", "Unread") },
     ...(Object.keys(notificationTypeLabels) as NotificationType[]).map((type) => ({
       id: type,
-      label: notificationTypeLabels[type],
+      label: t(`pages.notifications.types.${type}`, notificationTypeLabels[type]),
     })),
   ]
 
@@ -69,22 +70,22 @@ export function NotificationsPage() {
         <Button variant="ghost" size="sm" className="w-fit gap-1.5 px-2" asChild>
           <Link to="/reservations">
             <ArrowLeft className="size-3.5" />
-            {t("pages.notifications.backToReservations")}
+            {t("pages.notifications.backToReservations", "Back to reservations")}
           </Link>
         </Button>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t("pages.notifications.title")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("pages.notifications.title", "Notifications")}</h1>
             <p className="text-muted-foreground text-sm">
               {unreadCount > 0
                 ? t("pages.notifications.unreadCount", { count: unreadCount })
-                : t("pages.notifications.allCaughtUp")}
+                : t("pages.notifications.allCaughtUp", "You're all caught up.")}
             </p>
           </div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => markAllRead()}>
               <Check className="size-3.5" />
-              {t("pages.notifications.markAllRead")}
+              {t("pages.notifications.markAllRead", "Mark all read")}
             </Button>
           )}
         </div>
@@ -112,11 +113,12 @@ export function NotificationsPage() {
         <CardContent className="divide-y p-0">
           {filtered.length === 0 ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              {t("pages.notifications.empty")}
+              {t("pages.notifications.empty", "No notifications here.")}
             </p>
           ) : (
             filtered.map((n) => {
               const Icon = typeIcons[n.type]
+              const displayTitle = getTranslatedNotificationTitle(n.title, t)
               return (
                 <div
                   key={n.id}
@@ -144,15 +146,15 @@ export function NotificationsPage() {
                           onClick={(e) => e.stopPropagation()}
                           className={cn("font-medium", !n.read && "font-semibold")}
                         >
-                          {n.title}
+                          {displayTitle}
                         </Link>
                       ) : (
-                        <p className={cn("font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                        <p className={cn("font-medium", !n.read && "font-semibold")}>{displayTitle}</p>
                       )}
                       {!n.read && <span className="bg-primary size-1.5 shrink-0 rounded-full" />}
                     </div>
                     <p className="text-muted-foreground mt-0.5">{n.message}</p>
-                    <p className="text-muted-foreground mt-1 text-xs">{formatFullTime(n.createdAt)}</p>
+                    <p className="text-muted-foreground mt-1 text-xs">{formatFullTime(n.createdAt, i18n.language)}</p>
                   </div>
                   <button
                     type="button"
@@ -161,7 +163,7 @@ export function NotificationsPage() {
                       e.stopPropagation()
                       dismiss(n.id)
                     }}
-                    aria-label={t("pages.notifications.dismiss")}
+                    aria-label={t("pages.notifications.dismiss", "Dismiss notification")}
                   >
                     <X className="size-4" />
                   </button>

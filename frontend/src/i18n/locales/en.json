@@ -426,6 +426,7 @@
     "notifications": {
       "backToReservations": "Back to reservations",
       "title": "Notifications",
+      "unreadCount": "You have {{count}} unread notifications.",
       "unreadCount_one": "You have {{count}} unread notification.",
       "unreadCount_other": "You have {{count}} unread notifications.",
       "allCaughtUp": "You're all caught up.",
@@ -433,7 +434,32 @@
       "filterAll": "All",
       "filterUnread": "Unread",
       "empty": "No notifications here.",
-      "dismiss": "Dismiss notification"
+      "dismiss": "Dismiss notification",
+      "viewAll": "View all notifications",
+      "time": {
+        "justNow": "just now",
+        "minutesAgo": "{{count}}m ago",
+        "hoursAgo": "{{count}}h ago",
+        "daysAgo": "{{count}}d ago"
+      },
+      "types": {
+        "reservation_new": "New reservation",
+        "reservation_confirmed": "Confirmation",
+        "reservation_cancelled": "Cancellation",
+        "reservation_updated": "Update",
+        "waitlist": "Waitlist",
+        "system": "System"
+      },
+      "titles": {
+        "onlineBookingReceived": "Online booking received",
+        "guestSeated": "Guest seated",
+        "reservationCompleted": "Reservation completed",
+        "noShow": "No-show",
+        "reservationCancelled": "Reservation cancelled",
+        "reservationConfirmed": "Reservation confirmed",
+        "reservationUpdated": "Reservation updated",
+        "reservationDeleted": "Reservation deleted"
+      }
     },
     "reservations": {
       "title": "Reservations",

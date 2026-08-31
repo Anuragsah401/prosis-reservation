@@ -1,5 +1,6 @@
 import { Bell, Check, CalendarPlus, CalendarCheck, CalendarX, CalendarClock, Users2, Info, X } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -9,7 +10,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { useNotifications } from "@/features/notifications/use-notifications"
-import type { NotificationType } from "@/features/notifications/notification-data"
+import {
+  type NotificationType,
+  getTranslatedNotificationTitle,
+} from "@/features/notifications/notification-data"
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
   reservation_new: CalendarPlus,
@@ -20,15 +24,20 @@ const typeIcons: Record<NotificationType, typeof Bell> = {
   system: Info,
 }
 
-function formatRelativeTime(iso: string) {
+import type { TFunction } from "i18next"
+
+function formatRelativeTime(
+  iso: string,
+  t: TFunction,
+) {
   const diffMs = Date.now() - new Date(iso).getTime()
   const diffMin = Math.round(diffMs / 60_000)
-  if (diffMin < 1) return "just now"
-  if (diffMin < 60) return `${diffMin}m ago`
+  if (diffMin < 1) return t("pages.notifications.time.justNow", "just now")
+  if (diffMin < 60) return t("pages.notifications.time.minutesAgo", { count: diffMin, defaultValue: `${diffMin}m ago` })
   const diffHours = Math.round(diffMin / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffHours < 24) return t("pages.notifications.time.hoursAgo", { count: diffHours, defaultValue: `${diffHours}h ago` })
   const diffDays = Math.round(diffHours / 24)
-  return `${diffDays}d ago`
+  return t("pages.notifications.time.daysAgo", { count: diffDays, defaultValue: `${diffDays}d ago` })
 }
 
 /**
@@ -39,6 +48,7 @@ function formatRelativeTime(iso: string) {
  * connect this to the real API later. See `notification-service.ts`.
  */
 export function NotificationBell() {
+  const { t } = useTranslation()
   const { notifications, unreadCount, markRead, markAllRead, dismiss } = useNotifications()
 
   return (
@@ -54,12 +64,12 @@ export function NotificationBell() {
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
-          <span className="sr-only">Notifications</span>
+          <span className="sr-only">{t("pages.notifications.title", "Notifications")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-          <span className="text-sm font-semibold">Notifications</span>
+          <span className="text-sm font-semibold">{t("pages.notifications.title", "Notifications")}</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -68,7 +78,7 @@ export function NotificationBell() {
               onClick={() => markAllRead()}
             >
               <Check className="size-3.5" />
-              Mark all read
+              {t("pages.notifications.markAllRead", "Mark all read")}
             </Button>
           )}
         </div>
@@ -76,11 +86,12 @@ export function NotificationBell() {
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
             <p className="text-muted-foreground px-3 py-6 text-center text-sm">
-              You&apos;re all caught up.
+              {t("pages.notifications.allCaughtUp", "You're all caught up.")}
             </p>
           ) : (
             notifications.slice(0, 6).map((n) => {
               const Icon = typeIcons[n.type]
+              const displayTitle = getTranslatedNotificationTitle(n.title, t)
               return (
                 <div
                   key={n.id}
@@ -108,16 +119,16 @@ export function NotificationBell() {
                           onClick={(e) => e.stopPropagation()}
                           className={cn("truncate font-medium", !n.read && "font-semibold")}
                         >
-                          {n.title}
+                          {displayTitle}
                         </Link>
                       ) : (
-                        <p className={cn("truncate font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                        <p className={cn("truncate font-medium", !n.read && "font-semibold")}>{displayTitle}</p>
                       )}
                       {!n.read && <span className="bg-primary size-1.5 shrink-0 rounded-full" />}
                     </div>
                     <p className="text-muted-foreground line-clamp-2">{n.message}</p>
                     <p className="text-muted-foreground mt-0.5 text-[11px]">
-                      {formatRelativeTime(n.createdAt)}
+                      {formatRelativeTime(n.createdAt, t)}
                     </p>
                   </div>
                   <button
@@ -127,7 +138,7 @@ export function NotificationBell() {
                       e.stopPropagation()
                       dismiss(n.id)
                     }}
-                    aria-label="Dismiss notification"
+                    aria-label={t("pages.notifications.dismiss", "Dismiss notification")}
                   >
                     <X className="size-3.5" />
                   </button>
@@ -139,7 +150,7 @@ export function NotificationBell() {
 
         <div className="border-t p-1.5">
           <Button variant="ghost" size="sm" className="w-full justify-center text-xs" asChild>
-            <Link to="/notifications">View all notifications</Link>
+            <Link to="/notifications">{t("pages.notifications.viewAll", "View all notifications")}</Link>
           </Button>
         </div>
       </DropdownMenuContent>

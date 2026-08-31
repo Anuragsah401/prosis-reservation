@@ -426,6 +426,7 @@
     "notifications": {
       "backToReservations": "Rezervasyonlara dön",
       "title": "Bildirimler",
+      "unreadCount": "{{count}} okunmamış bildiriminiz var.",
       "unreadCount_one": "{{count}} okunmamış bildiriminiz var.",
       "unreadCount_other": "{{count}} okunmamış bildiriminiz var.",
       "allCaughtUp": "Her şey güncel.",
@@ -433,7 +434,32 @@
       "filterAll": "Tümü",
       "filterUnread": "Okunmamış",
       "empty": "Burada bildirim yok.",
-      "dismiss": "Bildirimi kapat"
+      "dismiss": "Bildirimi kapat",
+      "viewAll": "Tüm bildirimleri görüntüle",
+      "time": {
+        "justNow": "az önce",
+        "minutesAgo": "{{count}} dk önce",
+        "hoursAgo": "{{count}} sa önce",
+        "daysAgo": "{{count}} gün önce"
+      },
+      "types": {
+        "reservation_new": "Yeni rezervasyon",
+        "reservation_confirmed": "Onay",
+        "reservation_cancelled": "İptal",
+        "reservation_updated": "Güncelleme",
+        "waitlist": "Bekleme listesi",
+        "system": "Sistem"
+      },
+      "titles": {
+        "onlineBookingReceived": "Çevrimiçi rezervasyon alındı",
+        "guestSeated": "Misafir masaya yerleştirildi",
+        "reservationCompleted": "Rezervasyon tamamlandı",
+        "noShow": "Gelmeyen misafir (No-show)",
+        "reservationCancelled": "Rezervasyon iptal edildi",
+        "reservationConfirmed": "Rezervasyon onaylandı",
+        "reservationUpdated": "Rezervasyon güncellendi",
+        "reservationDeleted": "Rezervasyon silindi"
+      }
     },
     "reservations": {
       "title": "Rezervasyonlar",
