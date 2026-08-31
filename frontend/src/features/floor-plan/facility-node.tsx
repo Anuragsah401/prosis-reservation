@@ -13,6 +13,7 @@ export interface FacilityNodeData extends Record<string, unknown> {
   isLocked?: boolean
   onRotate: (id: string) => void
   onDelete: (id: string) => void
+  onResizeStart?: (id: string) => void
   onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
 }
 
@@ -36,6 +37,9 @@ export function FacilityNode({
         keepAspectRatio={data.facilityType === "PLANT"}
         lineClassName="!border-primary"
         handleClassName="!size-2.5 !rounded-full !border-2 !border-primary !bg-background"
+        onResizeStart={() => {
+          data.onResizeStart?.(id)
+        }}
         onResizeEnd={(_event, params) => {
           data.onResizeEnd?.(id, params)
         }}

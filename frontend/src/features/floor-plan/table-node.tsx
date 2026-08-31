@@ -22,6 +22,7 @@ export interface TableNodeData extends Record<string, unknown> {
   onUngroup?: (id: string) => void
   onSelectGroup?: (groupId: string) => void
   onEdit?: (id: string) => void
+  onResizeStart?: (id: string) => void
   onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
 }
 
@@ -37,6 +38,9 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
         minWidth={60}
         minHeight={60}
         handleClassName="!size-2.5 !rounded-full !border-2 !border-primary !bg-background"
+        onResizeStart={() => {
+          data.onResizeStart?.(id)
+        }}
         onResizeEnd={(_event, params) => {
           data.onResizeEnd?.(id, params)
         }}

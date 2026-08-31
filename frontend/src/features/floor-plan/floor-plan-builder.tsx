@@ -111,6 +111,7 @@ function nodeFromTable(
     onUngroup?: (id: string) => void
     onSelectGroup?: (groupId: string) => void
     onEdit?: (id: string) => void
+    onResizeStart?: (id: string) => void
     onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
   },
   isLocked: boolean = true,
@@ -135,6 +136,7 @@ function nodeFromTable(
         isLocked,
         onRotate: handlers.onRotate,
         onDelete: handlers.onDelete,
+        onResizeStart: handlers.onResizeStart,
         onResizeEnd: handlers.onResizeEnd,
       } as FacilityNodeData,
     }
@@ -272,6 +274,7 @@ function FloorPlanBuilderInner() {
     onUngroup?: (id: string) => void
     onSelectGroup?: (groupId: string) => void
     onEdit?: (id: string) => void
+    onResizeStart?: (id: string) => void
     onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
   }>({
     onCycleShape: () => {},
@@ -380,6 +383,7 @@ function FloorPlanBuilderInner() {
               isLocked: false,
               onRotate: currentHandlers.onRotate,
               onDelete: currentHandlers.onDelete,
+              onResizeStart: currentHandlers.onResizeStart,
               onResizeEnd: currentHandlers.onResizeEnd,
             },
           }
@@ -465,6 +469,7 @@ function FloorPlanBuilderInner() {
               isLocked: false,
               onRotate: currentHandlers.onRotate,
               onDelete: currentHandlers.onDelete,
+              onResizeStart: currentHandlers.onResizeStart,
               onResizeEnd: currentHandlers.onResizeEnd,
             },
           }
@@ -808,9 +813,15 @@ function FloorPlanBuilderInner() {
     takeSnapshot,
   ])
 
+  const handleResizeStart = useCallback(
+    (_id: string) => {
+      takeSnapshot()
+    },
+    [takeSnapshot],
+  )
+
   const handleResizeEnd = useCallback(
     (id: string, params: { width: number; height: number; x?: number; y?: number }) => {
-      takeSnapshot()
       const newWidth = Math.round(params.width)
       const newHeight = Math.round(params.height)
       setNodesByFloor((current) => {
@@ -860,7 +871,7 @@ function FloorPlanBuilderInner() {
 
       setIsDirty(true)
     },
-    [takeSnapshot],
+    [],
   )
 
   const handlers = useMemo(
@@ -871,9 +882,10 @@ function FloorPlanBuilderInner() {
       onUngroup: handleUngroupTable,
       onSelectGroup: handleSelectGroup,
       onEdit: handleOpenEditDialog,
+      onResizeStart: handleResizeStart,
       onResizeEnd: handleResizeEnd,
     }),
-    [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog, handleResizeEnd],
+    [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog, handleResizeStart, handleResizeEnd],
   )
 
   handlersRef.current = handlers
