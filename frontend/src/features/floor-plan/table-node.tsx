@@ -13,6 +13,7 @@ export interface TableNodeData extends Record<string, unknown> {
   rotation: number
   width?: number
   height?: number
+  isLocked?: boolean
   groupId?: string | null
   groupName?: string | null
   onCycleShape: (id: string) => void
@@ -27,11 +28,12 @@ export interface TableNodeData extends Record<string, unknown> {
 export function TableNode({ id, data, selected, width, height }: NodeProps & { data: TableNodeData; width?: number; height?: number }) {
   const nodeW = width || (data.width as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : 140)
   const nodeH = height || (data.height as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : 90)
+  const isLocked = Boolean(data.isLocked)
 
   return (
     <>
       <NodeResizer
-        isVisible={selected}
+        isVisible={selected && !isLocked}
         minWidth={60}
         minHeight={60}
         handleClassName="!size-2.5 !rounded-full !border-2 !border-primary !bg-background"
@@ -40,7 +42,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
         }}
       />
       <div
-        className="cursor-grab active:cursor-grabbing size-full"
+        className={isLocked ? "cursor-pointer size-full select-none" : "cursor-grab active:cursor-grabbing size-full select-none"}
         style={{ transform: `rotate(${data.rotation}deg)` }}
       >
         <Handle type="target" position={Position.Top} className="opacity-0" />
@@ -60,7 +62,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
       </div>
 
-      {selected && (
+      {selected && !isLocked && (
         <div
           className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50 pointer-events-auto"
           onPointerDown={(e) => e.stopPropagation()}

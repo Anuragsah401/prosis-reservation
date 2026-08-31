@@ -10,6 +10,7 @@ export interface FacilityNodeData extends Record<string, unknown> {
   rotation: number
   width?: number
   height?: number
+  isLocked?: boolean
   onRotate: (id: string) => void
   onDelete: (id: string) => void
   onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
@@ -24,11 +25,12 @@ export function FacilityNode({
 }: NodeProps & { data: FacilityNodeData; width?: number; height?: number }) {
   const nodeW = width || (data.width as number) || 120
   const nodeH = height || (data.height as number) || 60
+  const isLocked = Boolean(data.isLocked)
 
   return (
     <>
       <NodeResizer
-        isVisible={selected}
+        isVisible={selected && !isLocked}
         minWidth={40}
         minHeight={20}
         keepAspectRatio={data.facilityType === "PLANT"}
@@ -39,7 +41,7 @@ export function FacilityNode({
         }}
       />
       <div
-        className="cursor-grab active:cursor-grabbing size-full"
+        className={isLocked ? "cursor-default size-full select-none" : "cursor-grab active:cursor-grabbing size-full select-none"}
         style={{ transform: `rotate(${data.rotation}deg)` }}
       >
         <Handle type="target" position={Position.Top} className="opacity-0" />
@@ -53,7 +55,7 @@ export function FacilityNode({
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
       </div>
 
-      {selected && (
+      {selected && !isLocked && (
         <div className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50">
           <Button
             variant="ghost"

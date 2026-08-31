@@ -5,9 +5,12 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  ControlButton,
   MiniMap,
   applyNodeChanges,
   SelectionMode,
+  ReactFlowProvider,
+  useReactFlow,
   type Node,
   type NodeChange,
   type NodeTypes,
@@ -54,6 +57,9 @@ import {
   Layers,
   Sparkles,
   Pencil,
+  Lock,
+  Unlock,
+  Focus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -107,6 +113,7 @@ function nodeFromTable(
     onEdit?: (id: string) => void
     onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
   },
+  isLocked: boolean = true,
 ): Node<TableNodeData | FacilityNodeData> {
   const isFacility = isFacilityElement(table)
 
@@ -125,6 +132,7 @@ function nodeFromTable(
         rotation: table.rotation || 0,
         width: table.width || def.width,
         height: table.height || def.height,
+        isLocked,
         onRotate: handlers.onRotate,
         onDelete: handlers.onDelete,
         onResizeEnd: handlers.onResizeEnd,
@@ -147,6 +155,7 @@ function nodeFromTable(
       rotation: table.rotation || 0,
       width: table.width || DEFAULT_TABLE_WIDTH,
       height: table.height || DEFAULT_TABLE_HEIGHT,
+      isLocked,
       groupId: table.groupId,
       groupName: table.groupName,
       ...handlers,
@@ -189,9 +198,18 @@ function buildFloorTables(): Record<string, FloorPlanTable[]> {
   return byFloor
 }
 
-export function FloorPlanBuilder() {
+function FloorPlanBuilderInner() {
   const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
+  const { fitView } = useReactFlow()
+
+  // Layout Safe-Lock state: ALWAYS starts true on reload, switching pages, or initial load
+  const [isLayoutLocked, setIsLayoutLocked] = useState(true)
+
+  const handleFitView = useCallback(() => {
+    fitView({ padding: 0.25, duration: 400 })
+  }, [fitView])
+
   // Seeded from localStorage so the canvas paints instantly, then replaced by
   // the server copy below. localStorage is per-browser, so it can only ever be
   // a cache — the database is the source of truth across devices.
@@ -220,6 +238,30 @@ export function FloorPlanBuilder() {
   useEffect(() => {
     saveFloorNames(floors)
   }, [floors])
+
+  // Keep isLocked synced on all nodes across all floors when toggled
+  useEffect(() => {
+    setNodesByFloor((current) => {
+      let changed = false
+      const next: typeof current = {}
+      for (const [floor, floorNodes] of Object.entries(current)) {
+        next[floor] = floorNodes.map((n) => {
+          if (n.data.isLocked !== isLayoutLocked) {
+            changed = true
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                isLocked: isLayoutLocked,
+              },
+            }
+          }
+          return n
+        })
+      }
+      return changed ? next : current
+    })
+  }, [isLayoutLocked])
 
   const handleCycleShape = useCallback((id: string) => {
     setNodesByFloor((current) => {
@@ -838,6 +880,7 @@ export function FloorPlanBuilder() {
   )
 
   const handleOpenAddDialog = useCallback(() => {
+    setIsLayoutLocked(false)
     setNewTableName(`T${tableCounter}`)
     setNewTableCapacity("4")
     setNewTableLocation(activeFloor)
@@ -847,6 +890,7 @@ export function FloorPlanBuilder() {
   }, [tableCounter, activeFloor])
 
   const handleOpenAddFacilityDialog = useCallback(() => {
+    setIsLayoutLocked(false)
     setSelectedFacilityType("BAR")
     setFacilityCustomName(facilityDefaults.BAR.name)
     setIsAddFacilityDialogOpen(true)
@@ -882,6 +926,7 @@ export function FloorPlanBuilder() {
         rotation: 0,
         width: size.width,
         height: size.height,
+        isLocked: false,
         ...handlers,
       },
     }
@@ -1232,6 +1277,45 @@ export function FloorPlanBuilder() {
             </Badge>
           ) : null}
 
+          {/* Lock / Unlock Mode Toggle Button */}
+          <Button
+            type="button"
+            variant={isLayoutLocked ? "outline" : "default"}
+            size="sm"
+            onClick={() => {
+              if (isLayoutLocked) {
+                setIsLayoutLocked(false)
+                toast.info("Floor plan unlocked. You can now drag, resize, and arrange tables.")
+              } else {
+                setIsLayoutLocked(true)
+                toast.success("Floor plan layout locked. Table positions are protected.")
+              }
+            }}
+            className={cn(
+              "gap-1.5 font-semibold transition-all shadow-xs text-xs",
+              isLayoutLocked
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white",
+            )}
+            title={
+              isLayoutLocked
+                ? "Layout is locked (Safe Mode). Click to unlock and edit tables."
+                : "Layout is unlocked for editing. Click to lock and protect table positions."
+            }
+          >
+            {isLayoutLocked ? (
+              <>
+                <Lock className="size-3.5 shrink-0 text-amber-500" />
+                <span>Layout Locked</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="size-3.5 shrink-0 animate-pulse" />
+                <span>Editing Layout (Lock)</span>
+              </>
+            )}
+          </Button>
+
           <Button variant="outline" onClick={handleReset} disabled={isSaving}>
             <RotateCcw className="size-4" />
             {t("pages.floorPlan.reset")}
@@ -1321,14 +1405,24 @@ export function FloorPlanBuilder() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={handleOpenAddDialog}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              if (isLayoutLocked) setIsLayoutLocked(false)
+              handleOpenAddDialog()
+            }}
+          >
             <Plus className="size-4" />
             {t("pages.floorPlan.addTable")}
           </Button>
           <Button
             size="sm"
             variant="outline"
-            onClick={handleOpenAddFacilityDialog}
+            onClick={() => {
+              if (isLayoutLocked) setIsLayoutLocked(false)
+              handleOpenAddFacilityDialog()
+            }}
             className="border-dashed bg-card/60 hover:bg-accent"
           >
             <Sparkles className="size-4 text-amber-500" />
@@ -1366,6 +1460,25 @@ export function FloorPlanBuilder() {
           isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-150 rounded-xl",
         )}
       >
+        {/* Floating Locked Safe-Mode HUD Badge */}
+        {isLayoutLocked && !isLoadingPlan && (
+          <div className="absolute top-3 left-3 z-30 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-background/90 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 shadow-md backdrop-blur-md">
+            <Lock className="size-3.5 text-amber-500 shrink-0" />
+            <span>Layout Locked (Safe Mode)</span>
+            <span className="text-muted-foreground font-normal text-[11px] hidden sm:inline">• Positions protected</span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLayoutLocked(false)
+                toast.info("Floor plan unlocked for editing.")
+              }}
+              className="ml-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              Unlock
+            </button>
+          </div>
+        )}
+
         {isLoadingPlan ? (
           <div className="text-muted-foreground flex h-full items-center justify-center gap-2 text-sm">
             <Loader2 className="size-4 animate-spin" />
@@ -1387,7 +1500,7 @@ export function FloorPlanBuilder() {
             selectionOnDrag={false}
             selectionKeyCode={["Shift", "Meta", "Control"]}
             multiSelectionKeyCode={["Shift", "Meta", "Control"]}
-            nodesDraggable={true}
+            nodesDraggable={!isLayoutLocked}
             elementsSelectable={true}
             zoomOnScroll={true}
             onNodeDragStop={() => {
@@ -1399,6 +1512,7 @@ export function FloorPlanBuilder() {
               }
             }}
             fitView
+            fitViewOptions={{ padding: 0.25 }}
             proOptions={{ hideAttribution: true }}
           >
             <Background
@@ -1406,7 +1520,22 @@ export function FloorPlanBuilder() {
               gap={16}
               color={resolvedTheme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"}
             />
-            <Controls className="bg-card border-border shadow-md" />
+            {/* Custom high-polish controls replacing the buggy [ ] icon */}
+            <Controls
+              showZoom={true}
+              showFitView={false}
+              showInteractive={false}
+              className="bg-card! border-border/80! shadow-md! rounded-xl! overflow-hidden p-0.5"
+            >
+              <ControlButton
+                onClick={handleFitView}
+                title="Fit & Center Floor Plan"
+                aria-label="Fit View"
+                className="hover:bg-muted! text-foreground! flex items-center justify-center cursor-pointer"
+              >
+                <Focus className="size-4 text-primary" />
+              </ControlButton>
+            </Controls>
             {/*
               React Flow's minimap defaults to 200x150, which eats a large
               corner of a phone screen. Scaled down on small viewports (same
@@ -2062,5 +2191,13 @@ export function FloorPlanBuilder() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export function FloorPlanBuilder() {
+  return (
+    <ReactFlowProvider>
+      <FloorPlanBuilderInner />
+    </ReactFlowProvider>
   )
 }
