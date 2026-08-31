@@ -1317,10 +1317,7 @@ function FloorPlanBuilderInner() {
         }
       })
 
-      // Sync to backend
-      const serverSynced = await syncFloorPlanToServer(savePayload)
-
-      // Also persist locally
+      // 1. Immediately persist locally (instant ~1ms)
       saveFloorPlanTables(
         allNodes.map(({ floor, node }) => ({
           id: node.id,
@@ -1356,7 +1353,7 @@ function FloorPlanBuilderInner() {
         }),
       )
 
-      // Update floorTables state with the newly saved tables
+      // Update floorTables state immediately so UI and Undo/Redo are instantly in sync
       const updatedByFloor: Record<string, FloorPlanTable[]> = {}
       for (const { floor, node } of allNodes) {
         const isFacility = node.type === "facility"
@@ -1384,7 +1381,13 @@ function FloorPlanBuilderInner() {
       }
       setFloorTables(updatedByFloor)
       setIsDirty(false)
-      setLastSaveResult(serverSynced ? "server" : "local")
+      setLastSaveResult("local")
+
+      // 2. Sync to server in the background
+      const serverSynced = await syncFloorPlanToServer(savePayload)
+      if (serverSynced) {
+        setLastSaveResult("server")
+      }
       if (!options?.isAuto) {
         toast.success(serverSynced ? "Floor plan saved to server successfully!" : "Floor plan layout saved locally!")
       }
