@@ -309,6 +309,8 @@ export function FloorPlanBuilder() {
   const [editTableLocation, setEditTableLocation] = useState("")
   const [editTableShape, setEditTableShape] = useState<TableShape>("RECTANGLE")
   const [editTableStatus, setEditTableStatus] = useState<TableStatus>("AVAILABLE")
+  const [editTableWidth, setEditTableWidth] = useState<string>("")
+  const [editTableHeight, setEditTableHeight] = useState<string>("")
 
   const nodesByFloorRef = useRef(nodesByFloor)
   nodesByFloorRef.current = nodesByFloor
@@ -330,12 +332,16 @@ export function FloorPlanBuilder() {
         const found = currentNodes[f]?.find((n) => n.id === id && n.type === "table") as Node<TableNodeData> | undefined
         if (found) {
           const data = found.data
+          const w = (found.width as number) || (data.width as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : DEFAULT_TABLE_WIDTH)
+          const h = (found.height as number) || (data.height as number) || (data.shape === "CIRCLE" || data.shape === "SQUARE" ? 100 : DEFAULT_TABLE_HEIGHT)
           setEditTableId(id)
           setEditTableName(data.name)
           setEditTableCapacity(String(data.capacity))
           setEditTableLocation(data.location || f || currentActiveFloor)
           setEditTableShape(data.shape)
           setEditTableStatus(data.status)
+          setEditTableWidth(String(Math.round(w)))
+          setEditTableHeight(String(Math.round(h)))
           setIsEditDialogOpen(true)
           return
         }
@@ -345,12 +351,16 @@ export function FloorPlanBuilder() {
       for (const f of Object.keys(currentFloorTables)) {
         const found = currentFloorTables[f]?.find((t) => t.id === id)
         if (found) {
+          const w = found.width || (found.shape === "CIRCLE" || found.shape === "SQUARE" ? 100 : DEFAULT_TABLE_WIDTH)
+          const h = found.height || (found.shape === "CIRCLE" || found.shape === "SQUARE" ? 100 : DEFAULT_TABLE_HEIGHT)
           setEditTableId(id)
           setEditTableName(found.name)
           setEditTableCapacity(String(found.capacity))
           setEditTableLocation(found.location || found.floor || f || currentActiveFloor)
           setEditTableShape(found.shape || "RECTANGLE")
           setEditTableStatus(found.status || "AVAILABLE")
+          setEditTableWidth(String(Math.round(w)))
+          setEditTableHeight(String(Math.round(h)))
           setIsEditDialogOpen(true)
           return
         }
@@ -366,6 +376,8 @@ export function FloorPlanBuilder() {
         setEditTableLocation(foundLocal.floor || currentActiveFloor)
         setEditTableShape("RECTANGLE")
         setEditTableStatus("AVAILABLE")
+        setEditTableWidth(String(DEFAULT_TABLE_WIDTH))
+        setEditTableHeight(String(DEFAULT_TABLE_HEIGHT))
         setIsEditDialogOpen(true)
         return
       }
@@ -377,6 +389,8 @@ export function FloorPlanBuilder() {
       setEditTableLocation(currentActiveFloor)
       setEditTableShape("RECTANGLE")
       setEditTableStatus("AVAILABLE")
+      setEditTableWidth(String(DEFAULT_TABLE_WIDTH))
+      setEditTableHeight(String(DEFAULT_TABLE_HEIGHT))
       setIsEditDialogOpen(true)
     },
     [],
@@ -388,22 +402,39 @@ export function FloorPlanBuilder() {
     const finalName = editTableName.trim() || "Table"
     const finalLocation = editTableLocation.trim() || undefined
 
+    const parsedCustomW = Math.max(30, Number(editTableWidth) || 0)
+    const parsedCustomH = Math.max(30, Number(editTableHeight) || 0)
+
+    let updatedWidth = DEFAULT_TABLE_WIDTH
+    let updatedHeight = DEFAULT_TABLE_HEIGHT
+
     setNodesByFloor((current) => {
       const next = { ...current }
       for (const f of Object.keys(next)) {
         next[f] = next[f].map((n) => {
           if (n.id === editTableId && n.type === "table") {
             const data = n.data as TableNodeData
-            const size =
-              editTableShape === "CIRCLE"
-                ? { width: 40 + capacity * 12, height: 40 + capacity * 12 }
-                : editTableShape === "SQUARE"
-                  ? { width: 40 + capacity * 10, height: 40 + capacity * 10 }
-                  : { width: DEFAULT_TABLE_WIDTH, height: DEFAULT_TABLE_HEIGHT }
+            const existingW = (n.width as number) || (data.width as number) || DEFAULT_TABLE_WIDTH
+            const existingH = (n.height as number) || (data.height as number) || DEFAULT_TABLE_HEIGHT
+
+            // Preserve existing custom resized dimensions unless explicitly edited in input
+            let finalW = parsedCustomW > 0 ? parsedCustomW : existingW
+            let finalH = parsedCustomH > 0 ? parsedCustomH : existingH
+
+            // If shape changed to circle/square, adjust to square aspect ratio using max dimension
+            if (data.shape !== editTableShape && (editTableShape === "CIRCLE" || editTableShape === "SQUARE")) {
+              const maxDim = Math.max(finalW, finalH)
+              finalW = maxDim
+              finalH = maxDim
+            }
+
+            updatedWidth = finalW
+            updatedHeight = finalH
+
             return {
               ...n,
-              width: size.width,
-              height: size.height,
+              width: finalW,
+              height: finalH,
               data: {
                 ...data,
                 name: finalName,
@@ -411,8 +442,8 @@ export function FloorPlanBuilder() {
                 location: finalLocation,
                 status: editTableStatus,
                 shape: editTableShape,
-                width: size.width,
-                height: size.height,
+                width: finalW,
+                height: finalH,
               },
             }
           }
@@ -434,6 +465,8 @@ export function FloorPlanBuilder() {
                 location: finalLocation,
                 status: editTableStatus,
                 shape: editTableShape,
+                width: updatedWidth,
+                height: updatedHeight,
               }
             : t,
         )
@@ -451,6 +484,8 @@ export function FloorPlanBuilder() {
     editTableLocation,
     editTableStatus,
     editTableShape,
+    editTableWidth,
+    editTableHeight,
   ])
 
   const handleResizeEnd = useCallback(
@@ -1723,6 +1758,39 @@ export function FloorPlanBuilder() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-table-width" className="flex items-center justify-between text-xs">
+                  <span>Width</span>
+                  <span className="text-muted-foreground font-normal">(px)</span>
+                </Label>
+                <Input
+                  id="edit-table-width"
+                  type="number"
+                  min={40}
+                  max={800}
+                  value={editTableWidth}
+                  onChange={(e) => setEditTableWidth(e.target.value)}
+                  placeholder="140"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-table-height" className="flex items-center justify-between text-xs">
+                  <span>Height</span>
+                  <span className="text-muted-foreground font-normal">(px)</span>
+                </Label>
+                <Input
+                  id="edit-table-height"
+                  type="number"
+                  min={40}
+                  max={800}
+                  value={editTableHeight}
+                  onChange={(e) => setEditTableHeight(e.target.value)}
+                  placeholder="90"
+                />
               </div>
             </div>
           </div>
