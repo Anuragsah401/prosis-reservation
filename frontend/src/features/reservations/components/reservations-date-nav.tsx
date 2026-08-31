@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { ChevronLeft, ChevronRight, Calendar, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,7 @@ interface ReservationsDateNavProps {
 
 export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: ReservationsDateNavProps) {
   const { t, i18n } = useTranslation()
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   const today = new Date()
   const yesterday = new Date(today)
@@ -115,29 +117,31 @@ export function ReservationsDateNav({ selectedDate, onSelectDate, totalCount }: 
         </div>
 
         {/* Native date picker jumper */}
-        <label className="relative inline-flex items-center">
+        <div className="relative inline-flex items-center">
           <input
+            ref={dateInputRef}
             type="date"
             className="sr-only"
             value={toDateInputValue(selectedDate)}
             onChange={handleDateInputChange}
-            id="reservations-date-jump"
           />
           <Button
+            type="button"
             variant="outline"
             size="sm"
             className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
             onClick={() => {
-              const el = document.getElementById("reservations-date-jump") as HTMLInputElement | null
-              if (el && typeof el.showPicker === "function") {
-                el.showPicker()
+              if (dateInputRef.current && typeof dateInputRef.current.showPicker === "function") {
+                dateInputRef.current.showPicker()
+              } else if (dateInputRef.current) {
+                dateInputRef.current.focus()
               }
             }}
           >
             <Calendar className="size-3.5" />
             <span className="hidden sm:inline">{t("pages.reservations.jumpToDate", "Jump to date")}</span>
           </Button>
-        </label>
+        </div>
       </div>
     </div>
   )
