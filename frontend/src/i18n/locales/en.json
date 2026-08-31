@@ -477,6 +477,52 @@
       "resultCount_one": "{{count}} reservation",
       "resultCount_other": "{{count}} reservations",
       "scrollForMore": "Scroll down to view more reservations",
+      "jumpToDate": "Jump to date",
+      "stats": {
+        "totalBookings": "Total Guests",
+        "totalCovers": "{{count}} covers",
+        "confirmed": "Confirmed / Seated",
+        "seated": "seated",
+        "arrivalRate": "arrival rate",
+        "pending": "Pending Action",
+        "actionRequired": "Needs review",
+        "allReviewed": "All reviewed",
+        "tablesBooked": "Tables Booked",
+        "tables": "tables",
+        "allAssigned": "All assigned"
+      },
+      "dateShortcuts": {
+        "yesterday": "Yesterday",
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "prevDay": "Previous day",
+        "nextDay": "Next day"
+      },
+      "filters": {
+        "all": "All",
+        "confirmed": "Confirmed",
+        "seated": "Seated",
+        "pending": "Pending",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "noShow": "No-show"
+      },
+      "serviceTools": {
+        "printRunSheet": "Print Service Sheet",
+        "exportCsv": "Export CSV",
+        "refresh": "Refresh",
+        "selectedCount": "{{count}} selected",
+        "bulkMarkConfirmed": "Mark Confirmed",
+        "bulkMarkSeated": "Mark Seated",
+        "bulkMarkCompleted": "Mark Completed",
+        "bulkCancel": "Cancel Selected",
+        "selectAll": "Select all",
+        "clearSelection": "Clear"
+      },
+      "emptyState": {
+        "title": "No reservations found",
+        "description": "There are no bookings matching your criteria for this day."
+      },
       "colCustomer": "Customer",
       "colPhone": "Phone",
       "colTime": "Time",
@@ -517,7 +563,9 @@
         "updated": "Reservation updated successfully",
         "deleted": "Reservation deleted successfully",
         "statusUpdated": "Reservation status updated to {{status}}",
-        "statusError": "Failed to update reservation status"
+        "statusError": "Failed to update reservation status",
+        "refreshed": "Reservations updated",
+        "bulkStatusUpdated": "Updated {{count}} reservations to {{status}}"
       },
       "empty": "No reservations for this date.",
       "setStatus": "Set status",

@@ -477,6 +477,52 @@
       "resultCount_one": "{{count}} reservation",
       "resultCount_other": "{{count}} reservationer",
       "scrollForMore": "Rul ned for at se flere reservationer",
+      "jumpToDate": "Gå til dato",
+      "stats": {
+        "totalBookings": "Gæster i alt",
+        "totalCovers": "{{count}} gæster",
+        "confirmed": "Bekræftet / Placeret",
+        "seated": "placeret",
+        "arrivalRate": "ankomstrate",
+        "pending": "Afventer handling",
+        "actionRequired": "Kræver gennemgang",
+        "allReviewed": "Alt gennemgået",
+        "tablesBooked": "Reserverede borde",
+        "tables": "borde",
+        "allAssigned": "Alle tildelt"
+      },
+      "dateShortcuts": {
+        "yesterday": "I går",
+        "today": "I dag",
+        "tomorrow": "I morgen",
+        "prevDay": "Forrige dag",
+        "nextDay": "Næste dag"
+      },
+      "filters": {
+        "all": "Alle",
+        "confirmed": "Bekræftet",
+        "seated": "Placeret",
+        "pending": "Afventer",
+        "completed": "Gennemført",
+        "cancelled": "Aflyst",
+        "noShow": "Udeblevet"
+      },
+      "serviceTools": {
+        "printRunSheet": "Udskriv køreliste",
+        "exportCsv": "Eksportér CSV",
+        "refresh": "Opdater",
+        "selectedCount": "{{count}} valgt",
+        "bulkMarkConfirmed": "Markér bekræftet",
+        "bulkMarkSeated": "Markér placeret",
+        "bulkMarkCompleted": "Markér gennemført",
+        "bulkCancel": "Annuller valgte",
+        "selectAll": "Vælg alle",
+        "clearSelection": "Ryd"
+      },
+      "emptyState": {
+        "title": "Ingen reservationer fundet",
+        "description": "Der er ingen reservationer, der matcher dine kriterier for denne dag."
+      },
       "colCustomer": "Kunde",
       "colPhone": "Telefon",
       "colTime": "Tid",
@@ -517,7 +563,9 @@
         "updated": "Reservation opdateret",
         "deleted": "Reservation slettet",
         "statusUpdated": "Reservationsstatus opdateret til {{status}}",
-        "statusError": "Kunne ikke opdatere reservationsstatus"
+        "statusError": "Kunne ikke opdatere reservationsstatus",
+        "refreshed": "Reservationer opdateret",
+        "bulkStatusUpdated": "Opdaterede {{count}} reservationer til {{status}}"
       },
       "empty": "Ingen reservationer for denne dato.",
       "setStatus": "Sæt status",

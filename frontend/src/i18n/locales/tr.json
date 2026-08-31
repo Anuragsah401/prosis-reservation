@@ -477,6 +477,52 @@
       "resultCount_one": "{{count}} rezervasyon",
       "resultCount_other": "{{count}} rezervasyon",
       "scrollForMore": "Daha fazla rezervasyon görmek için aşağı kaydırın",
+      "jumpToDate": "Tarihe git",
+      "stats": {
+        "totalBookings": "Toplam Misafir",
+        "totalCovers": "{{count}} kişi",
+        "confirmed": "Onaylandı / Masada",
+        "seated": "masada",
+        "arrivalRate": "geliş oranı",
+        "pending": "İşlem Bekleyen",
+        "actionRequired": "İnceleme gerekli",
+        "allReviewed": "Hepsi incelendi",
+        "tablesBooked": "Rezerve Masalar",
+        "tables": "masa",
+        "allAssigned": "Hepsi atandı"
+      },
+      "dateShortcuts": {
+        "yesterday": "Dün",
+        "today": "Bugün",
+        "tomorrow": "Yarın",
+        "prevDay": "Önceki gün",
+        "nextDay": "Sonraki gün"
+      },
+      "filters": {
+        "all": "Tümü",
+        "confirmed": "Onaylandı",
+        "seated": "Masada",
+        "pending": "Beklemede",
+        "completed": "Tamamlandı",
+        "cancelled": "İptal",
+        "noShow": "Gelmedi"
+      },
+      "serviceTools": {
+        "printRunSheet": "Servis Listesini Yazdır",
+        "exportCsv": "CSV Dışa Aktar",
+        "refresh": "Yenile",
+        "selectedCount": "{{count}} seçildi",
+        "bulkMarkConfirmed": "Onaylandı İşaretle",
+        "bulkMarkSeated": "Masada İşaretle",
+        "bulkMarkCompleted": "Tamamlandı İşaretle",
+        "bulkCancel": "Seçilenleri İptal Et",
+        "selectAll": "Tümünü seç",
+        "clearSelection": "Temizle"
+      },
+      "emptyState": {
+        "title": "Rezervasyon bulunamadı",
+        "description": "Bu gün için kriterlerinize uyan rezervasyon bulunamadı."
+      },
       "colCustomer": "Müşteri",
       "colPhone": "Telefon",
       "colTime": "Saat",
@@ -517,7 +563,9 @@
         "updated": "Rezervasyon başarıyla güncellendi",
         "deleted": "Rezervasyon başarıyla silindi",
         "statusUpdated": "Rezervasyon durumu {{status}} olarak güncellendi",
-        "statusError": "Rezervasyon durumu güncellenemedi"
+        "statusError": "Rezervasyon durumu güncellenemedi",
+        "refreshed": "Rezervasyonlar güncellendi",
+        "bulkStatusUpdated": "{{count}} rezervasyon {{status}} olarak güncellendi"
       },
       "empty": "Bu tarih için rezervasyon yok.",
       "setStatus": "Durumu ayarla",

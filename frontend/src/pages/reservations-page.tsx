@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Search } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import { ReservationsCalendar } from "@/features/reservations-calendar/reservations-calendar"
 import { MiniMonthCalendar } from "@/features/reservations-calendar/mini-month-calendar"
 import {
@@ -12,30 +13,44 @@ import {
 } from "@/features/reservations-calendar/calendar-data"
 import { ReservationsToolbar } from "@/features/reservations/components/reservations-toolbar"
 import { ReservationsTable } from "@/features/reservations/components/reservations-table"
+import { ReservationsStats } from "@/features/reservations/components/reservations-stats"
+import { ReservationsDateNav } from "@/features/reservations/components/reservations-date-nav"
 import { statusSortOrder } from "@/features/reservations/reservations-constants"
-import { isSameDay } from "@/features/reservations/reservations-utils"
+import { isSameDay, exportReservationsToCSV, printDailyRunSheet, toDateInputValue } from "@/features/reservations/reservations-utils"
 import { fetchReservations, updateReservationStatusOnServer } from "@/features/reservations/reservations-api"
 import { useRealtimeListener } from "@/features/realtime"
+import { useRestaurant } from "@/features/restaurant/restaurant-context"
+
+type StatusFilterOption = "all" | ReservationStatus
 
 export function ReservationsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const { profile } = useRestaurant()
   const [tab, setTab] = useState<"list" | "calendar">("list")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<StatusFilterOption>("all")
   const [allReservations, setAllReservations] = useState<CalendarReservation[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const loadReservations = useCallback(async (showLoading = true) => {
+  const loadReservations = useCallback(async (showLoading = true, isManual = false) => {
     if (showLoading) setIsLoading(true)
+    if (isManual) setIsRefreshing(true)
     setLoadError(null)
     try {
-      setAllReservations(await fetchReservations())
+      const data = await fetchReservations()
+      setAllReservations(data)
+      if (isManual) {
+        toast.success(t("pages.reservations.toasts.refreshed", "Reservations updated"))
+      }
     } catch (err) {
       console.error("[reservations] Failed to load reservations:", err)
-      setLoadError(t("pages.reservations.loadError"))
+      setLoadError(t("pages.reservations.loadError", "Could not load reservations. Please try again."))
     } finally {
       if (showLoading) setIsLoading(false)
+      if (isManual) setIsRefreshing(false)
     }
   }, [t])
 
@@ -57,8 +72,6 @@ export function ReservationsPage() {
   })
 
   useEffect(() => {
-    // Kicked off in a microtask so the initial fetch isn't dispatched
-    // synchronously during the effect body.
     let cancelled = false
     void Promise.resolve().then(() => {
       if (!cancelled) void loadReservations()
@@ -71,8 +84,7 @@ export function ReservationsPage() {
   async function handleStatusChange(id: string, status: ReservationStatus) {
     const previous = allReservations
     const target = allReservations.find((r) => r.id === id)
-    // Applied optimistically so the table responds immediately, then rolled
-    // back if the server rejects the transition.
+    // Optimistic update
     setAllReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
     try {
       await updateReservationStatusOnServer(id, status)
@@ -86,6 +98,24 @@ export function ReservationsPage() {
       )
     } catch (err) {
       console.error("[reservations] Failed to update status:", err)
+      setAllReservations(previous)
+      toast.error(t("pages.reservations.toasts.statusError", "Failed to update reservation status"))
+    }
+  }
+
+  async function handleBulkStatusChange(ids: string[], status: ReservationStatus) {
+    const previous = allReservations
+    setAllReservations((prev) => prev.map((r) => (ids.includes(r.id) ? { ...r, status } : r)))
+    try {
+      await Promise.all(ids.map((id) => updateReservationStatusOnServer(id, status)))
+      toast.success(
+        t("pages.reservations.toasts.bulkStatusUpdated", "Updated {{count}} reservations to {{status}}", {
+          count: ids.length,
+          status: statusLabels[status] ?? status,
+        })
+      )
+    } catch (err) {
+      console.error("[reservations] Failed bulk status update:", err)
       setAllReservations(previous)
       toast.error(t("pages.reservations.toasts.statusError", "Failed to update reservation status"))
     }
@@ -113,22 +143,86 @@ export function ReservationsPage() {
     return set
   }, [allReservations])
 
+  // All reservations for the active day (for stats and counts)
+  const dayReservations = useMemo(() => {
+    return allReservations.filter((r) => isSameDay(new Date(r.start), selectedDate))
+  }, [allReservations, selectedDate])
+
+  // Status counts for the selected day
+  const statusCounts = useMemo(() => {
+    const counts: Record<StatusFilterOption, number> = {
+      all: dayReservations.length,
+      PENDING: 0,
+      CONFIRMED: 0,
+      CHECKED_IN: 0,
+      COMPLETED: 0,
+      CANCELLED: 0,
+      NO_SHOW: 0,
+    }
+    for (const r of dayReservations) {
+      if (counts[r.status] !== undefined) {
+        counts[r.status]++
+      }
+    }
+    return counts
+  }, [dayReservations])
+
+  // Filtered reservations applying status filter and text search
   const filteredReservations = useMemo(() => {
-    return allReservations
-      .filter((r) => isSameDay(new Date(r.start), selectedDate))
-      .filter((r) => r.customerName.toLowerCase().includes(search.trim().toLowerCase()))
+    const query = search.trim().toLowerCase()
+    return dayReservations
+      .filter((r) => {
+        if (statusFilter === "all") return true
+        return r.status === statusFilter
+      })
+      .filter((r) => {
+        if (!query) return true
+        const matchCustomer = r.customerName.toLowerCase().includes(query)
+        const matchPhone = (r.customerPhone || "").toLowerCase().includes(query)
+        const matchEmail = (r.customerEmail || "").toLowerCase().includes(query)
+        const matchTable = (r.tableName || "").toLowerCase().includes(query)
+        const matchNotes = (r.notes || "").toLowerCase().includes(query)
+        const matchSpecial = (r.specialRequests || "").toLowerCase().includes(query)
+        const matchEvent = (r.eventType || "").toLowerCase().includes(query)
+        return matchCustomer || matchPhone || matchEmail || matchTable || matchNotes || matchSpecial || matchEvent
+      })
       .sort((a, b) => {
         const statusDiff = statusSortOrder[a.status] - statusSortOrder[b.status]
         if (statusDiff !== 0) return statusDiff
         return a.start.localeCompare(b.start)
       })
-  }, [allReservations, selectedDate, search])
+  }, [dayReservations, statusFilter, search])
+
+  const handlePrint = () => {
+    const formattedDate = selectedDate.toLocaleDateString(i18n.language || undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+    printDailyRunSheet(filteredReservations, formattedDate, profile?.name || "Restaurant")
+  }
+
+  const handleExport = () => {
+    exportReservationsToCSV(filteredReservations, toDateInputValue(selectedDate))
+  }
+
+  const statusFilterTabs: { id: StatusFilterOption; label: string; count: number }[] = [
+    { id: "all", label: t("pages.reservations.filters.all", "All"), count: statusCounts.all },
+    { id: "CONFIRMED", label: t("pages.reservations.filters.confirmed", "Confirmed"), count: statusCounts.CONFIRMED },
+    { id: "CHECKED_IN", label: t("pages.reservations.filters.seated", "Seated"), count: statusCounts.CHECKED_IN },
+    { id: "PENDING", label: t("pages.reservations.filters.pending", "Pending"), count: statusCounts.PENDING },
+    { id: "COMPLETED", label: t("pages.reservations.filters.completed", "Completed"), count: statusCounts.COMPLETED },
+    { id: "CANCELLED", label: t("pages.reservations.filters.cancelled", "Cancelled"), count: statusCounts.CANCELLED },
+    { id: "NO_SHOW", label: t("pages.reservations.filters.noShow", "No-show"), count: statusCounts.NO_SHOW },
+  ]
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
+      {/* Top Header & Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.reservations.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t("pages.reservations.title")}</h1>
           <p className="text-muted-foreground text-sm">{t("pages.reservations.subtitle")}</p>
         </div>
         <ReservationsToolbar
@@ -136,63 +230,118 @@ export function ReservationsPage() {
           onTabChange={setTab}
           defaultDate={selectedDate}
           onCreate={handleCreateReservation}
+          onRefresh={() => void loadReservations(false, true)}
+          isRefreshing={isRefreshing}
+          onExportCSV={handleExport}
+          onPrintRunSheet={handlePrint}
         />
       </div>
+
+      {/* Daily KPI Stats Summary Cards */}
+      <ReservationsStats reservations={dayReservations} />
+
+      {/* Date Quick Navigator Bar */}
+      <ReservationsDateNav
+        selectedDate={selectedDate}
+        onSelectDate={setSelectedDate}
+        totalCount={filteredReservations.length}
+      />
 
       {tab === "calendar" ? (
         <ReservationsCalendar />
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
-          <div className="bg-card rounded-lg border p-2">
-            <MiniMonthCalendar
-              selectedDate={selectedDate}
-              onSelect={setSelectedDate}
-              highlightedDates={bookedDates}
-            />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[230px_1fr]">
+          {/* Left Mini Calendar & Date Shortcuts */}
+          <div className="flex flex-col gap-3">
+            <div className="bg-card rounded-xl border border-border/80 p-2 shadow-xs">
+              <MiniMonthCalendar
+                selectedDate={selectedDate}
+                onSelect={setSelectedDate}
+                highlightedDates={bookedDates}
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="relative w-full max-w-sm">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          {/* Right Main Table & Filters Area */}
+          <div className="flex flex-col gap-3">
+            {/* Status Filter Tabs & Search Bar */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {/* Status Chips */}
+              <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+                {statusFilterTabs.map((tabItem) => {
+                  const isActive = statusFilter === tabItem.id
+                  return (
+                    <button
+                      key={tabItem.id}
+                      type="button"
+                      onClick={() => setStatusFilter(tabItem.id)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <span>{tabItem.label}</span>
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 py-0.2 text-[10px] font-bold leading-tight",
+                          isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {tabItem.count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Search Bar with Clear Button */}
+              <div className="relative w-full sm:w-64">
+                <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
                 <Input
-                  placeholder={t("pages.reservations.searchPlaceholder")}
-                  className="pl-9"
+                  placeholder={t("pages.reservations.searchPlaceholder", "Search reservations...")}
+                  className="h-8 pl-8 pr-8 text-xs bg-card"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer"
+                    aria-label="Clear search"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
               </div>
-              <p className="text-muted-foreground text-sm">
-                {selectedDate.toLocaleDateString(undefined, {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-                {" · "}
-                {t("pages.reservations.resultCount", { count: filteredReservations.length })}
-              </p>
             </div>
 
+            {/* Error or Loading or Table */}
             {loadError ? (
               <div className="border-destructive/50 bg-destructive/5 text-destructive flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
                 <span>{loadError}</span>
                 <button
                   type="button"
                   onClick={() => void loadReservations()}
-                  className="font-medium underline underline-offset-4"
+                  className="font-medium underline underline-offset-4 cursor-pointer"
                 >
-                  {t("pages.reservations.retry")}
+                  {t("pages.reservations.retry", "Retry")}
                 </button>
               </div>
             ) : isLoading ? (
-              <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
-                {t("pages.reservations.loading")}
+              <div className="text-muted-foreground rounded-xl border border-dashed py-16 text-center text-sm">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <span>{t("pages.reservations.loading", "Loading reservations...")}</span>
+                </div>
               </div>
             ) : (
               <ReservationsTable
                 reservations={filteredReservations}
                 onStatusChange={handleStatusChange}
+                onBulkStatusChange={handleBulkStatusChange}
                 onUpdateReservation={handleUpdateReservation}
                 onDeleteReservation={handleDeleteReservation}
               />
