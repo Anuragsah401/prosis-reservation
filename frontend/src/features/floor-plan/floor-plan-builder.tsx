@@ -39,7 +39,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  RotateCcw,
   Loader2,
   Plus,
   LayoutGrid,
@@ -59,6 +58,8 @@ import {
   Lock,
   Unlock,
   Focus,
+  Undo2,
+  Redo2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -233,6 +234,155 @@ function FloorPlanBuilderInner() {
   })
   const [activeFloor, setActiveFloor] = useState(initialFloors[0] ?? DEFAULT_FLOOR_NAME)
   const [nodesByFloor, setNodesByFloor] = useState<Record<string, Node<TableNodeData | FacilityNodeData>[]>>({})
+  const [isDirty, setIsDirty] = useState(false)
+
+  // History state for Undo & Redo (up to 30 steps)
+  type HistorySnapshot = {
+    nodesByFloor: Record<string, Node<TableNodeData | FacilityNodeData>[]>
+    floors: string[]
+    activeFloor: string
+  }
+  const [past, setPast] = useState<HistorySnapshot[]>([])
+  const [future, setFuture] = useState<HistorySnapshot[]>([])
+
+  const nodesByFloorRef = useRef(nodesByFloor)
+  nodesByFloorRef.current = nodesByFloor
+
+  const floorTablesRef = useRef(floorTables)
+  floorTablesRef.current = floorTables
+
+  const activeFloorRef = useRef(activeFloor)
+  activeFloorRef.current = activeFloor
+
+  const floorsRef = useRef(floors)
+  floorsRef.current = floors
+
+  const isDirtyRef = useRef(isDirty)
+  isDirtyRef.current = isDirty
+
+  // Deep-clone snapshot of current layout state before any mutation
+  const takeSnapshot = useCallback(() => {
+    const currentNodes = nodesByFloorRef.current
+    const currentFloors = floorsRef.current
+    const currentActiveFloor = activeFloorRef.current
+
+    const clonedNodes: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const [f, nodes] of Object.entries(currentNodes)) {
+      clonedNodes[f] = nodes.map((n) => ({
+        ...n,
+        position: { ...n.position },
+        data: { ...n.data },
+      }))
+    }
+
+    setPast((prev) => [
+      ...prev.slice(-30),
+      {
+        nodesByFloor: clonedNodes,
+        floors: [...currentFloors],
+        activeFloor: currentActiveFloor,
+      },
+    ])
+    setFuture([]) // Clear redo stack on fresh user modification
+  }, [])
+
+  const handleUndo = useCallback(() => {
+    if (past.length === 0) return
+
+    const previous = past[past.length - 1]
+    const newPast = past.slice(0, -1)
+
+    const currentNodes = nodesByFloorRef.current
+    const currentFloors = floorsRef.current
+    const currentActiveFloor = activeFloorRef.current
+
+    const clonedCurrent: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const [f, nodes] of Object.entries(currentNodes)) {
+      clonedCurrent[f] = nodes.map((n) => ({
+        ...n,
+        position: { ...n.position },
+        data: { ...n.data },
+      }))
+    }
+
+    setFuture((prev) => [
+      {
+        nodesByFloor: clonedCurrent,
+        floors: [...currentFloors],
+        activeFloor: currentActiveFloor,
+      },
+      ...prev,
+    ])
+
+    setPast(newPast)
+    setNodesByFloor(previous.nodesByFloor)
+    setFloors(previous.floors)
+    setActiveFloor(previous.activeFloor)
+    setIsDirty(true)
+    toast.info("Undo: Reverted action", { duration: 1500 })
+  }, [past])
+
+  const handleRedo = useCallback(() => {
+    if (future.length === 0) return
+
+    const next = future[0]
+    const newFuture = future.slice(1)
+
+    const currentNodes = nodesByFloorRef.current
+    const currentFloors = floorsRef.current
+    const currentActiveFloor = activeFloorRef.current
+
+    const clonedCurrent: Record<string, Node<TableNodeData | FacilityNodeData>[]> = {}
+    for (const [f, nodes] of Object.entries(currentNodes)) {
+      clonedCurrent[f] = nodes.map((n) => ({
+        ...n,
+        position: { ...n.position },
+        data: { ...n.data },
+      }))
+    }
+
+    setPast((prev) => [
+      ...prev,
+      {
+        nodesByFloor: clonedCurrent,
+        floors: [...currentFloors],
+        activeFloor: currentActiveFloor,
+      },
+    ])
+
+    setFuture(newFuture)
+    setNodesByFloor(next.nodesByFloor)
+    setFloors(next.floors)
+    setActiveFloor(next.activeFloor)
+    setIsDirty(true)
+    toast.info("Redo: Restored action", { duration: 1500 })
+  }, [future])
+
+  // Global Keyboard Shortcuts (Cmd+Z / Ctrl+Z for Undo, Cmd+Shift+Z / Ctrl+Shift+Z / Ctrl+Y for Redo)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return
+      }
+
+      if ((e.metaKey || e.ctrlKey) && !e.altKey) {
+        if (e.shiftKey && (e.key === "z" || e.key === "Z")) {
+          e.preventDefault()
+          handleRedo()
+        } else if (!e.shiftKey && (e.key === "z" || e.key === "Z")) {
+          e.preventDefault()
+          handleUndo()
+        } else if (!e.shiftKey && (e.key === "y" || e.key === "Y")) {
+          e.preventDefault()
+          handleRedo()
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [handleUndo, handleRedo])
 
   useEffect(() => {
     saveFloorNames(floors)
@@ -263,6 +413,7 @@ function FloorPlanBuilderInner() {
   }, [isLayoutLocked])
 
   const handleCycleShape = useCallback((id: string) => {
+    takeSnapshot()
     setNodesByFloor((current) => {
       const next = { ...current }
       for (const floor of Object.keys(next)) {
@@ -277,9 +428,10 @@ function FloorPlanBuilderInner() {
       return next
     })
     setIsDirty(true)
-  }, [])
+  }, [takeSnapshot])
 
   const handleRotate = useCallback((id: string) => {
+    takeSnapshot()
     setNodesByFloor((current) => {
       const next = { ...current }
       for (const floor of Object.keys(next)) {
@@ -290,9 +442,10 @@ function FloorPlanBuilderInner() {
       return next
     })
     setIsDirty(true)
-  }, [])
+  }, [takeSnapshot])
 
   const handleDelete = useCallback((id: string) => {
+    takeSnapshot()
     setNodesByFloor((current) => {
       const next = { ...current }
       for (const floor of Object.keys(next)) {
@@ -301,9 +454,10 @@ function FloorPlanBuilderInner() {
       return next
     })
     setIsDirty(true)
-  }, [])
+  }, [takeSnapshot])
 
   const handleUngroupTable = useCallback((id: string) => {
+    takeSnapshot()
     setNodesByFloor((current) => {
       const next = { ...current }
       for (const floor of Object.keys(next)) {
@@ -326,7 +480,7 @@ function FloorPlanBuilderInner() {
     })
     setIsDirty(true)
     toast.success("Table ungrouped")
-  }, [])
+  }, [takeSnapshot])
 
   const handleSelectGroup = useCallback((groupId: string) => {
     setNodesByFloor((current) => {
@@ -352,15 +506,6 @@ function FloorPlanBuilderInner() {
   const [editTableStatus, setEditTableStatus] = useState<TableStatus>("AVAILABLE")
   const [editTableWidth, setEditTableWidth] = useState<string>("")
   const [editTableHeight, setEditTableHeight] = useState<string>("")
-
-  const nodesByFloorRef = useRef(nodesByFloor)
-  nodesByFloorRef.current = nodesByFloor
-
-  const floorTablesRef = useRef(floorTables)
-  floorTablesRef.current = floorTables
-
-  const activeFloorRef = useRef(activeFloor)
-  activeFloorRef.current = activeFloor
 
   const handleOpenEditDialog = useCallback(
     (id: string) => {
@@ -439,6 +584,7 @@ function FloorPlanBuilderInner() {
 
   const handleSaveEditTable = useCallback(() => {
     if (!editTableId) return
+    takeSnapshot()
     const capacity = Math.max(1, Number(editTableCapacity) || 1)
     const finalName = editTableName.trim() || "Table"
     const finalLocation = editTableLocation.trim() || undefined
@@ -527,10 +673,12 @@ function FloorPlanBuilderInner() {
     editTableShape,
     editTableWidth,
     editTableHeight,
+    takeSnapshot,
   ])
 
   const handleResizeEnd = useCallback(
     (id: string, params: { width: number; height: number; x?: number; y?: number }) => {
+      takeSnapshot()
       const newWidth = Math.round(params.width)
       const newHeight = Math.round(params.height)
       setNodesByFloor((current) => {
@@ -580,7 +728,7 @@ function FloorPlanBuilderInner() {
 
       setIsDirty(true)
     },
-    [],
+    [takeSnapshot],
   )
 
   const handlers = useMemo(
@@ -665,7 +813,6 @@ function FloorPlanBuilderInner() {
     }
   }, [])
 
-  const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaveResult, setLastSaveResult] = useState<"server" | "local" | null>(null)
   const [tableCounter, setTableCounter] = useState(1)
@@ -739,6 +886,7 @@ function FloorPlanBuilderInner() {
 
   const handleConfirmDeleteFloor = useCallback(() => {
     if (!floorToDelete) return
+    takeSnapshot()
     const remainingFloors = floors.filter((f) => f !== floorToDelete)
     if (remainingFloors.length === 0) return
 
@@ -760,7 +908,7 @@ function FloorPlanBuilderInner() {
     setIsDeleteFloorDialogOpen(false)
     toast.success(`Floor "${floorToDelete}" deleted`)
     setFloorToDelete(null)
-  }, [floorToDelete, floors, activeFloor])
+  }, [floorToDelete, floors, activeFloor, takeSnapshot])
 
 
   const getFloorNodes = useCallback(
@@ -800,6 +948,7 @@ function FloorPlanBuilderInner() {
 
   const handleGroupSelectedTables = useCallback(() => {
     if (selectedTableNodes.length < 2) return
+    takeSnapshot()
     const newGroupId = `grp-${crypto.randomUUID()}`
     const finalGroupName =
       customGroupName.trim() || `Group ${selectedTableNodes.map((n) => n.data.name).join("+")}`
@@ -825,9 +974,10 @@ function FloorPlanBuilderInner() {
     setIsDirty(true)
     setIsGroupDialogOpen(false)
     toast.success(`Grouped ${selectedTableNodes.length} tables as "${finalGroupName}" (${totalSelectedCapacity} seats)`)
-  }, [selectedTableNodes, customGroupName, totalSelectedCapacity])
+  }, [selectedTableNodes, customGroupName, totalSelectedCapacity, takeSnapshot])
 
   const handleUngroupSelectedTables = useCallback(() => {
+    takeSnapshot()
     const selectedIds = new Set(selectedTableNodes.map((n) => n.id))
     setActiveFloorNodes((current) =>
       current.map((n) => {
@@ -847,7 +997,7 @@ function FloorPlanBuilderInner() {
     )
     setIsDirty(true)
     toast.success("Tables ungrouped")
-  }, [selectedTableNodes])
+  }, [selectedTableNodes, takeSnapshot])
 
   const handleDeselectAll = useCallback(() => {
     setActiveFloorNodes((current) => current.map((n) => ({ ...n, selected: false })))
@@ -901,6 +1051,7 @@ function FloorPlanBuilderInner() {
   }, [])
 
   const handleCreateTable = useCallback(() => {
+    takeSnapshot()
     const capacity = Math.max(1, Number(newTableCapacity) || 1)
     const size =
       newTableShape === "CIRCLE"
@@ -945,9 +1096,11 @@ function FloorPlanBuilderInner() {
     activeFloor,
     handlers,
     setActiveFloorNodes,
+    takeSnapshot,
   ])
 
   const handleCreateFacility = useCallback(() => {
+    takeSnapshot()
     const def = facilityDefaults[selectedFacilityType]
     const finalName = facilityCustomName.trim() || def.name
     const newNode: Node<FacilityNodeData> = {
@@ -981,13 +1134,8 @@ function FloorPlanBuilderInner() {
     handleDelete,
     handleResizeEnd,
     setActiveFloorNodes,
+    takeSnapshot,
   ])
-
-  const isDirtyRef = useRef(isDirty)
-  isDirtyRef.current = isDirty
-
-  const floorsRef = useRef(floors)
-  floorsRef.current = floors
 
   const handleSave = useCallback(async (options?: { isAuto?: boolean }) => {
     setIsSaving(true)
@@ -1192,11 +1340,6 @@ function FloorPlanBuilderInner() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [])
 
-  const handleReset = useCallback(() => {
-    setNodesByFloor({})
-    setIsDirty(false)
-  }, [])
-
   const edges = useMemo(() => [], [])
 
   // Escape exits the expanded canvas, and the page behind it is locked so it
@@ -1319,10 +1462,34 @@ function FloorPlanBuilderInner() {
             )}
           </Button>
 
-          <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-            <RotateCcw className="size-4" />
-            {t("pages.floorPlan.reset")}
-          </Button>
+          {/* Undo & Redo Controls */}
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleUndo}
+              disabled={past.length === 0 || isLayoutLocked}
+              className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
+              title="Undo (Ctrl+Z / ⌘Z)"
+            >
+              <Undo2 className="size-3.5" />
+              <span>Undo</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRedo}
+              disabled={future.length === 0 || isLayoutLocked}
+              className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
+              title="Redo (Ctrl+Shift+Z / ⌘⇧Z)"
+            >
+              <Redo2 className="size-3.5" />
+              <span>Redo</span>
+            </Button>
+          </div>
+
           <Button
             variant="outline"
             size="icon"
@@ -1502,6 +1669,9 @@ function FloorPlanBuilderInner() {
             nodesDraggable={!isLayoutLocked}
             elementsSelectable={true}
             zoomOnScroll={true}
+            onNodeDragStart={() => {
+              takeSnapshot()
+            }}
             onNodeDragStop={() => {
               setIsDirty(true)
             }}
