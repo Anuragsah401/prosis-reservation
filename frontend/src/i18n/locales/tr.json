@@ -376,17 +376,81 @@
       "title": "Müşteriler",
       "subtitle": "Restoranınızın müşteri ilişkileri veritabanı.",
       "addCustomer": "Müşteri ekle",
-      "searchPlaceholder": "Müşteri ara...",
+      "getEmailsButton": "Tüm E-postaları Al",
+      "getEmailsTitle": "Bültenler ve duyurular için tüm müşteri e-posta adreslerini alın",
+      "searchPlaceholder": "İsim, e-posta, telefon veya etiket ile ara...",
       "loading": "Müşteriler yükleniyor…",
       "retry": "Tekrar dene",
       "noRestaurant": "Hesabınıza henüz bir restoran bağlı değil.",
       "loadError": "Müşteriler yüklenemedi.",
-      "empty": "Henüz müşteri yok. Rezervasyonlar geldikçe yeni müşteriler burada görünecek.",
+      "empty": "Henüz müşteri yok.",
+      "emptyDesc": "Rezervasyonlar oluşturuldukça yeni müşteriler otomatik olarak burada görünecektir.",
       "noMatch": "Aramanızla eşleşen müşteri yok.",
+      "noMatchDesc": "Arama teriminizi veya filtre etiketlerinizi ayarlamayı deneyin.",
+      "noEmail": "E-posta yok",
       "cancel": "İptal",
       "editAction": "Müşteriyi düzenle",
       "deleteAction": "Müşteriyi sil",
       "viewHistory": "Geçmişi görüntüle",
+      "stats": {
+        "total": "Toplam Misafir",
+        "profiles": "profil",
+        "databaseDesc": "Kayıtlı misafir CRM",
+        "withEmail": "E-posta Ulaşılabilir",
+        "marketingReady": "Bülten listesi hazır",
+        "vipLoyal": "VIP & Sadık",
+        "guests": "misafir",
+        "taggedVip": "VIP / Müdavim olarak etiketli",
+        "withPhone": "Telefon Ulaşılabilir",
+        "contacts": "kişi",
+        "smsReady": "Arama & SMS ulaşılabilir"
+      },
+      "filters": {
+        "all": "Tümü",
+        "withEmail": "E-postası Olanlar",
+        "vip": "VIP & Müdavimler"
+      },
+      "views": {
+        "grid": "Kartlar",
+        "table": "Tablo"
+      },
+      "table": {
+        "customer": "Müşteri",
+        "email": "E-posta",
+        "phone": "Telefon",
+        "tags": "Etiketler",
+        "added": "Eklenme",
+        "actions": "İşlemler"
+      },
+      "emailsDialog": {
+        "title": "Müşteri E-posta Dizini",
+        "description": "Pazarlama kampanyaları, bültenler ve duyurular için müşteri e-posta adreslerini çıkarın, kopyalayın veya dışa aktarın.",
+        "matchingCount": "{{count}} ulaşılabilir e-posta bulundu",
+        "customersTotal": "müşteri",
+        "filterByTag": "Etikete / Gruba göre filtrele",
+        "allCustomers": "E-postası olan tüm müşteriler",
+        "outputFormat": "Çıktı Formatı",
+        "formatComma": "Virgülle ayrılmış (email1, email2)",
+        "formatSemicolon": "Noktalı virgülle ayrılmış (Outlook / BCC)",
+        "formatNamed": "İsim & E-posta (\"İsim\" <email>)",
+        "formatNewline": "Her satıra bir tane (e-posta listesi)",
+        "previewLabel": "E-posta Listesi Önizleme",
+        "addresses": "adres",
+        "emptyPlaceholder": "Filtreyle eşleşen e-posta bulunamadı.",
+        "exportCsv": "CSV Dışa Aktar",
+        "composeBcc": "E-posta Oluştur (BCC)",
+        "openBccTip": "Varsayılan e-posta istemcinizi tüm adresler BCC'de olacak şekilde açar",
+        "copyButton": "Tüm E-postaları Kopyala",
+        "copiedButton": "Kopyalandı!",
+        "toasts": {
+          "copied": "{{count}} müşteri e-postası panoya kopyalandı",
+          "copyFailed": "Panoya kopyalama başarısız oldu",
+          "exported": "{{count}} müşteri e-postası CSV olarak dışa aktarıldı"
+        }
+      },
+      "toasts": {
+        "emailCopied": "{{email}} panoya kopyalandı"
+      },
       "dialog": {
         "addTitle": "Müşteri ekle",
         "editTitle": "Müşteriyi düzenle",

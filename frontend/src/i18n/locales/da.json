@@ -376,17 +376,81 @@
       "title": "Kunder",
       "subtitle": "Din restaurants kunderelationsdatabase.",
       "addCustomer": "Tilføj kunde",
-      "searchPlaceholder": "Søg efter kunder...",
+      "getEmailsButton": "Hent alle e-mails",
+      "getEmailsTitle": "Hent alle kunders e-mailadresser til nyhedsbreve og kampagner",
+      "searchPlaceholder": "Søg efter navn, e-mail, telefon eller tag...",
       "loading": "Indlæser kunder…",
       "retry": "Prøv igen",
       "noRestaurant": "Ingen restaurant er endnu tilknyttet din konto.",
       "loadError": "Kunne ikke indlæse kunder.",
-      "empty": "Ingen kunder endnu. Nye kunder vises her, når reservationer kommer ind.",
+      "empty": "Ingen kunder endnu.",
+      "emptyDesc": "Nye kunder vises her automatisk, når reservationer oprettes.",
       "noMatch": "Ingen kunder matcher din søgning.",
+      "noMatchDesc": "Prøv at justere dit søgeord eller filtertags.",
+      "noEmail": "Ingen e-mail",
       "cancel": "Annuller",
       "editAction": "Rediger kunde",
       "deleteAction": "Slet kunde",
       "viewHistory": "Vis historik",
+      "stats": {
+        "total": "Gæster i alt",
+        "profiles": "profiler",
+        "databaseDesc": "Registreret gæste-CRM",
+        "withEmail": "E-mail tilgængelig",
+        "marketingReady": "Klar til nyhedsbrev",
+        "vipLoyal": "VIP & Loyale",
+        "guests": "gæster",
+        "taggedVip": "Markeret som VIP / Stamgæst",
+        "withPhone": "Telefon tilgængelig",
+        "contacts": "kontakter",
+        "smsReady": "Klar til opkald & SMS"
+      },
+      "filters": {
+        "all": "Alle",
+        "withEmail": "Med e-mail",
+        "vip": "VIP & Stamgæster"
+      },
+      "views": {
+        "grid": "Kort",
+        "table": "Tabel"
+      },
+      "table": {
+        "customer": "Kunde",
+        "email": "E-mail",
+        "phone": "Telefon",
+        "tags": "Tags",
+        "added": "Oprettet",
+        "actions": "Handlinger"
+      },
+      "emailsDialog": {
+        "title": "Kundens e-mailkartotek",
+        "description": "Udtræk, kopiér eller eksportér kunders e-mailadresser til markedsføring, nyhedsbreve og meddelelser.",
+        "matchingCount": "{{count}} tilgængelige e-mails fundet",
+        "customersTotal": "kunder",
+        "filterByTag": "Filtrér efter tag / gruppe",
+        "allCustomers": "Alle kunder med e-mail",
+        "outputFormat": "Outputformat",
+        "formatComma": "Kommasepareret (email1, email2)",
+        "formatSemicolon": "Semikolonsepareret (Outlook / BCC)",
+        "formatNamed": "Navn & E-mail (\"Navn\" <email>)",
+        "formatNewline": "Én pr. linje (e-mailliste)",
+        "previewLabel": "Forhåndsvisning af e-mailliste",
+        "addresses": "adresser",
+        "emptyPlaceholder": "Ingen e-mails fundet, der matcher filteret.",
+        "exportCsv": "Eksportér CSV",
+        "composeBcc": "Opret (BCC)",
+        "openBccTip": "Åbner dit standard e-mailprogram med alle adresser i BCC",
+        "copyButton": "Kopiér alle e-mails",
+        "copiedButton": "Kopieret!",
+        "toasts": {
+          "copied": "Kopierede {{count}} kunde-e-mails til udklipsholderen",
+          "copyFailed": "Kunne ikke kopiere til udklipsholderen",
+          "exported": "Eksporterede {{count}} kunde-e-mails til CSV"
+        }
+      },
+      "toasts": {
+        "emailCopied": "Kopierede {{email}} til udklipsholderen"
+      },
       "dialog": {
         "addTitle": "Tilføj kunde",
         "editTitle": "Rediger kunde",

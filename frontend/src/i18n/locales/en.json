@@ -376,17 +376,81 @@
       "title": "Customers",
       "subtitle": "Your restaurant's customer relationship database.",
       "addCustomer": "Add Customer",
-      "searchPlaceholder": "Search customers...",
+      "getEmailsButton": "Get All Emails",
+      "getEmailsTitle": "Get all customer email addresses for newsletters and announcements",
+      "searchPlaceholder": "Search by name, email, phone, or tag...",
       "loading": "Loading customers…",
       "retry": "Retry",
       "noRestaurant": "No restaurant associated with your account yet.",
       "loadError": "Failed to load customers.",
-      "empty": "No customers yet. New customers will appear here once reservations come in.",
+      "empty": "No customers yet.",
+      "emptyDesc": "New customers will appear here automatically when reservations are made.",
       "noMatch": "No customers match your search.",
+      "noMatchDesc": "Try adjusting your search query or filter tags.",
+      "noEmail": "No email",
       "cancel": "Cancel",
       "editAction": "Edit customer",
       "deleteAction": "Delete customer",
       "viewHistory": "View history",
+      "stats": {
+        "total": "Total Guests",
+        "profiles": "profiles",
+        "databaseDesc": "Registered guest CRM",
+        "withEmail": "Email Reachable",
+        "marketingReady": "Mailing list ready",
+        "vipLoyal": "VIP & Loyal",
+        "guests": "guests",
+        "taggedVip": "Tagged as VIP / Regular",
+        "withPhone": "Phone Reachable",
+        "contacts": "contacts",
+        "smsReady": "SMS & call reachable"
+      },
+      "filters": {
+        "all": "All",
+        "withEmail": "With Email",
+        "vip": "VIP & Regular"
+      },
+      "views": {
+        "grid": "Cards",
+        "table": "Table"
+      },
+      "table": {
+        "customer": "Customer",
+        "email": "Email",
+        "phone": "Phone",
+        "tags": "Tags",
+        "added": "Added",
+        "actions": "Actions"
+      },
+      "emailsDialog": {
+        "title": "Customer Email Directory",
+        "description": "Extract, copy, or export customer email addresses for marketing campaigns, newsletters, and announcements.",
+        "matchingCount": "{{count}} reachable emails found",
+        "customersTotal": "customers",
+        "filterByTag": "Filter by Tag / Group",
+        "allCustomers": "All Customers with Email",
+        "outputFormat": "Output Format",
+        "formatComma": "Comma separated (email1, email2)",
+        "formatSemicolon": "Semicolon separated (Outlook / BCC)",
+        "formatNamed": "Name & Email (\"John\" <email>)",
+        "formatNewline": "One per line (email list)",
+        "previewLabel": "Email List Preview",
+        "addresses": "addresses",
+        "emptyPlaceholder": "No emails found matching the filter.",
+        "exportCsv": "Export CSV",
+        "composeBcc": "Compose (BCC)",
+        "openBccTip": "Opens your default email client with all addresses in BCC",
+        "copyButton": "Copy All Emails",
+        "copiedButton": "Copied!",
+        "toasts": {
+          "copied": "Copied {{count}} customer emails to clipboard",
+          "copyFailed": "Failed to copy to clipboard",
+          "exported": "Exported {{count}} customer emails to CSV"
+        }
+      },
+      "toasts": {
+        "emailCopied": "Copied {{email}} to clipboard"
+      },
       "dialog": {
         "addTitle": "Add Customer",
         "editTitle": "Edit Customer",
