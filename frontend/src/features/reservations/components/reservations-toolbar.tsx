@@ -31,72 +31,76 @@ export function ReservationsToolbar({
   const { t } = useTranslation()
 
   return (
-    <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
-      <div className="flex items-center gap-1">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+      {/* Top row on mobile / Left group on tablet & desktop */}
+      <div className="flex items-center justify-between sm:justify-end gap-1.5">
         {/* View Toggle */}
-        <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
           <Button
             size="sm"
             variant={tab === "list" ? "default" : "ghost"}
-            className="h-8 px-2.5 text-xs font-semibold shadow-xs"
+            className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-semibold shadow-xs"
             onClick={() => onTabChange("list")}
           >
             <List className="size-3.5" />
-            <span className="hidden sm:inline">{t("pages.reservations.listView", "List")}</span>
+            <span className="ml-1 sm:inline">{t("pages.reservations.listView", "List")}</span>
           </Button>
           <Button
             size="sm"
             variant={tab === "calendar" ? "default" : "ghost"}
-            className="h-8 px-2.5 text-xs font-semibold shadow-xs"
+            className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-semibold shadow-xs"
             onClick={() => onTabChange("calendar")}
           >
             <CalendarDays className="size-3.5" />
-            <span className="hidden sm:inline">{t("pages.reservations.calendarView", "Calendar")}</span>
+            <span className="ml-1 sm:inline">{t("pages.reservations.calendarView", "Calendar")}</span>
           </Button>
         </div>
 
-        {/* Operational Service Tools: Print & Export */}
-        {onPrintRunSheet && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
-            onClick={onPrintRunSheet}
-            title={t("pages.reservations.serviceTools.printRunSheet", "Print Service Sheet")}
-          >
-            <Printer className="size-3.5" />
-            <span className="hidden md:inline">{t("pages.reservations.serviceTools.printRunSheet", "Print Sheet")}</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {/* Operational Service Tools: Print & Export */}
+          {onPrintRunSheet && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={onPrintRunSheet}
+              title={t("pages.reservations.serviceTools.printRunSheet", "Print Service Sheet")}
+            >
+              <Printer className="size-3.5" />
+              <span className="hidden md:inline">{t("pages.reservations.serviceTools.printRunSheet", "Print")}</span>
+            </Button>
+          )}
 
-        {onExportCSV && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
-            onClick={onExportCSV}
-            title={t("pages.reservations.serviceTools.exportCsv", "Export CSV")}
-          >
-            <Download className="size-3.5" />
-            <span className="hidden md:inline">{t("pages.reservations.serviceTools.exportCsv", "Export")}</span>
-          </Button>
-        )}
+          {onExportCSV && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={onExportCSV}
+              title={t("pages.reservations.serviceTools.exportCsv", "Export CSV")}
+            >
+              <Download className="size-3.5" />
+              <span className="hidden md:inline">{t("pages.reservations.serviceTools.exportCsv", "Export")}</span>
+            </Button>
+          )}
 
-        {onRefresh && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8 text-muted-foreground hover:text-foreground"
-            onClick={onRefresh}
-            title={t("pages.reservations.serviceTools.refresh", "Refresh reservations")}
-            disabled={isRefreshing}
-          >
-            <RotateCw className={cn("size-3.5", isRefreshing && "animate-spin text-primary")} />
-          </Button>
-        )}
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7 sm:size-8 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={onRefresh}
+              title={t("pages.reservations.serviceTools.refresh", "Refresh reservations")}
+              disabled={isRefreshing}
+            >
+              <RotateCw className={cn("size-3.5", isRefreshing && "animate-spin text-primary")} />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Action Dialog Triggers: WalkIn and NewReservation */}
+      <div className="flex items-center gap-2 w-full sm:w-auto">
         <WalkInDialog onCreate={onCreate} />
         <NewReservationDialog defaultDate={defaultDate} onCreate={onCreate} />
       </div>

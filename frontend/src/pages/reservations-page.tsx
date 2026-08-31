@@ -250,10 +250,10 @@ export function ReservationsPage() {
       {tab === "calendar" ? (
         <ReservationsCalendar />
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[230px_1fr]">
-          {/* Left Mini Calendar & Date Shortcuts */}
-          <div className="flex flex-col gap-3">
-            <div className="bg-card rounded-xl border border-border/80 p-2 shadow-xs">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
+          {/* Left Mini Calendar: Displayed in sidebar on desktop (>= lg) */}
+          <div className="hidden lg:flex flex-col gap-3">
+            <div className="bg-card rounded-xl border border-border/80 p-2 shadow-xs sticky top-4">
               <MiniMonthCalendar
                 selectedDate={selectedDate}
                 onSelect={setSelectedDate}
@@ -263,11 +263,11 @@ export function ReservationsPage() {
           </div>
 
           {/* Right Main Table & Filters Area */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 min-w-0">
             {/* Status Filter Tabs & Search Bar */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Status Chips */}
-              <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              {/* Status Chips: Swipeable on mobile, wrapping on larger screens */}
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1 sm:pb-0 flex-nowrap sm:flex-wrap">
                 {statusFilterTabs.map((tabItem) => {
                   const isActive = statusFilter === tabItem.id
                   return (
@@ -276,10 +276,10 @@ export function ReservationsPage() {
                       type="button"
                       onClick={() => setStatusFilter(tabItem.id)}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
+                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer shrink-0",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-xs"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50 sm:border-transparent",
                       )}
                     >
                       <span>{tabItem.label}</span>
@@ -297,7 +297,7 @@ export function ReservationsPage() {
               </div>
 
               {/* Search Bar with Clear Button */}
-              <div className="relative w-full sm:w-64">
+              <div className="relative w-full sm:w-60 shrink-0">
                 <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
                 <Input
                   placeholder={t("pages.reservations.searchPlaceholder", "Search reservations...")}
