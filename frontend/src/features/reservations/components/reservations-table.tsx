@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import {
   DropdownMenu,
@@ -36,7 +36,7 @@ import {
 } from "@/features/reservations-calendar/calendar-data"
 import { useScrollOverflow } from "@/hooks/use-scroll-overflow"
 import { statusCellStyles, statusOptions, statusStyles } from "../reservations-constants"
-import { capitalize, getReservationEndTime, normalizeStatus, parseReservationNotes } from "../reservations-utils"
+import { capitalize, getReservationEndTime, parseReservationNotes } from "../reservations-utils"
 import { EditReservationDialog } from "./edit-reservation-dialog"
 import { DeleteReservationDialog } from "./delete-reservation-dialog"
 
@@ -46,8 +46,6 @@ interface ReservationsTableProps {
   onBulkStatusChange?: (ids: string[], status: ReservationStatus) => void
   onUpdateReservation: (updated: CalendarReservation) => void
   onDeleteReservation: (id: string) => void
-  hasActiveFilters?: boolean
-  onResetFilters?: () => void
 }
 
 function getInitials(name: string): string {
@@ -69,8 +67,6 @@ export function ReservationsTable({
   onBulkStatusChange,
   onUpdateReservation,
   onDeleteReservation,
-  hasActiveFilters,
-  onResetFilters,
 }: ReservationsTableProps) {
   const { t } = useTranslation()
   const { ref: listScrollRef, hasMoreBelow } = useScrollOverflow<HTMLDivElement>([reservations])
@@ -179,13 +175,15 @@ export function ReservationsTable({
         </div>
       )}
 
-      {/* Table Container with minimum width and smooth overflow */}
-      <div className="relative">
-        <div ref={listScrollRef} className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
+      <CardContent className="px-0">
+        <div
+          ref={listScrollRef}
+          className="max-h-[calc(100vh-21rem)] overflow-y-auto overflow-x-auto"
+        >
           <Table className="min-w-[760px] w-full">
-            <TableHeader className="bg-muted/50 sticky top-0 z-10 backdrop-blur-xs">
-              <TableRow className="hover:bg-transparent border-b border-border/80">
-                <TableHead className="w-10 pl-3">
+            <TableHeader className="bg-muted/40 sticky top-0 z-10 backdrop-blur-xs">
+              <TableRow className="border-b border-border/80">
+                <TableHead className="w-10 pl-4 pr-0">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -193,16 +191,17 @@ export function ReservationsTable({
                       if (el) el.indeterminate = isPartiallySelected
                     }}
                     onChange={toggleSelectAll}
-                    className="size-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
-                    aria-label={t("pages.reservations.selectAll", "Select all reservations")}
+                    className="size-4 rounded border-input text-primary accent-primary cursor-pointer focus:ring-1 focus:ring-primary"
+                    aria-label={t("pages.reservations.serviceTools.selectAll", "Select all")}
                   />
                 </TableHead>
-                <TableHead className="w-24 font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colTime")}</TableHead>
-                <TableHead className="min-w-[160px] font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colGuest")}</TableHead>
-                <TableHead className="w-20 text-center font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colParty")}</TableHead>
-                <TableHead className="w-32 font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colTable")}</TableHead>
-                <TableHead className="w-32 font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colStatus")}</TableHead>
-                <TableHead className="min-w-[160px] font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colNotes")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[150px]">{t("pages.reservations.colCustomer")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[110px]">{t("pages.reservations.colPhone")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[100px]">{t("pages.reservations.colTime")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[60px]">{t("pages.reservations.colParty")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[90px]">{t("pages.reservations.colTable")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[130px]">{t("pages.reservations.colEventsNotes", "Events & Notes")}</TableHead>
+                <TableHead className="font-bold text-xs uppercase tracking-wider min-w-[110px]">{t("pages.reservations.colStatus")}</TableHead>
                 <TableHead className="w-20 text-right pr-4 font-bold text-xs uppercase tracking-wider">{t("pages.reservations.colActions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -213,16 +212,6 @@ export function ReservationsTable({
                     <div className="flex flex-col items-center justify-center gap-2">
                       <p className="text-sm font-medium text-foreground">{t("pages.reservations.emptyState.title", "No reservations found")}</p>
                       <p className="text-xs text-muted-foreground">{t("pages.reservations.empty", "No reservations match your criteria.")}</p>
-                      {hasActiveFilters && onResetFilters && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={onResetFilters}
-                          className="mt-2 text-xs font-semibold"
-                        >
-                          {t("pages.reservations.filters.reset", "Clear filters")}
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -247,7 +236,7 @@ export function ReservationsTable({
                       key={r.id}
                       className={cn(
                         "group transition-colors border-b border-border/50",
-                        isRowSelected ? "bg-primary/5 hover:bg-primary/10" : statusCellStyles[normalizeStatus(r.status)],
+                        isRowSelected ? "bg-primary/5 hover:bg-primary/10" : statusCellStyles[r.status],
                       )}
                     >
                       {/* Checkbox */}
@@ -441,10 +430,10 @@ export function ReservationsTable({
                           <DropdownMenuTrigger asChild>
                             <button className="inline-flex cursor-pointer focus:outline-hidden">
                               <Badge
-                                variant={statusStyles[normalizeStatus(r.status)] ?? "outline"}
+                                variant={statusStyles[r.status] ?? "outline"}
                                 className="flex items-center gap-1 text-xs font-semibold py-0.5"
                               >
-                                {statusLabels[normalizeStatus(r.status)]}
+                                {statusLabels[r.status]}
                                 <ChevronDown className="size-3 opacity-70" />
                               </Badge>
                             </button>
@@ -502,7 +491,7 @@ export function ReservationsTable({
             {t("pages.reservations.scrollForMore")}
           </p>
         )}
-      </div>
+      </CardContent>
 
       {editingReservation && (
         <EditReservationDialog

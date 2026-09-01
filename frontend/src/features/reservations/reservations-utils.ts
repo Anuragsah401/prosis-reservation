@@ -11,7 +11,7 @@ import {
 } from "@/features/floor-plan/floor-plan-data"
 import type { FloorPlanTable } from "@/features/floor-plan/floor-plan-data"
 import type { FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
-import type { CalendarReservation, ReservationStatus } from "@/features/reservations-calendar/calendar-data"
+import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
 
 export interface TableOption {
   id: string
@@ -391,20 +391,5 @@ export function printDailyRunSheet(
   printWindow.document.open()
   printWindow.document.write(html)
   printWindow.document.close()
-}
-
-/**
- * Normalizes status strings from various API/DB formats (e.g. Prisma's SEATED vs API's CHECKED_IN)
- * to the authoritative ReservationStatus enum.
- */
-export function normalizeStatus(status?: string): ReservationStatus {
-  if (!status) return "PENDING"
-  const upper = status.trim().toUpperCase()
-  if (upper === "SEATED" || upper === "CHECKED_IN" || upper === "CHECKEDIN") return "CHECKED_IN"
-  if (upper === "CONFIRMED") return "CONFIRMED"
-  if (upper === "COMPLETED") return "COMPLETED"
-  if (upper === "CANCELLED" || upper === "CANCELED") return "CANCELLED"
-  if (upper === "NO_SHOW" || upper === "NOSHOW" || upper === "NO-SHOW") return "NO_SHOW"
-  return "PENDING"
 }
 
