@@ -143,14 +143,14 @@ export function FloorPlanViewer({
     const { clientWidth, clientHeight } = containerRef.current
     if (clientWidth <= 0 || clientHeight <= 0) return
 
-    const pad = clientWidth < 640 ? 10 : 28
+    const pad = clientWidth < 640 ? 6 : 24
     const availableWidth = Math.max(100, clientWidth - pad * 2)
     const availableHeight = Math.max(100, clientHeight - pad * 2)
 
     // Calculate scale so the table cluster fills the screen nicely
     const scaleX = availableWidth / bounds.contentW
     const scaleY = availableHeight / bounds.contentH
-    const initialScale = Math.min(1.3, Math.max(0.15, Math.min(scaleX, scaleY)))
+    const initialScale = Math.min(1.6, Math.max(0.15, Math.min(scaleX, scaleY)))
 
     // Calculate exact cluster centroid
     const clusterCenterX = bounds.minX + bounds.contentW / 2
