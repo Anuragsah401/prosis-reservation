@@ -236,7 +236,7 @@ export function ReservationConfirmPage() {
                         {t("reservationConfirm.chooseTableHint")}
                       </p>
                     </div>
-                    <div className="h-[220px] sm:h-[260px] w-full relative">
+                    <div className="h-[290px] sm:h-[320px] w-full relative">
                       <FloorPlanViewer
                         tables={details.tables}
                         selectedTableId={selectedTableId}
