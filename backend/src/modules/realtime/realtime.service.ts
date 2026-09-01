@@ -71,6 +71,9 @@ class RealtimeService {
     for (const client of pool) {
       try {
         client.res.write(message)
+        if (typeof (client.res as any).flush === "function") {
+          ;(client.res as any).flush()
+        }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("[realtime] Failed to write event to client:", err)
@@ -88,6 +91,9 @@ class RealtimeService {
         for (const client of pool) {
           try {
             client.res.write(":keep-alive\n\n")
+            if (typeof (client.res as any).flush === "function") {
+              ;(client.res as any).flush()
+            }
           } catch {
             pool.delete(client)
           }

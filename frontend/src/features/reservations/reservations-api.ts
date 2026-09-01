@@ -47,20 +47,21 @@ const DEFAULT_DURATION_MINUTES = 90
  * list/calendar/timeline components already render, so the UI components
  * don't need to change alongside the data source.
  */
-function toCalendarReservation(r: ApiReservation): CalendarReservation {
+export function toCalendarReservation(r: any): CalendarReservation {
   const parsed = parseReservationNotes(r.notes)
+  const start = r.reservedFor || r.start || new Date().toISOString()
   return {
     id: r.id,
-    customerId: r.customer?.id ?? undefined,
-    customerName: r.customer?.name ?? "Guest",
-    customerPhone: r.customer?.phone ?? "",
-    customerEmail: r.customer?.email ?? undefined,
-    tableId: r.tableId ?? "",
-    tableName: r.table?.name ?? undefined,
-    partySize: r.partySize,
-    start: r.reservedFor,
-    durationMinutes: DEFAULT_DURATION_MINUTES,
-    status: r.status,
+    customerId: r.customer?.id ?? r.customerId ?? undefined,
+    customerName: r.customer?.name ?? r.customerName ?? "Guest",
+    customerPhone: r.customer?.phone ?? r.customerPhone ?? "",
+    customerEmail: r.customer?.email ?? r.customerEmail ?? undefined,
+    tableId: r.tableId ?? r.table?.id ?? "",
+    tableName: r.table?.name ?? r.tableName ?? undefined,
+    partySize: r.partySize ?? 2,
+    start,
+    durationMinutes: r.durationMinutes ?? DEFAULT_DURATION_MINUTES,
+    status: r.status ?? "PENDING",
     notes: r.notes ?? undefined,
     specialRequests: parsed.specialRequests,
     foodCategories: parsed.foodCategories.length > 0 ? parsed.foodCategories : undefined,

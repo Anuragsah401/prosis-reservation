@@ -66,7 +66,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const connect = useCallback(() => {
-    const activeRestaurantId = profile?.id ?? authClient.getUser()?.restaurantId
+    const user = authClient.getUser()
+    const activeRestaurantId = profile?.id ?? user?.restaurantId ?? user?.restaurant?.id ?? null
     if (!activeRestaurantId) return
     const token = authClient.getToken()
     if (!token) return
@@ -104,7 +105,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         eventSourceRef.current = null
 
         // Exponential backoff reconnect
-        const delay = Math.min(1000 * 2 ** retryCountRef.current, 15_000)
+        const delay = Math.min(1000 * 2 ** retryCountRef.current, 10_000)
         retryCountRef.current += 1
 
         if (reconnectTimeoutRef.current) {
@@ -122,7 +123,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     connect()
 
-    const handleVisibilityChange = () => {
+    const handleVisibilityOrFocus = () => {
       if (document.visibilityState === "visible") {
         // Re-verify connection on tab refocus
         if (!eventSourceRef.current || eventSourceRef.current.readyState === EventSource.CLOSED) {
@@ -131,11 +132,19 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+    const handleAuthChange = () => {
+      connect()
+    }
+
+    window.addEventListener("auth:state-change", handleAuthChange)
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus)
+    window.addEventListener("focus", handleVisibilityOrFocus)
     window.addEventListener("online", connect)
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("auth:state-change", handleAuthChange)
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus)
+      window.removeEventListener("focus", handleVisibilityOrFocus)
       window.removeEventListener("online", connect)
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)

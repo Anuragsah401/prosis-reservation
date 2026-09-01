@@ -543,7 +543,7 @@ export const reservationService = {
         : null,
       table: table ? { id: table.id, name: table.number, number: table.number, floor: table.floor, location: table.section } : null,
     })
-    realtimeService.broadcastToRestaurant(data.restaurantId, "RESERVATION_CREATED", result)
+    realtimeService.broadcastToRestaurant(reservation.restaurantId, "RESERVATION_CREATED", result)
     return result
   },
 

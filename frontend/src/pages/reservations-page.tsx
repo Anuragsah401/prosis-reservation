@@ -17,7 +17,7 @@ import { ReservationsStats } from "@/features/reservations/components/reservatio
 import { ReservationsDateNav } from "@/features/reservations/components/reservations-date-nav"
 import { statusSortOrder } from "@/features/reservations/reservations-constants"
 import { isSameDay, exportReservationsToCSV, printDailyRunSheet, toDateInputValue } from "@/features/reservations/reservations-utils"
-import { fetchReservations, updateReservationStatusOnServer } from "@/features/reservations/reservations-api"
+import { fetchReservations, toCalendarReservation, updateReservationStatusOnServer } from "@/features/reservations/reservations-api"
 import { useRealtimeListener } from "@/features/realtime"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
 
@@ -55,29 +55,75 @@ export function ReservationsPage() {
   }, [t])
 
   // Real-time live sync for reservations
-  useRealtimeListener("RESERVATION_CREATED", () => {
+  useRealtimeListener("RESERVATION_CREATED", (event) => {
+    if (event.payload?.id) {
+      const incoming = toCalendarReservation(event.payload)
+      setAllReservations((prev) => {
+        const exists = prev.some((r) => r.id === incoming.id)
+        if (exists) {
+          return prev.map((r) => (r.id === incoming.id ? { ...r, ...incoming } : r))
+        }
+        return [incoming, ...prev]
+      })
+    }
     void loadReservations(false)
   })
 
-  useRealtimeListener("RESERVATION_UPDATED", () => {
+  useRealtimeListener("RESERVATION_UPDATED", (event) => {
+    if (event.payload?.id) {
+      const updated = toCalendarReservation(event.payload)
+      setAllReservations((prev) =>
+        prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)),
+      )
+    }
     void loadReservations(false)
   })
 
-  useRealtimeListener("RESERVATION_STATUS_CHANGED", () => {
+  useRealtimeListener("RESERVATION_STATUS_CHANGED", (event) => {
+    if (event.payload?.id && event.payload?.status) {
+      setAllReservations((prev) =>
+        prev.map((r) =>
+          r.id === event.payload.id ? { ...r, status: event.payload.status } : r,
+        ),
+      )
+    }
     void loadReservations(false)
   })
 
-  useRealtimeListener("RESERVATION_DELETED", () => {
+  useRealtimeListener("RESERVATION_DELETED", (event) => {
+    if (event.payload?.id) {
+      setAllReservations((prev) => prev.filter((r) => r.id !== event.payload.id))
+    }
     void loadReservations(false)
   })
 
+  // Periodic heartbeat sync and focus refetch
   useEffect(() => {
     let cancelled = false
     void Promise.resolve().then(() => {
       if (!cancelled) void loadReservations()
     })
+
+    const interval = setInterval(() => {
+      if (!cancelled && document.visibilityState === "visible") {
+        void loadReservations(false)
+      }
+    }, 15_000)
+
+    const handleFocus = () => {
+      if (!cancelled && document.visibilityState === "visible") {
+        void loadReservations(false)
+      }
+    }
+
+    window.addEventListener("focus", handleFocus)
+    document.addEventListener("visibilitychange", handleFocus)
+
     return () => {
       cancelled = true
+      clearInterval(interval)
+      window.removeEventListener("focus", handleFocus)
+      document.removeEventListener("visibilitychange", handleFocus)
     }
   }, [loadReservations])
 

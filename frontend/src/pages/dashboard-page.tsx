@@ -98,7 +98,32 @@ export function DashboardPage() {
   })
 
   useEffect(() => {
-    void loadDashboardData(true)
+    let cancelled = false
+    void Promise.resolve().then(() => {
+      if (!cancelled) void loadDashboardData(true)
+    })
+
+    const interval = setInterval(() => {
+      if (!cancelled && document.visibilityState === "visible") {
+        void loadDashboardData(false)
+      }
+    }, 15_000)
+
+    const handleFocus = () => {
+      if (!cancelled && document.visibilityState === "visible") {
+        void loadDashboardData(false)
+      }
+    }
+
+    window.addEventListener("focus", handleFocus)
+    document.addEventListener("visibilitychange", handleFocus)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      window.removeEventListener("focus", handleFocus)
+      document.removeEventListener("visibilitychange", handleFocus)
+    }
   }, [loadDashboardData])
 
   const todaysReservations = useMemo(() => {
