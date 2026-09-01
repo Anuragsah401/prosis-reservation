@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { RequireAuth, RedirectIfAuthenticated } from '@/features/auth/require-auth'
+import { Route, Routes } from 'react-router-dom'
+import { RequireAuth, RequireManager, RedirectIfAuthenticated } from '@/features/auth/require-auth'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { RestaurantProvider } from '@/features/restaurant/restaurant-context'
 import { RealtimeProvider } from '@/features/realtime'
@@ -8,6 +8,7 @@ import { ScreenSaverProvider } from '@/features/screensaver/screensaver-context'
 import { Toaster } from '@/components/ui/sonner'
 import { ChatWidget } from '@/components/chat/chat-widget'
 import { PWAStatusBar } from '@/components/pwa-install-dialog'
+import { AnimatedCursor } from '@/components/animated-cursor'
 import { Loader2 } from 'lucide-react'
 
 // Route-level lazy loading for performance & instant initial page loads
@@ -25,6 +26,7 @@ const CustomersPage = lazy(() => import('@/pages/customers-page').then((m) => ({
 const AnalyticsPage = lazy(() => import('@/pages/analytics-page').then((m) => ({ default: m.AnalyticsPage })))
 const SettingsPage = lazy(() => import('@/pages/settings-page').then((m) => ({ default: m.SettingsPage })))
 const NotificationsPage = lazy(() => import('@/pages/notifications-page').then((m) => ({ default: m.NotificationsPage })))
+const ProfilePage = lazy(() => import('@/pages/profile-page').then((m) => ({ default: m.ProfilePage })))
 const NotFoundPage = lazy(() => import('@/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })))
 
 function PageLoadingFallback() {
@@ -80,14 +82,19 @@ function App() {
             <Route path="/reservation/confirm" element={<ReservationConfirmPage />} />
             <Route element={<RequireAuth />}>
               <Route element={<DashboardLayout />}>
+                {/* Available to all staff roles (Manager, Host, Server, Staff) */}
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/floor-plan" element={<FloorPlanPage />} />
                 <Route path="/reservations" element={<ReservationsPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/profile" element={<Navigate to="/settings?section=profile" replace />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
+
+                {/* Manager & Owner only routes */}
+                <Route element={<RequireManager />}>
+                  <Route path="/floor-plan" element={<FloorPlanPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
               </Route>
             </Route>
             <Route path="*" element={<NotFoundPage />} />
@@ -95,6 +102,7 @@ function App() {
         </Suspense>
         <ChatWidget />
         <PWAStatusBar />
+        <AnimatedCursor />
         </ScreenSaverProvider>
       </RealtimeProvider>
     </RestaurantProvider>

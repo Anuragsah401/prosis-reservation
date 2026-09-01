@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { navSections } from "@/components/layout/nav-items"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { authClient, isManagerRole, type AuthUser } from "@/features/auth/auth-client"
 
 interface SidebarNavProps {
   onNavigate?: () => void
@@ -13,6 +15,17 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
   const { t } = useTranslation()
   const location = useLocation()
   const pathname = location.pathname
+  const [user, setUser] = useState<AuthUser | null>(() => authClient.getUser())
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setUser(authClient.getUser())
+    }
+    window.addEventListener("auth:state-change", handleAuthChange)
+    return () => window.removeEventListener("auth:state-change", handleAuthChange)
+  }, [])
+
+  const isManager = isManagerRole(user)
 
   const checkIsActive = (to: string) => {
     if (to === "/dashboard") {
@@ -21,9 +34,16 @@ export function SidebarNav({ onNavigate, collapsed = false }: SidebarNavProps) {
     return pathname === to || pathname.startsWith(to + "/")
   }
 
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.managerOnly || isManager),
+    }))
+    .filter((section) => section.items.length > 0)
+
   return (
     <nav className={cn("flex flex-col", collapsed ? "items-center gap-2 px-2" : "gap-3 px-3")}>
-      {navSections.map((section, sIdx) => {
+      {visibleSections.map((section, sIdx) => {
         const sectionTitle = t(section.titleKey)
 
         return (

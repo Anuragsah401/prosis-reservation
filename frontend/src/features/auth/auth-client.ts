@@ -17,6 +17,12 @@ export interface AuthUserRestaurant {
   isActive?: boolean
 }
 
+export interface AuthRole {
+  id: string
+  name: string
+  permissions: string[]
+}
+
 export interface AuthUser {
   id: string
   email: string
@@ -25,9 +31,25 @@ export interface AuthUser {
   isActive: boolean
   restaurantId: string | null
   roleId: string | null
+  role?: AuthRole | null
   restaurant?: AuthUserRestaurant | null
   createdAt: string
   updatedAt: string
+}
+
+export function isManagerRole(user: AuthUser | null): boolean {
+  if (!user) return false
+  if (user.role?.name) {
+    const roleName = user.role.name.toLowerCase().trim()
+    return roleName === "manager" || roleName === "owner" || roleName === "admin"
+  }
+  return true
+}
+
+export function getRoleDisplayName(user: AuthUser | null): string {
+  if (!user) return "Guest"
+  if (user.role?.name) return user.role.name
+  return "Owner"
 }
 
 export interface AuthResult {
@@ -172,6 +194,15 @@ export const authClient = {
 
   isAuthenticated(): boolean {
     return Boolean(localStorage.getItem(TOKEN_KEY))
+  },
+
+  updateUser(data: Partial<AuthUser>): AuthUser | null {
+    const current = this.getUser()
+    if (!current) return null
+    const updated = { ...current, ...data, updatedAt: new Date().toISOString() }
+    localStorage.setItem(USER_KEY, JSON.stringify(updated))
+    notifyAuthChange()
+    return updated
   },
 }
 

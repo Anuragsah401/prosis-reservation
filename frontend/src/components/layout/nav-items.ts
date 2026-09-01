@@ -14,6 +14,7 @@ export interface NavItem {
   to: string
   icon: LucideIcon
   badge?: string
+  managerOnly?: boolean
 }
 
 export interface NavSection {
@@ -28,7 +29,7 @@ export const navSections: NavSection[] = [
     titleKey: "nav.sectionMain",
     items: [
       { title: "Dashboard", titleKey: "nav.dashboard", to: "/dashboard", icon: LayoutDashboard },
-      { title: "Floor Plan", titleKey: "nav.floorPlan", to: "/floor-plan", icon: LayoutGrid },
+      { title: "Floor Plan", titleKey: "nav.floorPlan", to: "/floor-plan", icon: LayoutGrid, managerOnly: true },
       { title: "Reservations", titleKey: "nav.reservations", to: "/reservations", icon: CalendarCheck },
     ],
   },
@@ -37,14 +38,14 @@ export const navSections: NavSection[] = [
     titleKey: "nav.sectionInsights",
     items: [
       { title: "Customers", titleKey: "nav.customers", to: "/customers", icon: Users },
-      { title: "Analytics", titleKey: "nav.analytics", to: "/analytics", icon: BarChart3 },
+      { title: "Analytics", titleKey: "nav.analytics", to: "/analytics", icon: BarChart3, managerOnly: true },
     ],
   },
   {
     id: "system",
     titleKey: "nav.sectionSystem",
     items: [
-      { title: "Settings", titleKey: "nav.settings", to: "/settings", icon: Settings },
+      { title: "Settings", titleKey: "nav.settings", to: "/settings", icon: Settings, managerOnly: true },
     ],
   },
 ]

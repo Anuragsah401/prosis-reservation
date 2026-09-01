@@ -377,10 +377,17 @@ export function CustomersPage() {
           {filtered.map((c) => (
             <Card key={c.id} className="group hover:border-primary/40 hover:shadow-xs transition-all">
               <CardContent className="flex flex-col gap-3 p-4">
-                <button
-                  type="button"
-                  className="flex min-w-0 items-start gap-3 text-left cursor-pointer"
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="flex min-w-0 items-start gap-3 text-left cursor-pointer focus-visible:outline-hidden"
                   onClick={() => setViewing(c)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      setViewing(c)
+                    }
+                  }}
                 >
                   <Avatar className="size-10 border border-border/80">
                     <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
@@ -435,7 +442,7 @@ export function CustomersPage() {
                       </p>
                     )}
                   </div>
-                </button>
+                </div>
 
                 <div className="flex items-center justify-between gap-1.5 pt-2.5 border-t border-border/60">
                   <span className="text-[11px] text-muted-foreground">

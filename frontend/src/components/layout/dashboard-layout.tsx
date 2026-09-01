@@ -6,12 +6,12 @@ import { SEOHead } from "@/components/seo"
 
 export function DashboardLayout() {
   return (
-    <div className="flex min-h-svh">
+    <div className="flex h-svh w-full overflow-hidden">
       <SEOHead robots="noindex, nofollow" />
       <DashboardSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col h-svh overflow-hidden">
         <DashboardHeader />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5">
           <Outlet />
         </main>
       </div>

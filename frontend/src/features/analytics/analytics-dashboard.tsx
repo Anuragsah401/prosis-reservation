@@ -33,7 +33,8 @@ const RANGE_OPTIONS = [
 export function AnalyticsDashboard() {
   const { t } = useTranslation()
   const [rangeDays, setRangeDays] = useState<number>(14)
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isRefetching, setIsRefetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [metrics, setMetrics] = useState<SummaryMetric[]>([])
   const [dailyReservations, setDailyReservations] = useState<DailyReservations[]>([])
@@ -45,7 +46,7 @@ export function AnalyticsDashboard() {
   useEffect(() => {
     let active = true
     async function load() {
-      setLoading(true)
+      setIsRefetching(true)
       setError(null)
       try {
         const [summary, daily, status, hourly, tables, weekday] = await Promise.all([
@@ -67,7 +68,10 @@ export function AnalyticsDashboard() {
         if (!active) return
         setError(err instanceof Error ? err.message : "Failed to load analytics")
       } finally {
-        if (active) setLoading(false)
+        if (active) {
+          setInitialLoading(false)
+          setIsRefetching(false)
+        }
       }
     }
     void load()
@@ -76,7 +80,7 @@ export function AnalyticsDashboard() {
     }
   }, [rangeDays])
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -85,7 +89,7 @@ export function AnalyticsDashboard() {
     )
   }
 
-  if (error) {
+  if (error && metrics.length === 0) {
     return (
       <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-center">
         <p className="text-destructive text-sm">{error}</p>
@@ -94,7 +98,7 @@ export function AnalyticsDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 w-full pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t("pages.analytics.title")}</h1>
@@ -102,21 +106,30 @@ export function AnalyticsDashboard() {
             {t("pages.analytics.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-md border p-1">
-          {RANGE_OPTIONS.map((option) => (
-            <Button
-              key={option.days}
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setRangeDays(option.days)}
-              className={cn(
-                rangeDays === option.days && "bg-primary text-primary-foreground hover:bg-primary/90",
-              )}
-            >
-              {t(`pages.analytics.${option.labelKey}`)}
-            </Button>
-          ))}
+        <div className="flex items-center gap-2">
+          {isRefetching && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-in fade-in">
+              <Loader2 className="size-3.5 animate-spin text-primary" />
+              <span>{t("common.updating", "Updating...")}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1 rounded-xl border p-1 bg-card shadow-2xs">
+            {RANGE_OPTIONS.map((option) => (
+              <Button
+                key={option.days}
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setRangeDays(option.days)}
+                className={cn(
+                  "rounded-lg text-xs font-semibold cursor-pointer",
+                  rangeDays === option.days && "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs",
+                )}
+              >
+                {t(`pages.analytics.${option.labelKey}`)}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 

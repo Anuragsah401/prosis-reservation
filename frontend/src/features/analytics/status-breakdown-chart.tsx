@@ -24,36 +24,38 @@ export function StatusBreakdownChart({ data }: StatusBreakdownChartProps) {
         <CardDescription>{t("pages.analytics.statusBreakdownDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="count"
-              nameKey="status"
-              innerRadius={60}
-              outerRadius={95}
-              paddingAngle={2}
-            >
-              {data.map((entry) => (
-                <Cell key={entry.status} fill={COLORS[entry.status] ?? "var(--muted-foreground)"} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius)",
-                fontSize: 12,
-              }}
-            />
-            <Legend
-              verticalAlign="bottom"
-              height={36}
-              wrapperStyle={{ fontSize: 12 }}
-              formatter={(value) => value.replace("_", " ")}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <div className="w-full h-[280px] min-h-[280px]">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="status"
+                innerRadius={60}
+                outerRadius={95}
+                paddingAngle={2}
+              >
+                {data.map((entry) => (
+                  <Cell key={entry.status} fill={COLORS[entry.status] ?? "var(--muted-foreground)"} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  fontSize: 12,
+                }}
+              />
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                wrapperStyle={{ fontSize: 12 }}
+                formatter={(value) => value.replace("_", " ")}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   )

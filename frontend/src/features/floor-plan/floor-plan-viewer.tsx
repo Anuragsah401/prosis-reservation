@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
 import { Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TableGraphic } from "@/features/floor-plan/table-graphic"
@@ -536,5 +535,5 @@ export function FloorPlanViewer({
     </div>
   )
 
-  return fullscreen ? createPortal(viewer, document.body) : viewer
+  return viewer
 }

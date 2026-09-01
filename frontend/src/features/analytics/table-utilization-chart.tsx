@@ -22,32 +22,34 @@ export function TableUtilizationChart({ data }: TableUtilizationChartProps) {
         <CardDescription>{t("pages.analytics.tableUtilizationDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 4, right: 24, left: 8, bottom: 0 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border" />
-            <XAxis type="number" domain={[0, 100]} tickLine={false} axisLine={false} fontSize={12} />
-            <YAxis type="category" dataKey="table" tickLine={false} axisLine={false} fontSize={12} width={32} />
-            <Tooltip
-              cursor={{ fill: "var(--muted)" }}
-              formatter={(value) => [`${value}%`, "Utilization"]}
-              contentStyle={{
-                backgroundColor: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius)",
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="utilization" radius={[0, 4, 4, 0]}>
-              {data.map((entry) => (
-                <Cell key={entry.table} fill={colorForUtilization(entry.utilization)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="w-full h-[260px] min-h-[260px]">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <BarChart
+              data={data}
+              layout="vertical"
+              margin={{ top: 4, right: 24, left: 8, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border" />
+              <XAxis type="number" domain={[0, 100]} tickLine={false} axisLine={false} fontSize={12} />
+              <YAxis type="category" dataKey="table" tickLine={false} axisLine={false} fontSize={12} width={32} />
+              <Tooltip
+                cursor={{ fill: "var(--muted)" }}
+                formatter={(value) => [`${value}%`, "Utilization"]}
+                contentStyle={{
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  fontSize: 12,
+                }}
+              />
+              <Bar dataKey="utilization" radius={[0, 4, 4, 0]}>
+                {data.map((entry) => (
+                  <Cell key={entry.table} fill={colorForUtilization(entry.utilization)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   )

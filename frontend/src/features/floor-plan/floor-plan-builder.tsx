@@ -41,7 +41,6 @@ import {
 import {
   Loader2,
   Plus,
-  LayoutGrid,
   CheckCircle2,
   Square,
   RectangleHorizontal,
@@ -968,6 +967,16 @@ function FloorPlanBuilderInner() {
   const [newTableStatus, setNewTableStatus] = useState<TableStatus>("AVAILABLE")
   const [isFullscreen, setIsFullscreen] = useState(false)
 
+  // Automatically re-center and frame view smoothly when floor or fullscreen changes without destroying DOM nodes
+  useEffect(() => {
+    if (!isLoadingPlan) {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.25, duration: 300 })
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [activeFloor, isFullscreen, isLoadingPlan, fitView])
+
   // Add Floor Dialog state
   const [isAddFloorDialogOpen, setIsAddFloorDialogOpen] = useState(false)
   const [newFloorName, setNewFloorName] = useState("")
@@ -1520,25 +1529,41 @@ function FloorPlanBuilderInner() {
     return counts
   }, [nodes])
 
+  const activeFloorStats = useMemo(() => {
+    let tableCount = 0
+    let totalSeats = 0
+    for (const n of nodes) {
+      if (n.type === "table") {
+        tableCount++
+        totalSeats += (n.data as TableNodeData).capacity || 0
+      }
+    }
+    return { tableCount, totalSeats }
+  }, [nodes])
+
   return (
     <div
       className={cn(
-        "flex flex-col gap-3",
-        // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't
-        // support requestFullscreen() on non-video elements. Wrapping the
-        // whole builder keeps the floor tabs and save/reset controls usable
-        // while expanded.
+        "flex flex-col gap-3 w-full pb-6",
         isFullscreen && "bg-background fixed inset-0 z-50 overflow-auto p-4",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("pages.floorPlan.title")}</h1>
-          <p className="text-muted-foreground text-sm">
-            {t("pages.floorPlan.subtitle")}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              {t("pages.floorPlan.title", "Floor Plan Designer")}
+            </h1>
+            <Badge variant="outline" className="text-xs font-semibold py-0.5 px-2.5 bg-primary/10 text-primary border-primary/20">
+              {activeFloorStats.tableCount} {activeFloorStats.tableCount === 1 ? "Table" : "Tables"} • {activeFloorStats.totalSeats} Seats
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+            {t("pages.floorPlan.subtitle", "Drag, resize, and reshape tables to design your dining floor layout.")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Live Auto-Save / Cloud Status Indicator */}
           {isSaving ? (
             <Badge
@@ -1587,7 +1612,7 @@ function FloorPlanBuilderInner() {
               }
             }}
             className={cn(
-              "gap-1.5 font-semibold transition-all shadow-xs text-xs",
+              "gap-1.5 font-semibold transition-all shadow-xs text-xs rounded-xl cursor-pointer",
               isLayoutLocked
                 ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
                 : "bg-emerald-600 hover:bg-emerald-700 text-white",
@@ -1619,7 +1644,7 @@ function FloorPlanBuilderInner() {
               size="sm"
               onClick={handleUndo}
               disabled={past.length === 0}
-              className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
+              className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5 cursor-pointer"
               title={t("pages.floorPlan.undoTooltip", "Undo (Ctrl+Z / ⌘Z)")}
             >
               <Undo2 className="size-3.5" />
@@ -1631,7 +1656,7 @@ function FloorPlanBuilderInner() {
               size="sm"
               onClick={handleRedo}
               disabled={future.length === 0}
-              className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5"
+              className="gap-1.5 font-semibold text-xs rounded-xl h-8 px-2.5 cursor-pointer"
               title={t("pages.floorPlan.redoTooltip", "Redo (Ctrl+Shift+Z / ⌘⇧Z)")}
             >
               <Redo2 className="size-3.5" />
@@ -1643,6 +1668,7 @@ function FloorPlanBuilderInner() {
             variant="outline"
             size="icon"
             onClick={() => setIsFullscreen((f) => !f)}
+            className="rounded-xl size-8 cursor-pointer"
             aria-label={
               isFullscreen ? t("pages.floorPlan.exitFullscreen") : t("pages.floorPlan.enterFullscreen")
             }
@@ -1655,9 +1681,13 @@ function FloorPlanBuilderInner() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2">
+      {/* Floor Room Tabs & Create Actions Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-border/80 bg-card p-2.5 shadow-2xs">
         <div className="flex flex-wrap items-center gap-1.5">
-          <LayoutGrid className="text-muted-foreground mr-1 size-4" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground mr-1 pl-1">
+            <Layers className="size-4 text-primary" />
+            <span className="hidden sm:inline">Rooms:</span>
+          </div>
           {floors.map((floor) => {
             const isActive = floor === activeFloor
             const floorItems = nodesByFloor[floor] ?? floorTables[floor] ?? []
@@ -1668,7 +1698,7 @@ function FloorPlanBuilderInner() {
                   variant={isActive ? "default" : "ghost"}
                   onClick={() => setActiveFloor(floor)}
                   className={cn(
-                    "relative transition-all",
+                    "relative transition-all rounded-xl text-xs font-semibold cursor-pointer",
                     floors.length > 1 && (isActive ? "pr-7.5" : "hover:pr-7.5"),
                   )}
                 >
@@ -1711,11 +1741,11 @@ function FloorPlanBuilderInner() {
           <Button
             size="sm"
             variant="ghost"
-            className="text-muted-foreground"
+            className="text-muted-foreground rounded-xl text-xs font-semibold gap-1 cursor-pointer"
             onClick={handleOpenAddFloorDialog}
           >
             <Plus className="size-3.5" />
-            {t("pages.floorPlan.addFloor")}
+            <span>{t("pages.floorPlan.addFloor", "Add Area")}</span>
           </Button>
         </div>
 
@@ -1723,13 +1753,14 @@ function FloorPlanBuilderInner() {
           <Button
             size="sm"
             variant="secondary"
+            className="rounded-xl text-xs font-semibold gap-1.5 shadow-2xs cursor-pointer"
             onClick={() => {
               if (isLayoutLocked) setIsLayoutLocked(false)
               handleOpenAddDialog()
             }}
           >
             <Plus className="size-4" />
-            {t("pages.floorPlan.addTable")}
+            <span>{t("pages.floorPlan.addTable", "Add Table")}</span>
           </Button>
           <Button
             size="sm"
@@ -1738,41 +1769,44 @@ function FloorPlanBuilderInner() {
               if (isLayoutLocked) setIsLayoutLocked(false)
               handleOpenAddFacilityDialog()
             }}
-            className="border-dashed bg-card/60 hover:bg-accent"
+            className="border-dashed bg-card/60 hover:bg-accent rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
           >
             <Sparkles className="size-4 text-amber-500" />
-            {t("pages.floorPlan.addFacility")}
+            <span>{t("pages.floorPlan.addFacility", "Add Facility / Decor")}</span>
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 text-xs">
-        {(Object.keys(statusLabels) as TableStatus[]).map((status) => (
-          <span key={status} className="text-muted-foreground flex items-center gap-1.5">
-            <span
-              className={
-                {
-                  AVAILABLE: "size-2.5 rounded-full bg-emerald-500",
-                  OCCUPIED: "size-2.5 rounded-full bg-amber-500",
-                  RESERVED: "size-2.5 rounded-full bg-blue-500",
-                  MAINTENANCE: "size-2.5 rounded-full bg-destructive",
-                }[status]
-              }
-            />
-            {statusLabels[status]} ({statusCounts[status]})
-          </span>
-        ))}
-        <span className="text-muted-foreground ml-auto">
+      {/* Live Status Summary & Shortcuts Ribbon */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs px-1">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {(Object.keys(statusLabels) as TableStatus[]).map((status) => (
+            <span key={status} className="text-muted-foreground flex items-center gap-1.5 bg-card border border-border/70 rounded-lg px-2 py-1 shadow-2xs">
+              <span
+                className={
+                  {
+                    AVAILABLE: "size-2.5 rounded-full bg-emerald-500",
+                    OCCUPIED: "size-2.5 rounded-full bg-amber-500",
+                    RESERVED: "size-2.5 rounded-full bg-blue-500",
+                    MAINTENANCE: "size-2.5 rounded-full bg-destructive",
+                  }[status]
+                }
+              />
+              <span className="font-semibold text-foreground">{statusLabels[status]}</span>
+              <span className="text-muted-foreground font-mono">({statusCounts[status]})</span>
+            </span>
+          ))}
+        </div>
+        <span className="text-muted-foreground text-[11px] hidden md:inline">
           {t("pages.floorPlan.selectHint", { shapes: Object.values(shapeLabels).join(" / ") })}
         </span>
       </div>
 
+      {/* Main Interactive Canvas Area */}
       <div
         className={cn(
-          "bg-muted/30 relative w-full overflow-hidden border",
-          // Fills the remaining overlay height instead of staying at the
-          // fixed h-150 used in the normal page flow.
-          isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-150 rounded-xl",
+          "bg-muted/20 relative w-full overflow-hidden border border-border/80 shadow-xs transition-all",
+          isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-[calc(100vh-14.5rem)] min-h-[520px] rounded-2xl",
         )}
       >
         {/* Floating Locked Safe-Mode HUD Badge */}
@@ -1801,10 +1835,6 @@ function FloorPlanBuilderInner() {
           </div>
         ) : (
           <ReactFlow
-            // Remounting on resize re-runs `fitView`, so the layout is framed to
-            // the new canvas size instead of keeping the old viewport. Node
-            // positions live in `nodesByFloor`, so nothing unsaved is lost.
-            key={`${activeFloor}-${isFullscreen}`}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}

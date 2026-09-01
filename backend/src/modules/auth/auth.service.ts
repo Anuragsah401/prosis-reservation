@@ -33,9 +33,11 @@ function toSafeUser(user: {
   isActive: boolean
   restaurantId: string | null
   roleId: string | null
+  role?: { id: string; name: string; permissions: string[] } | null
   createdAt: Date
   updatedAt: Date
   passwordHash?: string
+  restaurant?: any
 }) {
   const { passwordHash: _passwordHash, ...safeUser } = user
   return safeUser
@@ -92,7 +94,7 @@ export const authService = {
             restaurantId: restaurant.id,
             roleId: ownerRole.id,
           },
-          include: { restaurant: true },
+          include: { restaurant: true, role: true },
         })
       })
 
@@ -128,7 +130,7 @@ export const authService = {
         restaurantId: data.restaurantId,
         roleId: data.roleId,
       },
-      include: { restaurant: true },
+      include: { restaurant: true, role: true },
     })
 
     const token = signToken({
@@ -156,7 +158,7 @@ export const authService = {
   async login(data: LoginInput) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
-      include: { restaurant: true },
+      include: { restaurant: true, role: true },
     })
     // Compare against a dummy hash when the user doesn't exist so the
     // response time doesn't leak whether an email is registered.
@@ -181,7 +183,7 @@ export const authService = {
   async me(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { restaurant: true },
+      include: { restaurant: true, role: true },
     })
     if (!user || !user.isActive || !user.restaurant || !user.restaurant.isActive) {
       return null
