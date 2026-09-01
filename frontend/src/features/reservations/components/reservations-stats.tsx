@@ -36,7 +36,7 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
       {/* 1. Total Covers & Bookings */}
       <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
-        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
+        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-0 md:px-3.5 md:py-0 lg:py-0 xl:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
               {t("pages.reservations.stats.totalBookings", "Total Guests")}
@@ -61,7 +61,7 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
 
       {/* 2. Confirmed & Seated (Arrivals) */}
       <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
-        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
+        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-0 md:px-3.5 md:py-0 lg:py-0 xl:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
               {t("pages.reservations.stats.confirmed", "Confirmed / Seated")}
@@ -86,7 +86,7 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
 
       {/* 3. Pending Action Required */}
       <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
-        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
+        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-0 md:px-3.5 md:py-0 lg:py-0 xl:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
               {t("pages.reservations.stats.pending", "Pending Action")}
@@ -113,12 +113,12 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
 
       {/* 4. Tables Assigned */}
       <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
-        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
+        <CardContent className="px-2.5 py-2 sm:px-3 sm:py-0 md:px-3.5 md:py-0 lg:py-0 xl:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
               {t("pages.reservations.stats.tablesBooked", "Tables Booked")}
             </span>
-            <div className="flex size-6 sm:size-6.5 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+            <div className="flex size-6 sm:size-6.5 shrink-0 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <UtensilsCrossed className="size-3 sm:size-3.5" />
             </div>
           </div>
