@@ -43,6 +43,8 @@ interface FloorPlanViewerProps {
   activeFloor?: string
   onFloorChange?: (floor: string) => void
   hideFloorTabs?: boolean
+  className?: string
+  canvasClassName?: string
 }
 
 const DEFAULT_W = 140
@@ -68,6 +70,8 @@ export function FloorPlanViewer({
   activeFloor: controlledActiveFloor,
   onFloorChange,
   hideFloorTabs = false,
+  className,
+  canvasClassName,
 }: FloorPlanViewerProps) {
   const floors = useMemo(
     () => [...new Set(tables.map((t) => t.floor).filter((f): f is string => Boolean(f)))],
@@ -226,6 +230,7 @@ export function FloorPlanViewer({
       className={cn(
         "flex flex-col gap-2 w-full h-full min-h-0",
         fullscreen && "bg-background fixed inset-0 z-[9999] p-3 sm:p-4 pointer-events-auto",
+        !fullscreen && className,
       )}
       style={fullscreen ? { pointerEvents: "auto" } : undefined}
     >
@@ -252,7 +257,11 @@ export function FloorPlanViewer({
       <div
         className={cn(
           "bg-muted/30 relative overflow-hidden border w-full flex-1 min-h-0",
-          fullscreen ? "min-h-0 flex-1 rounded-md" : "rounded-lg min-h-[300px] sm:min-h-[360px]",
+          fullscreen
+            ? "min-h-0 flex-1 rounded-md"
+            : canvasClassName
+              ? cn("rounded-lg", canvasClassName)
+              : "rounded-lg min-h-[220px] sm:min-h-[260px]",
         )}
       >
         <div

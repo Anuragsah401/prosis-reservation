@@ -229,20 +229,23 @@ export function ReservationConfirmPage() {
                 </div>
 
                 {canChooseTable && details && (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2.5">
                     <div>
                       <h2 className="text-sm font-medium">{t("reservationConfirm.chooseTable")}</h2>
                       <p className="text-muted-foreground text-xs">
                         {t("reservationConfirm.chooseTableHint")}
                       </p>
                     </div>
-                    <FloorPlanViewer
-                      tables={details.tables}
-                      selectedTableId={selectedTableId}
-                      currentTableId={reservation.table?.id ?? null}
-                      onSelect={setSelectedTableId}
-                      seatsLabel={t("reservationConfirm.seats")}
-                    />
+                    <div className="h-[220px] sm:h-[260px] w-full relative">
+                      <FloorPlanViewer
+                        tables={details.tables}
+                        selectedTableId={selectedTableId}
+                        currentTableId={reservation.table?.id ?? null}
+                        onSelect={setSelectedTableId}
+                        seatsLabel={t("reservationConfirm.seats")}
+                        canvasClassName="min-h-0 h-full"
+                      />
+                    </div>
                     <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs">
                       <span className="flex items-center gap-1.5">
                         <span className="bg-card inline-block size-3 rounded-sm border-2 border-emerald-500/60" />
@@ -258,7 +261,7 @@ export function ReservationConfirmPage() {
                       </span>
                     </div>
                     {selectedTableId === null && (
-                      <Badge variant="secondary" className="self-start">
+                      <Badge variant="secondary" className="self-start text-[11px]">
                         {t("reservationConfirm.noTableSelected")}
                       </Badge>
                     )}
