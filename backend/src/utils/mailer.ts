@@ -7,6 +7,18 @@ interface SendEmailInput {
   to: string
   subject: string
   html: string
+  from?: string
+}
+
+/** Extracts the clean email address from EMAIL_FROM and pairs it with the restaurant's display name. */
+function formatSender(displayName?: string): string {
+  const match = env.EMAIL_FROM.match(/<([^>]+)>/)
+  const emailOnly = match ? match[1] : env.EMAIL_FROM.trim()
+  if (displayName) {
+    const cleanName = displayName.replace(/["<>]/g, "").trim()
+    return `"${cleanName}" <${emailOnly}>`
+  }
+  return env.EMAIL_FROM
 }
 
 /**
@@ -15,15 +27,17 @@ interface SendEmailInput {
  * the console instead of thrown as an error, so the rest of the flow (token
  * creation, etc.) still works and is testable without a real provider.
  */
-async function sendEmail({ to, subject, html }: SendEmailInput) {
+async function sendEmail({ to, subject, html, from }: SendEmailInput) {
   if (!resend) {
     // eslint-disable-next-line no-console
     console.log(`[mailer] RESEND_API_KEY not set — logging email instead of sending.\nTo: ${to}\nSubject: ${subject}\n${html}`)
     return
   }
 
+  const sender = from || env.EMAIL_FROM
+
   const { error } = await resend.emails.send({
-    from: env.EMAIL_FROM,
+    from: sender,
     to,
     subject,
     html,
@@ -124,6 +138,7 @@ export const mailer = {
     })
 
     await sendEmail({
+      from: formatSender(restaurantName),
       to,
       subject: `🍽️ Confirm your reservation at ${restaurantName}`,
       html: `
