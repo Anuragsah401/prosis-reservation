@@ -1,22 +1,33 @@
 import { useTranslation } from "react-i18next"
 import { Users, CheckCircle2, AlertCircle, UtensilsCrossed } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import type { CalendarReservation } from "@/features/reservations-calendar/calendar-data"
+import { cn } from "@/lib/utils"
+import type { CalendarReservation, ReservationStatus } from "@/features/reservations-calendar/calendar-data"
+import { normalizeStatus } from "../reservations-utils"
 
 interface ReservationsStatsProps {
   reservations: CalendarReservation[]
+  activeStatus?: "all" | ReservationStatus
+  onSelectStatus?: (status: "all" | ReservationStatus) => void
 }
 
-export function ReservationsStats({ reservations }: ReservationsStatsProps) {
+export function ReservationsStats({
+  reservations,
+  activeStatus,
+  onSelectStatus,
+}: ReservationsStatsProps) {
   const { t } = useTranslation()
 
   const totalBookings = reservations.length
-  const activeReservations = reservations.filter((r) => r.status !== "CANCELLED" && r.status !== "NO_SHOW")
+  const activeReservations = reservations.filter((r) => {
+    const s = normalizeStatus(r.status)
+    return s !== "CANCELLED" && s !== "NO_SHOW"
+  })
   const totalCovers = reservations.reduce((sum, r) => sum + (r.partySize || 0), 0)
-  const confirmedCount = reservations.filter((r) => r.status === "CONFIRMED").length
-  const seatedCount = reservations.filter((r) => r.status === "CHECKED_IN").length
-  const completedCount = reservations.filter((r) => r.status === "COMPLETED").length
-  const pendingCount = reservations.filter((r) => r.status === "PENDING").length
+  const confirmedCount = reservations.filter((r) => normalizeStatus(r.status) === "CONFIRMED").length
+  const seatedCount = reservations.filter((r) => normalizeStatus(r.status) === "CHECKED_IN").length
+  const completedCount = reservations.filter((r) => normalizeStatus(r.status) === "COMPLETED").length
+  const pendingCount = reservations.filter((r) => normalizeStatus(r.status) === "PENDING").length
   const activeBookings = activeReservations.length
 
   const arrivalRate =
@@ -35,7 +46,14 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
       {/* 1. Total Covers & Bookings */}
-      <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
+      <Card
+        onClick={() => onSelectStatus?.("all")}
+        className={cn(
+          "min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm",
+          onSelectStatus && "cursor-pointer",
+          activeStatus === "all" && onSelectStatus && "ring-1.5 ring-primary/40 border-primary/50",
+        )}
+      >
         <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
@@ -60,7 +78,25 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
       </Card>
 
       {/* 2. Confirmed & Seated (Arrivals) */}
-      <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
+      <Card
+        onClick={() => {
+          if (!onSelectStatus) return
+          if (activeStatus === "CONFIRMED") {
+            onSelectStatus("CHECKED_IN")
+          } else if (activeStatus === "CHECKED_IN") {
+            onSelectStatus("all")
+          } else {
+            onSelectStatus("CONFIRMED")
+          }
+        }}
+        className={cn(
+          "min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm",
+          onSelectStatus && "cursor-pointer",
+          (activeStatus === "CONFIRMED" || activeStatus === "CHECKED_IN") &&
+            onSelectStatus &&
+            "ring-1.5 ring-emerald-500/40 border-emerald-500/50",
+        )}
+      >
         <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
@@ -85,7 +121,17 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
       </Card>
 
       {/* 3. Pending Action Required */}
-      <Card className="min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm">
+      <Card
+        onClick={() => {
+          if (!onSelectStatus) return
+          onSelectStatus(activeStatus === "PENDING" ? "all" : "PENDING")
+        }}
+        className={cn(
+          "min-w-0 border-border/80 bg-card shadow-xs transition-all hover:border-border hover:shadow-sm",
+          onSelectStatus && "cursor-pointer",
+          activeStatus === "PENDING" && onSelectStatus && "ring-1.5 ring-amber-500/40 border-amber-500/50",
+        )}
+      >
         <CardContent className="px-2.5 py-2 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
@@ -118,7 +164,7 @@ export function ReservationsStats({ reservations }: ReservationsStatsProps) {
             <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
               {t("pages.reservations.stats.tablesBooked", "Tables Booked")}
             </span>
-            <div className="flex size-6 sm:size-6.5 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+            <div className="flex size-6 sm:size-6.5 shrink-0 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <UtensilsCrossed className="size-3 sm:size-3.5" />
             </div>
           </div>

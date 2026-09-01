@@ -16,7 +16,13 @@ import { ReservationsTable } from "@/features/reservations/components/reservatio
 import { ReservationsStats } from "@/features/reservations/components/reservations-stats"
 import { ReservationsDateNav } from "@/features/reservations/components/reservations-date-nav"
 import { statusSortOrder } from "@/features/reservations/reservations-constants"
-import { isSameDay, exportReservationsToCSV, printDailyRunSheet, toDateInputValue } from "@/features/reservations/reservations-utils"
+import {
+  isSameDay,
+  exportReservationsToCSV,
+  printDailyRunSheet,
+  toDateInputValue,
+  normalizeStatus,
+} from "@/features/reservations/reservations-utils"
 import { fetchReservations, updateReservationStatusOnServer } from "@/features/reservations/reservations-api"
 import { useRealtimeListener } from "@/features/realtime"
 import { useRestaurant } from "@/features/restaurant/restaurant-context"
@@ -82,50 +88,65 @@ export function ReservationsPage() {
   }, [loadReservations])
 
   async function handleStatusChange(id: string, status: ReservationStatus) {
-    const previous = allReservations
-    const target = allReservations.find((r) => r.id === id)
-    // Optimistic update
+    const previous = allReservations.find((r) => r.id === id)
+    if (!previous) return
+
     setAllReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+
     try {
       await updateReservationStatusOnServer(id, status)
       toast.success(
-        t("pages.reservations.toasts.statusUpdated", "Reservation status updated to {{status}}", {
+        t("pages.reservations.statusUpdated", {
+          name: previous.customerName,
           status: statusLabels[status] ?? status,
         }),
-        {
-          description: target?.customerName,
-        }
       )
     } catch (err) {
-      console.error("[reservations] Failed to update status:", err)
-      setAllReservations(previous)
-      const errorMsg =
-        err instanceof Error && err.message
-          ? err.message
-          : t("pages.reservations.toasts.statusError", "Failed to update reservation status")
-      toast.error(errorMsg)
+      setAllReservations((prev) => prev.map((r) => (r.id === id ? previous : r)))
+      console.error("[reservations] Status update failed:", err)
+      const message = err instanceof Error ? err.message : t("pages.reservations.statusUpdateFailed", "Failed to update reservation status.")
+      toast.error(message)
     }
   }
 
   async function handleBulkStatusChange(ids: string[], status: ReservationStatus) {
-    const previous = allReservations
-    setAllReservations((prev) => prev.map((r) => (ids.includes(r.id) ? { ...r, status } : r)))
+    const previousReservations = allReservations.filter((r) => ids.includes(r.id))
+    if (previousReservations.length === 0) return
+
+    setAllReservations((prev) =>
+      prev.map((r) => (ids.includes(r.id) ? { ...r, status } : r)),
+    )
+
     try {
-      await Promise.all(ids.map((id) => updateReservationStatusOnServer(id, status)))
-      toast.success(
-        t("pages.reservations.toasts.bulkStatusUpdated", "Updated {{count}} reservations to {{status}}", {
-          count: ids.length,
-          status: statusLabels[status] ?? status,
-        })
+      const results = await Promise.allSettled(
+        ids.map((id) => updateReservationStatusOnServer(id, status)),
       )
+      const failures = results.filter((res) => res.status === "rejected")
+
+      if (failures.length > 0) {
+        toast.warning(
+          t("pages.reservations.serviceTools.bulkPartialSuccess", {
+            success: ids.length - failures.length,
+            total: ids.length,
+          }),
+        )
+      } else {
+        toast.success(
+          t("pages.reservations.serviceTools.bulkSuccess", {
+            count: ids.length,
+            status: statusLabels[status] ?? status,
+          }),
+        )
+      }
     } catch (err) {
-      console.error("[reservations] Failed bulk status update:", err)
-      setAllReservations(previous)
-      const errorMsg =
-        err instanceof Error && err.message
-          ? err.message
-          : t("pages.reservations.toasts.statusError", "Failed to update reservation status")
-      toast.error(errorMsg)
+      setAllReservations((prev) =>
+        prev.map((r) => {
+          const old = previousReservations.find((p) => p.id === r.id)
+          return old ? old : r
+        }),
+      )
+      console.error("[reservations] Bulk status update failed:", err)
+      toast.error(t("pages.reservations.statusUpdateFailed", "Failed to update reservation status."))
     }
   }
 
@@ -168,8 +189,9 @@ export function ReservationsPage() {
       NO_SHOW: 0,
     }
     for (const r of dayReservations) {
-      if (counts[r.status] !== undefined) {
-        counts[r.status]++
+      const s = normalizeStatus(r.status)
+      if (counts[s] !== undefined) {
+        counts[s]++
       }
     }
     return counts
@@ -181,7 +203,7 @@ export function ReservationsPage() {
     return dayReservations
       .filter((r) => {
         if (statusFilter === "all") return true
-        return r.status === statusFilter
+        return normalizeStatus(r.status) === statusFilter
       })
       .filter((r) => {
         if (!query) return true
@@ -195,7 +217,7 @@ export function ReservationsPage() {
         return matchCustomer || matchPhone || matchEmail || matchTable || matchNotes || matchSpecial || matchEvent
       })
       .sort((a, b) => {
-        const statusDiff = statusSortOrder[a.status] - statusSortOrder[b.status]
+        const statusDiff = statusSortOrder[normalizeStatus(a.status)] - statusSortOrder[normalizeStatus(b.status)]
         if (statusDiff !== 0) return statusDiff
         return a.start.localeCompare(b.start)
       })
@@ -225,6 +247,8 @@ export function ReservationsPage() {
     { id: "NO_SHOW", label: t("pages.reservations.filters.noShow", "No-show"), count: statusCounts.NO_SHOW },
   ]
 
+  const hasActiveFilters = statusFilter !== "all" || search.trim().length > 0
+
   return (
     <div className="flex flex-col gap-4">
       {/* Top Header & Toolbar */}
@@ -246,7 +270,11 @@ export function ReservationsPage() {
       </div>
 
       {/* Daily KPI Stats Summary Cards */}
-      <ReservationsStats reservations={dayReservations} />
+      <ReservationsStats
+        reservations={dayReservations}
+        activeStatus={statusFilter}
+        onSelectStatus={setStatusFilter}
+      />
 
       {/* Date Quick Navigator Bar */}
       <ReservationsDateNav
@@ -263,12 +291,14 @@ export function ReservationsPage() {
             <button
               key={tabItem.id}
               type="button"
-              onClick={() => setStatusFilter(tabItem.id)}
+              onClick={() =>
+                setStatusFilter((prev) => (prev === tabItem.id && tabItem.id !== "all" ? "all" : tabItem.id))
+              }
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer shrink-0",
+                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer shrink-0 select-none",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-primary text-primary-foreground shadow-xs ring-1 ring-primary"
+                  : "bg-card border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <span>{tabItem.label}</span>
@@ -345,6 +375,11 @@ export function ReservationsPage() {
             ) : (
               <ReservationsTable
                 reservations={filteredReservations}
+                hasActiveFilters={hasActiveFilters}
+                onResetFilters={() => {
+                  setStatusFilter("all")
+                  setSearch("")
+                }}
                 onStatusChange={handleStatusChange}
                 onBulkStatusChange={handleBulkStatusChange}
                 onUpdateReservation={handleUpdateReservation}
