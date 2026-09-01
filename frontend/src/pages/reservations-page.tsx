@@ -99,7 +99,11 @@ export function ReservationsPage() {
     } catch (err) {
       console.error("[reservations] Failed to update status:", err)
       setAllReservations(previous)
-      toast.error(t("pages.reservations.toasts.statusError", "Failed to update reservation status"))
+      const errorMsg =
+        err instanceof Error && err.message
+          ? err.message
+          : t("pages.reservations.toasts.statusError", "Failed to update reservation status")
+      toast.error(errorMsg)
     }
   }
 
@@ -117,7 +121,11 @@ export function ReservationsPage() {
     } catch (err) {
       console.error("[reservations] Failed bulk status update:", err)
       setAllReservations(previous)
-      toast.error(t("pages.reservations.toasts.statusError", "Failed to update reservation status"))
+      const errorMsg =
+        err instanceof Error && err.message
+          ? err.message
+          : t("pages.reservations.toasts.statusError", "Failed to update reservation status")
+      toast.error(errorMsg)
     }
   }
 

@@ -223,16 +223,6 @@ function toApiShape<T extends { status: ReservationStatus }>(
   > & { status: ReservationStatus }
 }
 
-// Valid forward transitions for reservation status updates.
-const ALLOWED_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
-  PENDING: ["CONFIRMED", "CANCELLED", "NO_SHOW"],
-  CONFIRMED: ["SEATED", "CANCELLED", "NO_SHOW"],
-  SEATED: ["COMPLETED", "CANCELLED"],
-  COMPLETED: [],
-  CANCELLED: [],
-  NO_SHOW: [],
-}
-
 export const reservationService = {
   async list(restaurantId: string) {
     const reservations = await prisma.reservation.findMany({
@@ -897,8 +887,9 @@ export const reservationService = {
   },
 
   /**
-   * Updates the reservation status, enforcing valid transitions
-   * (e.g. a COMPLETED reservation cannot move back to PENDING).
+   * Updates the reservation status. Staff can set any valid status
+   * (PENDING, CONFIRMED, CHECKED_IN/SEATED, COMPLETED, CANCELLED, NO_SHOW)
+   * and table occupancy is automatically synced.
    */
   async updateStatus(id: string, restaurantId: string, apiStatus: string) {
     const existing = await prisma.reservation.findFirst({ where: { id, restaurantId } })
@@ -911,11 +902,8 @@ export const reservationService = {
       throw new Error("Invalid status")
     }
 
-    const allowed = ALLOWED_TRANSITIONS[existing.status]
-    if (existing.status !== nextStatus && !allowed.includes(nextStatus)) {
-      throw new Error(
-        `Cannot transition reservation from ${DB_TO_API_STATUS[existing.status]} to ${apiStatus}`,
-      )
+    if (existing.status === nextStatus) {
+      return toApiShape(existing)
     }
 
     const reservation = await prisma.reservation.update({
