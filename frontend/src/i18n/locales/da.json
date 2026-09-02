@@ -879,6 +879,16 @@
         "cancel": "Annuller",
         "add": "Tilføj til bordplan"
       },
+      "editFacility": "Rediger facilitet",
+      "editFacilityDialog": {
+        "title": "Rediger facilitet eller element",
+        "description": "Skift facilitetstype, brugerdefineret navn eller dimensioner.",
+        "type": "Type facilitet",
+        "name": "Brugerdefineret navn",
+        "namePlaceholder": "f.eks. Hovedbar, VIP Indgang",
+        "cancel": "Annuller",
+        "save": "Gem ændringer"
+      },
       "addFloorDialog": {
         "title": "Tilføj ny etage / område",
         "description": "Opret en særskilt etage eller spiseområde til din restaurantlayout.",

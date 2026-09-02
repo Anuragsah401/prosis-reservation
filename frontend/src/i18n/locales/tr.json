@@ -872,12 +872,22 @@
       },
       "addFacilityDialog": {
         "title": "Tesis veya Mimari Öğe Ekle",
-        "description": "{{floor}} tuvaline bar, tuvalet, giriş ve acil çıkış gibi mimari simgeler ekleyin.",
+        "description": "Bar, tuvalet, giriş ve çıkış gibi mimari öğeleri {{floor}} planına ekleyin.",
         "type": "Tesis Türü",
         "name": "Özel Ad",
-        "namePlaceholder": "örn. Ana Bar, Müşteri WC",
+        "namePlaceholder": "ör. Ana Bar, Misafir WC",
         "cancel": "İptal",
-        "add": "Kat Planına Ekle"
+        "add": "Bordplana Ekle"
+      },
+      "editFacility": "Tesis Öğesini Düzenle",
+      "editFacilityDialog": {
+        "title": "Tesis / Mimari Öğeyi Düzenle",
+        "description": "Tesis türünü, özel adını veya boyutlarını değiştirin.",
+        "type": "Tesis Türü",
+        "name": "Özel Ad",
+        "namePlaceholder": "ör. Ana Bar, VIP Giriş",
+        "cancel": "İptal",
+        "save": "Değişiklikleri Kaydet"
       },
       "addFloorDialog": {
         "title": "Yeni Kat / Alan Ekle",

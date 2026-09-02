@@ -1,5 +1,5 @@
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react"
-import { RotateCw, Trash2 } from "lucide-react"
+import { Pencil, RotateCw, Trash2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import type { FacilityType } from "@/features/floor-plan/floor-plan-data"
@@ -14,6 +14,7 @@ export interface FacilityNodeData extends Record<string, unknown> {
   isLocked?: boolean
   onRotate: (id: string) => void
   onDelete: (id: string) => void
+  onEdit?: (id: string) => void
   onResizeStart?: (id: string) => void
   onResizeEnd?: (id: string, params: { width: number; height: number; x?: number; y?: number }) => void
 }
@@ -61,23 +62,50 @@ export function FacilityNode({
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
       </div>
 
-      {selected && !isLocked && (
-        <div className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50">
+      {selected && (
+        <div
+          className="nodrag nopan absolute -top-12 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover/95 p-1 shadow-xl z-50 pointer-events-auto backdrop-blur-sm ring-1 ring-border"
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {data.onEdit && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 text-primary hover:bg-primary/10 cursor-pointer"
+              title={t("pages.floorPlan.tooltips.editFacility", "Edit element")}
+              onClick={(e) => {
+                e.stopPropagation()
+                data.onEdit?.(id)
+              }}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          )}
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-7 hover:bg-accent text-foreground cursor-pointer"
             title={t("pages.floorPlan.tooltips.rotate", "Rotate 15°")}
-            onClick={() => data.onRotate(id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              data.onRotate(id)
+            }}
           >
             <RotateCw className="size-4" />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="text-destructive hover:bg-destructive/10 size-7"
+            className="text-destructive hover:bg-destructive/10 size-7 cursor-pointer"
             title={t("pages.floorPlan.tooltips.deleteFacility", "Delete element")}
-            onClick={() => data.onDelete(id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              data.onDelete(id)
+            }}
           >
             <Trash2 className="size-4" />
           </Button>

@@ -59,6 +59,7 @@ import {
   Focus,
   Undo2,
   Redo2,
+  RotateCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -135,6 +136,7 @@ function nodeFromTable(
         isLocked,
         onRotate: handlers.onRotate,
         onDelete: handlers.onDelete,
+        onEdit: handlers.onEdit,
         onResizeStart: handlers.onResizeStart,
         onResizeEnd: handlers.onResizeEnd,
       } as FacilityNodeData,
@@ -643,11 +645,166 @@ function FloorPlanBuilderInner() {
   const [editTableWidth, setEditTableWidth] = useState<string>("")
   const [editTableHeight, setEditTableHeight] = useState<string>("")
 
+  // Edit Facility Dialog State
+  const [isEditFacilityDialogOpen, setIsEditFacilityDialogOpen] = useState(false)
+  const [editFacilityId, setEditFacilityId] = useState<string | null>(null)
+  const [editFacilityType, setEditFacilityType] = useState<FacilityType>("BAR")
+  const [editFacilityName, setEditFacilityName] = useState("")
+  const [editFacilityWidth, setEditFacilityWidth] = useState("")
+  const [editFacilityHeight, setEditFacilityHeight] = useState("")
+
+  const handleOpenEditFacilityDialog = useCallback((id: string) => {
+    const currentNodes = nodesByFloorRef.current
+    const currentFloorTables = floorTablesRef.current
+
+    // 1. Search in nodesByFloor
+    for (const f of Object.keys(currentNodes)) {
+      const found = currentNodes[f]?.find((n) => n.id === id && n.type === "facility") as Node<FacilityNodeData> | undefined
+      if (found) {
+        const data = found.data
+        const fType = data.facilityType || "BAR"
+        const def = facilityDefaults[fType] || facilityDefaults.BAR
+        const w = (found.width as number) || (data.width as number) || def.width
+        const h = (found.height as number) || (data.height as number) || def.height
+        setEditFacilityId(id)
+        setEditFacilityType(fType)
+        setEditFacilityName(data.name || def.name)
+        setEditFacilityWidth(String(Math.round(w)))
+        setEditFacilityHeight(String(Math.round(h)))
+        setIsEditFacilityDialogOpen(true)
+        return
+      }
+    }
+
+    // 2. Search in floorTables
+    for (const f of Object.keys(currentFloorTables)) {
+      const found = currentFloorTables[f]?.find((t) => t.id === id && isFacilityElement(t))
+      if (found) {
+        const fType = resolveFacilityType(found) || "BAR"
+        const def = facilityDefaults[fType] || facilityDefaults.BAR
+        const w = found.width || def.width
+        const h = found.height || def.height
+        setEditFacilityId(id)
+        setEditFacilityType(fType)
+        setEditFacilityName(found.name || def.name)
+        setEditFacilityWidth(String(Math.round(w)))
+        setEditFacilityHeight(String(Math.round(h)))
+        setIsEditFacilityDialogOpen(true)
+        return
+      }
+    }
+
+    // 3. Fallback
+    setEditFacilityId(id)
+    setEditFacilityType("BAR")
+    setEditFacilityName("Bar & Counter")
+    setEditFacilityWidth(String(facilityDefaults.BAR.width))
+    setEditFacilityHeight(String(facilityDefaults.BAR.height))
+    setIsEditFacilityDialogOpen(true)
+  }, [])
+
+  const handleSelectFacilityTypeInEdit = useCallback((type: FacilityType) => {
+    const def = facilityDefaults[type]
+    setEditFacilityType(type)
+    if (def) {
+      setEditFacilityName((prevName) => {
+        const prevDef = facilityDefaults[editFacilityType]
+        if (!prevName.trim() || (prevDef && prevName.trim() === prevDef.name)) {
+          return def.name
+        }
+        return prevName
+      })
+      setEditFacilityWidth(String(def.width))
+      setEditFacilityHeight(String(def.height))
+    }
+  }, [editFacilityType])
+
+  const handleSaveEditFacility = useCallback(() => {
+    if (!editFacilityId) return
+    takeSnapshot()
+
+    const def = facilityDefaults[editFacilityType] || facilityDefaults.BAR
+    const finalName = editFacilityName.trim() || def.name
+    const parsedW = Math.max(20, Number(editFacilityWidth) || def.width)
+    const parsedH = Math.max(20, Number(editFacilityHeight) || def.height)
+    const finalShape = def.shape
+
+    setNodesByFloor((current) => {
+      const next = { ...current }
+      for (const f of Object.keys(next)) {
+        next[f] = next[f].map((n) => {
+          if (n.id === editFacilityId && n.type === "facility") {
+            const data = n.data as FacilityNodeData
+            return {
+              ...n,
+              width: parsedW,
+              height: parsedH,
+              data: {
+                ...data,
+                facilityType: editFacilityType,
+                name: finalName,
+                width: parsedW,
+                height: parsedH,
+              },
+            }
+          }
+          return n
+        })
+      }
+      return next
+    })
+
+    setFloorTables((current) => {
+      const next = { ...current }
+      for (const f of Object.keys(next)) {
+        next[f] = next[f].map((t) => {
+          if (t.id === editFacilityId) {
+            return {
+              ...t,
+              name: finalName,
+              facilityType: editFacilityType,
+              location: `FACILITY:${editFacilityType}`,
+              elementType: "FACILITY",
+              shape: finalShape,
+              width: parsedW,
+              height: parsedH,
+            }
+          }
+          return t
+        })
+      }
+      return next
+    })
+
+    setIsDirty(true)
+    setIsEditFacilityDialogOpen(false)
+    toast.success(t("pages.floorPlan.toasts.facilityUpdated", "Facility updated successfully"))
+  }, [editFacilityId, editFacilityType, editFacilityName, editFacilityWidth, editFacilityHeight, takeSnapshot, t])
+
   const handleOpenEditDialog = useCallback(
     (id: string) => {
       const currentNodes = nodesByFloorRef.current
       const currentFloorTables = floorTablesRef.current
       const currentActiveFloor = activeFloorRef.current
+
+      // Check if it's a facility element first
+      for (const f of Object.keys(currentNodes)) {
+        const found = currentNodes[f]?.find((n) => n.id === id)
+        if (found) {
+          if (found.type === "facility") {
+            handleOpenEditFacilityDialog(id)
+            return
+          }
+          break
+        }
+      }
+      for (const f of Object.keys(currentFloorTables)) {
+        const found = currentFloorTables[f]?.find((t) => t.id === id)
+        if (found && isFacilityElement(found)) {
+          handleOpenEditFacilityDialog(id)
+          return
+        }
+      }
 
       // 1. Search in nodesByFloor
       for (const f of Object.keys(currentNodes)) {
@@ -1079,6 +1236,11 @@ function FloorPlanBuilderInner() {
   // Multi-selected tables on the active floor
   const selectedTableNodes = useMemo(() => {
     return nodes.filter((n) => n.selected && n.type === "table") as Node<TableNodeData>[]
+  }, [nodes])
+
+  // Selected facilities on the active floor
+  const selectedFacilityNodes = useMemo(() => {
+    return nodes.filter((n) => n.selected && n.type === "facility") as Node<FacilityNodeData>[]
   }, [nodes])
 
   const totalSelectedCapacity = useMemo(() => {
@@ -1854,11 +2016,6 @@ function FloorPlanBuilderInner() {
             onNodeDragStop={() => {
               setIsDirty(true)
             }}
-            onNodeDoubleClick={(_e, node) => {
-              if (node.type === "table") {
-                handleOpenEditDialog(node.id)
-              }
-            }}
             fitView
             fitViewOptions={{ padding: 0.25 }}
             proOptions={{ hideAttribution: true }}
@@ -1897,8 +2054,8 @@ function FloorPlanBuilderInner() {
           </ReactFlow>
         )}
 
-        {/* Floating Multi/Single-Selection Action Bar */}
-        {selectedTableNodes.length >= 1 && (
+        {/* Floating Multi/Single-Selection Action Bar for Tables */}
+        {selectedTableNodes.length >= 1 && selectedFacilityNodes.length === 0 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border border-border/80 bg-background/95 p-2 px-4 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4">
             <div className="flex items-center gap-2 pr-3 border-r">
               <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -1919,7 +2076,7 @@ function FloorPlanBuilderInner() {
                 <Button
                   size="sm"
                   onClick={() => handleOpenEditDialog(selectedTableNodes[0].id)}
-                  className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold"
+                  className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold cursor-pointer"
                 >
                   <Pencil className="size-3.5" />
                   <span>{t("pages.floorPlan.editTable", "Edit Table")}</span>
@@ -1930,7 +2087,7 @@ function FloorPlanBuilderInner() {
                 <Button
                   size="sm"
                   onClick={handleOpenGroupDialog}
-                  className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white shadow-xs font-semibold"
+                  className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white shadow-xs font-semibold cursor-pointer"
                 >
                   <Link2 className="size-3.5" />
                   <span>{t("pages.floorPlan.groupTables", "Group Tables")}</span>
@@ -1942,7 +2099,7 @@ function FloorPlanBuilderInner() {
                   size="sm"
                   variant="outline"
                   onClick={handleUngroupSelectedTables}
-                  className="gap-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                  className="gap-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
                 >
                   <Unlink className="size-3.5" />
                   <span>{t("pages.floorPlan.ungroup", "Ungroup")}</span>
@@ -1953,7 +2110,69 @@ function FloorPlanBuilderInner() {
                 size="sm"
                 variant="ghost"
                 onClick={handleDeselectAll}
-                className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                className="size-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                title={t("pages.floorPlan.clearSelection", "Clear selection")}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Action Bar for Selected Facility Element */}
+        {selectedFacilityNodes.length === 1 && selectedTableNodes.length === 0 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border border-border/80 bg-background/95 p-2 px-4 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-2 pr-3 border-r">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Sparkles className="size-4" />
+              </div>
+              <div className="text-xs">
+                <span className="font-semibold text-foreground">
+                  {(selectedFacilityNodes[0].data as FacilityNodeData).name}
+                </span>
+                <span className="text-muted-foreground ml-1.5 font-medium">
+                  {facilityDefaults[(selectedFacilityNodes[0].data as FacilityNodeData).facilityType]?.name || "Facility"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => handleOpenEditFacilityDialog(selectedFacilityNodes[0].id)}
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold cursor-pointer"
+              >
+                <Pencil className="size-3.5" />
+                <span>{t("pages.floorPlan.editFacility", "Edit Facility")}</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleRotate(selectedFacilityNodes[0].id)}
+                className="gap-1.5 cursor-pointer"
+                title={t("pages.floorPlan.tooltips.rotate", "Rotate 15°")}
+              >
+                <RotateCw className="size-3.5" />
+                <span>{t("pages.floorPlan.rotate", "Rotate")}</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleDelete(selectedFacilityNodes[0].id)}
+                className="gap-1.5 cursor-pointer"
+                title={t("pages.floorPlan.tooltips.deleteFacility", "Delete element")}
+              >
+                <Trash2 className="size-3.5" />
+                <span>{t("common.delete", "Delete")}</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleDeselectAll}
+                className="size-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
                 title={t("pages.floorPlan.clearSelection", "Clear selection")}
               >
                 <X className="size-4" />
@@ -2407,6 +2626,165 @@ function FloorPlanBuilderInner() {
             <Button onClick={handleCreateFacility}>
               <Plus className="size-4" />
               {t("pages.floorPlan.addFacilityDialog.add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Facility Dialog */}
+      <Dialog open={isEditFacilityDialogOpen} onOpenChange={setIsEditFacilityDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="size-5 text-primary" />
+              {t("pages.floorPlan.editFacilityDialog.title", "Edit Facility / Architectural Element")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("pages.floorPlan.editFacilityDialog.description", "Change the facility type, custom name label, or dimensions.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("pages.floorPlan.editFacilityDialog.type", "Facility Type")}
+              </Label>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 max-h-64 overflow-y-auto pr-1">
+                {[
+                  {
+                    type: "BAR" as FacilityType,
+                    icon: Wine,
+                    label: "Bar & Counter",
+                    desc: "Cocktail bar & stools",
+                    color: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+                  },
+                  {
+                    type: "RESTROOM" as FacilityType,
+                    icon: RestroomIcon,
+                    label: "Restrooms",
+                    desc: "Guest toilets & WC",
+                    color: "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30",
+                  },
+                  {
+                    type: "ENTRANCE" as FacilityType,
+                    icon: DoorOpen,
+                    label: "Entrance",
+                    desc: "Door swing entryway",
+                    color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+                  },
+                  {
+                    type: "EXIT" as FacilityType,
+                    icon: LogOut,
+                    label: "Exit",
+                    desc: "Safety emergency exit",
+                    color: "text-emerald-700 dark:text-emerald-300 bg-emerald-600/10 border-emerald-600/30",
+                  },
+                  {
+                    type: "KITCHEN" as FacilityType,
+                    icon: UtensilsCrossed,
+                    label: "Kitchen",
+                    desc: "Pass window & staff",
+                    color: "text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/30",
+                  },
+                  {
+                    type: "HOST_STAND" as FacilityType,
+                    icon: UserCheck,
+                    label: "Host Stand",
+                    desc: "Check-in desk podium",
+                    color: "text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/30",
+                  },
+                  {
+                    type: "WALL" as FacilityType,
+                    icon: Layers,
+                    label: "Divider Wall",
+                    desc: "Partition wall segment",
+                    color: "text-muted-foreground bg-muted border-border",
+                  },
+                  {
+                    type: "PLANT" as FacilityType,
+                    icon: Sprout,
+                    label: "Planter",
+                    desc: "Decorative indoor plant",
+                    color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+                  },
+                ].map((item) => {
+                  const isChosen = editFacilityType === item.type
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={item.type}
+                      type="button"
+                      onClick={() => handleSelectFacilityTypeInEdit(item.type)}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2.5 text-center transition-all cursor-pointer",
+                        item.color,
+                        isChosen
+                          ? "ring-2 ring-primary border-primary shadow-sm scale-98 font-bold"
+                          : "hover:border-primary/50 opacity-70 hover:opacity-100",
+                      )}
+                    >
+                      <Icon className="size-5 shrink-0" />
+                      <span className="text-xs font-bold leading-tight">{item.label}</span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1 leading-none">
+                        {item.desc}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="edit-facility-name">
+                {t("pages.floorPlan.editFacilityDialog.name", "Element Label / Custom Name")}
+              </Label>
+              <Input
+                id="edit-facility-name"
+                value={editFacilityName}
+                onChange={(e) => setEditFacilityName(e.target.value)}
+                placeholder={t("pages.floorPlan.editFacilityDialog.namePlaceholder", "e.g. Main Bar, Guest WC")}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-facility-width" className="flex items-center justify-between text-xs">
+                  <span>{t("pages.floorPlan.editDialog.width", "Width")}</span>
+                  <span className="text-muted-foreground font-normal">{t("pages.floorPlan.editDialog.px", "(px)")}</span>
+                </Label>
+                <Input
+                  id="edit-facility-width"
+                  type="number"
+                  min={20}
+                  max={1200}
+                  value={editFacilityWidth}
+                  onChange={(e) => setEditFacilityWidth(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-facility-height" className="flex items-center justify-between text-xs">
+                  <span>{t("pages.floorPlan.editDialog.height", "Height")}</span>
+                  <span className="text-muted-foreground font-normal">{t("pages.floorPlan.editDialog.px", "(px)")}</span>
+                </Label>
+                <Input
+                  id="edit-facility-height"
+                  type="number"
+                  min={20}
+                  max={1200}
+                  value={editFacilityHeight}
+                  onChange={(e) => setEditFacilityHeight(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditFacilityDialogOpen(false)}>
+              {t("pages.floorPlan.editFacilityDialog.cancel", "Cancel")}
+            </Button>
+            <Button onClick={handleSaveEditFacility} disabled={!editFacilityName.trim()} className="gap-1.5">
+              <CheckCircle2 className="size-4" />
+              {t("pages.floorPlan.editFacilityDialog.save", "Save Changes")}
             </Button>
           </DialogFooter>
         </DialogContent>

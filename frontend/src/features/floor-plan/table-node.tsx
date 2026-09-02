@@ -68,9 +68,9 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
       </div>
 
-      {selected && !isLocked && (
+      {selected && (
         <div
-          className="nodrag nopan absolute -top-11 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-lg z-50 pointer-events-auto"
+          className="nodrag nopan absolute -top-12 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover/95 p-1 shadow-xl z-50 pointer-events-auto backdrop-blur-sm ring-1 ring-border"
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -93,7 +93,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7 cursor-pointer"
+            className="size-7 hover:bg-accent text-foreground cursor-pointer"
             title={t("pages.floorPlan.tooltips.cycleShape", "Cycle shape")}
             onClick={(e) => {
               e.stopPropagation()
@@ -108,7 +108,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7 cursor-pointer"
+            className="size-7 hover:bg-accent text-foreground cursor-pointer"
             title={t("pages.floorPlan.tooltips.rotate", "Rotate 15°")}
             onClick={(e) => {
               e.stopPropagation()
@@ -138,7 +138,7 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
               variant="ghost"
               size="icon"
               className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 size-7 cursor-pointer"
-              title={t("pages.floorPlan.tooltips.ungroupTable", "Ungroup this table")}
+              title={t("pages.floorPlan.tooltips.ungroupTable", "Remove from group")}
               onClick={(e) => {
                 e.stopPropagation()
                 data.onUngroup?.(id)
@@ -165,5 +165,3 @@ export function TableNode({ id, data, selected, width, height }: NodeProps & { d
     </>
   )
 }
-
-

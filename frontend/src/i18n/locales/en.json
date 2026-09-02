@@ -879,6 +879,16 @@
         "cancel": "Cancel",
         "add": "Add to Floor Plan"
       },
+      "editFacility": "Edit Facility",
+      "editFacilityDialog": {
+        "title": "Edit Facility / Architectural Element",
+        "description": "Change the facility type, custom name label, or dimensions.",
+        "type": "Facility Type",
+        "name": "Custom Name",
+        "namePlaceholder": "e.g. Main Bar, VIP Entrance",
+        "cancel": "Cancel",
+        "save": "Save Changes"
+      },
       "addFloorDialog": {
         "title": "Add New Floor / Area",
         "description": "Create a distinct floor or dining section for your restaurant layout.",
