@@ -26,6 +26,10 @@ interface SendEmailInput {
 function htmlToPlainText(html: string): string {
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_match, url, text) => {
+      const cleanText = text.replace(/<[^>]+>/g, "").trim()
+      return cleanText ? `${cleanText} -> ${url}` : url
+    })
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
     .replace(/<\/div>/gi, "\n")
@@ -118,6 +122,7 @@ const RESERVATION_CONFIRMATION_I18N = {
     tableLabel: "🪑 Bord",
     restaurantLabel: "📍 Restaurant",
     buttonCta: "✅ Bekræft reservation →",
+    fallbackPrompt: "Virker knappen ikke? Kopiér eller klik på dette direkte link:",
     floorPlanTip: "🗺️ <strong>Bordvalg:</strong> På bekræftelsessiden kan du se restaurantens bordplan og vælge din foretrukne plads.",
     footerNotice: "ℹ️ Hvis du ikke forventede denne reservation, kan du roligt ignorere denne e-mail.",
     dateLocale: "da-DK",
@@ -133,6 +138,7 @@ const RESERVATION_CONFIRMATION_I18N = {
     tableLabel: "🪑 Masa",
     restaurantLabel: "📍 Restoran",
     buttonCta: "✅ Rezervasyonu Onayla →",
+    fallbackPrompt: "Buton açılmıyorsa bu doğrudan bağlantıyı tıklayın:",
     floorPlanTip: "🗺️ <strong>Masa Seçimi:</strong> Onay sayfasında restoranın masa planını inceleyebilir ve oturma yerinizi seçebilirsiniz.",
     footerNotice: "ℹ️ Bu rezervasyonu siz yapmadıysanız, bu e-postayı güvenle yok sayabilirsiniz.",
     dateLocale: "tr-TR",
@@ -148,6 +154,7 @@ const RESERVATION_CONFIRMATION_I18N = {
     tableLabel: "🪑 Table",
     restaurantLabel: "📍 Restaurant",
     buttonCta: "✅ Confirm Reservation →",
+    fallbackPrompt: "Button not opening? Click or copy this direct link:",
     floorPlanTip: "🗺️ <strong>Table Selection:</strong> On the confirmation page, you can preview the restaurant layout and choose your preferred seating.",
     footerNotice: "ℹ️ If you did not expect this reservation, you can safely ignore this email.",
     dateLocale: "en-US",
@@ -258,17 +265,21 @@ export const mailer = {
           <p style="color: #555; line-height: 1.5;">
             ${t.desc}
           </p>
-          <p style="margin: 24px 0;">
-            <a href="${escapedResetUrl}" style="background: #111; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
-              ${t.button}
-            </a>
-          </p>
+          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 24px 0; border-collapse: separate;">
+            <tr>
+              <td align="center" bgcolor="#18181b" style="border-radius: 8px; background-color: #18181b;">
+                <a href="${escapedResetUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; font-weight: 700; color: #ffffff !important; text-decoration: none; border-radius: 8px; background-color: #18181b; border: 1px solid #18181b; text-align: center;">
+                  <span style="color: #ffffff !important; text-decoration: none;">${t.button}</span>
+                </a>
+              </td>
+            </tr>
+          </table>
           <p style="color: #888; font-size: 13px; line-height: 1.5;">
             ${t.ignore}
           </p>
           <p style="color: #888; font-size: 13px; line-height: 1.5;">
             ${t.orCopy}<br />
-            <a href="${escapedResetUrl}" style="color: #555; word-break: break-all;">${escapedResetUrl}</a>
+            <a href="${escapedResetUrl}" target="_blank" style="color: #2563eb; word-break: break-all; text-decoration: underline;">${escapedResetUrl}</a>
           </p>
         </div>
       `,
@@ -310,83 +321,104 @@ export const mailer = {
       to,
       subject: t.subject(restaurantName),
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; color: #18181b; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #18181b; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
           <!-- Header Banner -->
-          <div style="background: #18181b; padding: 24px 28px; text-align: left;">
-            <div style="display: inline-block; background: #27272a; color: #ffffff; width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 8px;">
-              SB
-            </div>
-            <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">
-              ${t.headerTitle}
-            </h1>
+          <div style="background: #18181b; padding: 14px 18px; text-align: left;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td style="vertical-align: middle;">
+                  <span style="display: inline-block; background: #27272a; color: #ffffff; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 6px; font-weight: bold; font-size: 12px; margin-right: 8px; vertical-align: middle;">
+                    SB
+                  </span>
+                  <span style="color: #ffffff; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; vertical-align: middle;">
+                    ${t.headerTitle}
+                  </span>
+                </td>
+              </tr>
+            </table>
           </div>
 
           <!-- Body Content -->
-          <div style="padding: 28px;">
-            <p style="font-size: 16px; line-height: 1.6; margin-top: 0; color: #18181b;">
+          <div style="padding: 18px 20px;">
+            <p style="font-size: 15px; line-height: 1.5; margin: 0 0 6px 0; color: #18181b;">
               ${t.greeting(safeCustomer)}
             </p>
-            <p style="font-size: 15px; line-height: 1.6; color: #52525b;">
+            <p style="font-size: 14px; line-height: 1.5; margin: 0 0 14px 0; color: #52525b;">
               ${t.intro(safeRestaurant)}
             </p>
 
-            <!-- Details Card -->
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; margin: 20px 0;">
+            <!-- Compact Details Card -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin: 0 0 16px 0;">
               <table style="border-collapse: collapse; width: 100%;">
                 <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; vertical-align: middle;">
+                  <td style="padding: 5px 0; color: #64748b; font-size: 13px; vertical-align: middle;">
                     ${t.dateTimeLabel}
                   </td>
-                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; vertical-align: middle;">
+                  <td style="padding: 5px 0; font-weight: 600; font-size: 13px; color: #0f172a; text-align: right; vertical-align: middle;">
                     ${when}
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                  <td style="padding: 5px 0; color: #64748b; font-size: 13px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
                     ${t.partySizeLabel}
                   </td>
-                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                  <td style="padding: 5px 0; font-weight: 600; font-size: 13px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
                     ${partyText}
                   </td>
                 </tr>
                 ${
                   safeTable
                     ? `<tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                  <td style="padding: 5px 0; color: #64748b; font-size: 13px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
                     ${t.tableLabel}
                   </td>
-                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                  <td style="padding: 5px 0; font-weight: 600; font-size: 13px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
                     ${safeTable}
                   </td>
                 </tr>`
                     : ""
                 }
                 <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                  <td style="padding: 5px 0; color: #64748b; font-size: 13px; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
                     ${t.restaurantLabel}
                   </td>
-                  <td style="padding: 8px 0; font-weight: 600; font-size: 14px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
+                  <td style="padding: 5px 0; font-weight: 600; font-size: 13px; color: #0f172a; text-align: right; border-top: 1px dashed #e2e8f0; vertical-align: middle;">
                     ${safeRestaurant}
                   </td>
                 </tr>
               </table>
             </div>
 
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 28px 0;">
-              <a href="${safeConfirmUrl}" style="background: #18181b; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                ${t.buttonCta}
-              </a>
-            </div>
+            <!-- Bulletproof CTA Button -->
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="margin: 0 0 12px 0;">
+              <tr>
+                <td align="center">
+                  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: separate; margin: 0 auto; width: 100%;">
+                    <tr>
+                      <td align="center" bgcolor="#18181b" style="border-radius: 8px; background-color: #18181b;">
+                        <a href="${safeConfirmUrl}" target="_blank" style="display: block; padding: 13px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 700; color: #ffffff !important; text-decoration: none; border-radius: 8px; background-color: #18181b; border: 1px solid #18181b; text-align: center;">
+                          <span style="color: #ffffff !important; text-decoration: none;">${t.buttonCta}</span>
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
 
-            <!-- Interactive Floor Plan Note -->
-            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px 16px; margin: 20px 0;">
-              <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">
+            <!-- Floor Plan Tip -->
+            <div style="background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 6px; padding: 8px 12px; margin: 0 0 12px 0;">
+              <p style="margin: 0; color: #1e40af; font-size: 12px; line-height: 1.4;">
                 ${t.floorPlanTip}
               </p>
             </div>
 
-            <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+            <!-- Fallback Direct Clickable Link -->
+            <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.4;">
+              ${t.fallbackPrompt} <a href="${safeConfirmUrl}" target="_blank" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${safeConfirmUrl}</a>
+            </p>
+
+            <p style="color: #94a3b8; font-size: 11px; line-height: 1.4; margin: 10px 0 0 0; border-top: 1px solid #f1f5f9; padding-top: 8px; text-align: center;">
               ${t.footerNotice}
             </p>
           </div>
