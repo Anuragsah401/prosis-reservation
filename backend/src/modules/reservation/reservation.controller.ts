@@ -72,7 +72,8 @@ export const reservationController = {
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
-      const result = await reservationService.publicBook(parsed.data)
+      const locale = (req.headers["accept-language"] as string) || (req.body?.locale as string) || undefined
+      const result = await reservationService.publicBook(parsed.data, locale)
       res.status(201).json(result)
     } catch (err) {
       if (err instanceof Error) {
@@ -104,7 +105,8 @@ export const reservationController = {
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
-      const result = await reservationService.create(parsed.data)
+      const locale = (req.headers["accept-language"] as string) || (req.body?.locale as string) || undefined
+      const result = await reservationService.create({ ...parsed.data, locale })
       res.status(201).json(result)
     } catch (err) {
       if (err instanceof Error && err.message === "Table is not available at the requested time") {
@@ -255,7 +257,8 @@ export const reservationController = {
         return res.status(400).json({ error: parsed.error.flatten().fieldErrors })
       }
       const reservationId = String(req.params.id)
-      const result = await reservationService.resendConfirmationEmail(reservationId, restaurantId, parsed.data.email)
+      const locale = (req.headers["accept-language"] as string) || (req.body?.locale as string) || undefined
+      const result = await reservationService.resendConfirmationEmail(reservationId, restaurantId, parsed.data.email, locale)
       res.status(200).json(result)
     } catch (err) {
       if (err instanceof Error && CONFIRMATION_ERRORS.has(err.message)) {

@@ -141,21 +141,27 @@ export const sms = {
     reservedFor: Date
     partySize: number
     confirmUrl: string
+    locale?: string | null
   }) {
-    const { to, customerName, restaurantName, reservedFor, partySize, confirmUrl } = input
-    const when = reservedFor.toLocaleString(undefined, {
+    const { to, customerName, restaurantName, reservedFor, partySize, confirmUrl, locale: rawLocale } = input
+    const lang = rawLocale?.split(",")[0]?.split("-")[0]?.toLowerCase() || "da"
+    const isDa = lang === "da" || lang === "dk"
+    const isTr = lang === "tr"
+
+    const dateLocale = isDa ? "da-DK" : isTr ? "tr-TR" : "en-US"
+    const when = reservedFor.toLocaleString(dateLocale, {
       month: "short",
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
     })
 
-    // Kept deliberately short: messages over 160 GSM-7 characters are split
-    // into multiple segments and billed per segment.
-    const body =
-      `Hi ${customerName}, ${restaurantName} has booked you for ${partySize} ` +
-      `${partySize === 1 ? "guest" : "guests"} on ${when}. ` +
-      `Confirm (and pick your table): ${confirmUrl}`
+    let body = `Hi ${customerName}, ${restaurantName} has booked you for ${partySize} ${partySize === 1 ? "guest" : "guests"} on ${when}. Confirm: ${confirmUrl}`
+    if (isDa) {
+      body = `Hej ${customerName}, ${restaurantName} har reserveret bord til ${partySize} ${partySize === 1 ? "gæst" : "gæster"} den ${when}. Bekræft: ${confirmUrl}`
+    } else if (isTr) {
+      body = `Merhaba ${customerName}, ${restaurantName} sizin için ${when} tarihine ${partySize} kişilik rezervasyon yaptı. Onaylayın: ${confirmUrl}`
+    }
 
     await sendSms({ to, body })
   },

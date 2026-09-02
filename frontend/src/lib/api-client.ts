@@ -17,6 +17,12 @@ function buildHeaders(hasBody: boolean): HeadersInit {
   if (hasBody) headers["Content-Type"] = "application/json"
   const token = authClient.getToken()
   if (token) headers.Authorization = `Bearer ${token}`
+  try {
+    const lang = localStorage.getItem("prosisit:language") || "da"
+    if (lang) headers["Accept-Language"] = lang
+  } catch {
+    // Ignore in SSR / non-browser
+  }
   return headers
 }
 

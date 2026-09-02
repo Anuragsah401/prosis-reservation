@@ -314,11 +314,11 @@ export const reservationService = {
     customerName: string
     customerEmail: string
     customerPhone?: string
+    tableId?: string
     partySize: number
     reservedFor: Date
-    tableId?: string
     notes?: string
-  }) {
+  }, locale?: string) {
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: data.restaurantId },
       select: { id: true, name: true, isActive: true },
@@ -368,6 +368,7 @@ export const reservationService = {
       reservedFor: data.reservedFor,
       notes: data.notes,
       isPublicBooking: true,
+      locale,
     })
   },
 
@@ -381,6 +382,7 @@ export const reservationService = {
     createdById?: string
     status?: string
     isPublicBooking?: boolean
+    locale?: string
   }) {
     // Frontend sends "__customer_choice__" sentinel when guest picks their own table.
     // Treat it as undefined (no table assigned yet).
@@ -493,6 +495,7 @@ export const reservationService = {
             partySize: reservation.partySize,
             tableName: reservation.table?.number ?? null,
             confirmUrl,
+            locale: data.locale,
           })
         } else {
           await sms.sendReservationConfirmationSms({
@@ -502,6 +505,7 @@ export const reservationService = {
             reservedFor: reservation.reservedFor,
             partySize: reservation.partySize,
             confirmUrl,
+            locale: data.locale,
           })
         }
         await prisma.reservation.update({
@@ -729,7 +733,7 @@ export const reservationService = {
    * Useful when the customer's email on file is wrong or staff needs to send
    * the link to a different address.
    */
-  async resendConfirmationEmail(reservationId: string, restaurantId: string, toEmail: string) {
+  async resendConfirmationEmail(reservationId: string, restaurantId: string, toEmail: string, locale?: string) {
     const reservation = await prisma.reservation.findFirst({
       where: { id: reservationId, restaurantId },
       include: {
@@ -766,6 +770,7 @@ export const reservationService = {
       partySize: reservation.partySize,
       tableName: reservation.table?.number ?? null,
       confirmUrl,
+      locale,
     })
 
     await prisma.reservation.update({

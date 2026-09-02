@@ -201,10 +201,10 @@ export async function createReservationOnServer(
     if (input.customerName && input.customerName.trim() && customer.name !== input.customerName.trim()) {
       updates.name = input.customerName.trim()
     }
-    if (input.customerEmail && !customer.email) {
+    if (input.customerEmail && input.customerEmail.trim() && customer.email !== input.customerEmail.trim()) {
       updates.email = input.customerEmail.trim()
     }
-    if (input.customerPhone && !customer.phone) {
+    if (input.customerPhone && input.customerPhone.trim() && customer.phone !== input.customerPhone.trim()) {
       updates.phone = input.customerPhone.trim()
     }
     if (Object.keys(updates).length > 0) {
