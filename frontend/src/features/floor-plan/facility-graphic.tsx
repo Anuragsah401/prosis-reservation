@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import React, { useMemo } from "react"
 import {
   Wine,
   DoorOpen,
@@ -21,7 +21,7 @@ export interface FacilityGraphicProps {
   children?: React.ReactNode
 }
 
-export function FacilityGraphic({
+export const FacilityGraphic = React.memo(function FacilityGraphic({
   type,
   name,
   width = 120,
@@ -226,5 +226,5 @@ export function FacilityGraphic({
       </div>
     </div>
   )
-}
+})
 

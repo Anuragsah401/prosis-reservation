@@ -196,15 +196,22 @@ export const GROUP_COLOR_PALETTES: GroupColorTheme[] = [
   },
 ]
 
+const groupThemeCache = new Map<string, GroupColorTheme>()
+
 export function getGroupColorTheme(groupId: string | null | undefined): GroupColorTheme | null {
   if (!groupId) return null
+  const cached = groupThemeCache.get(groupId)
+  if (cached) return cached
+
   let hash = 0
   for (let i = 0; i < groupId.length; i++) {
     hash = (hash << 5) - hash + groupId.charCodeAt(i)
     hash |= 0
   }
   const index = Math.abs(hash) % GROUP_COLOR_PALETTES.length
-  return GROUP_COLOR_PALETTES[index]
+  const theme = GROUP_COLOR_PALETTES[index]
+  groupThemeCache.set(groupId, theme)
+  return theme
 }
 
 interface ChairItem {
@@ -608,7 +615,7 @@ function computeChairsAndPlates(
   return { chairs, plates }
 }
 
-export function TableGraphic({
+export const TableGraphic = React.memo(function TableGraphic({
   name,
   capacity,
   shape,
@@ -860,4 +867,4 @@ export function TableGraphic({
       </div>
     </div>
   )
-}
+})

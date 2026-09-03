@@ -1031,21 +1031,31 @@ function FloorPlanBuilderInner() {
     [],
   )
 
+  handlersRef.current = {
+    onCycleShape: handleCycleShape,
+    onRotate: handleRotate,
+    onDelete: handleDelete,
+    onUngroup: handleUngroupTable,
+    onSelectGroup: handleSelectGroup,
+    onEdit: handleOpenEditDialog,
+    onResizeStart: handleResizeStart,
+    onResizeEnd: handleResizeEnd,
+  }
+
   const handlers = useMemo(
     () => ({
-      onCycleShape: handleCycleShape,
-      onRotate: handleRotate,
-      onDelete: handleDelete,
-      onUngroup: handleUngroupTable,
-      onSelectGroup: handleSelectGroup,
-      onEdit: handleOpenEditDialog,
-      onResizeStart: handleResizeStart,
-      onResizeEnd: handleResizeEnd,
+      onCycleShape: (id: string) => handlersRef.current.onCycleShape(id),
+      onRotate: (id: string) => handlersRef.current.onRotate(id),
+      onDelete: (id: string) => handlersRef.current.onDelete(id),
+      onUngroup: (id: string) => handlersRef.current.onUngroup?.(id),
+      onSelectGroup: (groupId: string) => handlersRef.current.onSelectGroup?.(groupId),
+      onEdit: (id: string) => handlersRef.current.onEdit?.(id),
+      onResizeStart: (id: string) => handlersRef.current.onResizeStart?.(id),
+      onResizeEnd: (id: string, params: { width: number; height: number; x?: number; y?: number }) =>
+        handlersRef.current.onResizeEnd?.(id, params),
     }),
-    [handleCycleShape, handleRotate, handleDelete, handleUngroupTable, handleSelectGroup, handleOpenEditDialog, handleResizeStart, handleResizeEnd],
+    [],
   )
-
-  handlersRef.current = handlers
 
   // Pull the authoritative plan from the database on initial mount.
   useEffect(() => {
@@ -2008,8 +2018,14 @@ function FloorPlanBuilderInner() {
             selectionKeyCode={["Shift", "Meta", "Control"]}
             multiSelectionKeyCode={["Shift", "Meta", "Control"]}
             nodesDraggable={!isLayoutLocked}
+            nodesConnectable={false}
+            nodesFocusable={false}
             elementsSelectable={true}
             zoomOnScroll={true}
+            minZoom={0.2}
+            maxZoom={2.5}
+            onlyRenderVisibleElements={true}
+            elevateNodesOnSelect={false}
             onNodeDragStart={() => {
               takeSnapshot()
             }}

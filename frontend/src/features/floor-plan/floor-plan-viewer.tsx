@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TableGraphic } from "@/features/floor-plan/table-graphic"
@@ -50,6 +50,120 @@ const DEFAULT_W = 140
 const DEFAULT_H = 90
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 3.0
+
+function resolveViewerFacilityType(tb: FloorPlanViewerTable): FacilityType {
+  if (tb.facilityType) return tb.facilityType
+  if (tb.section?.startsWith("FACILITY:")) {
+    return tb.section.replace("FACILITY:", "") as FacilityType
+  }
+  const lower = tb.name.toLowerCase()
+  if (lower.includes("bar")) return "BAR"
+  if (lower.includes("restroom") || lower.includes("toilet") || lower.includes("wc")) return "RESTROOM"
+  if (lower.includes("entrance") || lower.includes("entry")) return "ENTRANCE"
+  if (lower.includes("exit")) return "EXIT"
+  if (lower.includes("kitchen")) return "KITCHEN"
+  if (lower.includes("host")) return "HOST_STAND"
+  if (lower.includes("wall") || lower.includes("divider")) return "WALL"
+  if (lower.includes("plant")) return "PLANT"
+  return "BAR"
+}
+
+interface TableItemProps {
+  table: FloorPlanViewerTable
+  isSelected: boolean
+  isCurrent: boolean
+  seatsLabel: string
+  onSelect: (id: string | null) => void
+  hasDraggedRef: React.RefObject<boolean>
+}
+
+const FloorPlanViewerTableItem = React.memo(function FloorPlanViewerTableItem({
+  table,
+  isSelected,
+  isCurrent,
+  seatsLabel,
+  onSelect,
+  hasDraggedRef,
+}: TableItemProps) {
+  const selectable = table.available || isCurrent
+  const w = table.width || (table.shape === "CIRCLE" || table.shape === "SQUARE" ? 100 : 140)
+  const h = table.height || (table.shape === "CIRCLE" || table.shape === "SQUARE" ? 100 : 90)
+
+  return (
+    <button
+      type="button"
+      data-table
+      data-table-id={table.id}
+      disabled={!selectable}
+      aria-disabled={!selectable}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (hasDraggedRef.current) return
+        if (selectable) {
+          onSelect(isSelected ? null : table.id)
+        }
+      }}
+      className={cn(
+        "absolute p-0 border-0 bg-transparent text-left focus:outline-hidden z-10",
+        selectable ? "cursor-pointer" : "cursor-not-allowed opacity-50",
+      )}
+      style={{
+        left: table.positionX!,
+        top: table.positionY!,
+        width: w,
+        height: h,
+        transform: `rotate(${table.rotation || 0}deg)`,
+      }}
+    >
+      <TableGraphic
+        name={table.name}
+        capacity={table.capacity}
+        shape={table.shape}
+        status={table.status ?? (selectable ? "AVAILABLE" : "RESERVED")}
+        width={w}
+        height={h}
+        location={table.section || undefined}
+        seatsLabel={seatsLabel}
+        isSelected={isSelected}
+        isSelectable={selectable}
+        showStatusBadge={!selectable}
+        groupId={table.groupId}
+        groupName={table.groupName}
+      />
+    </button>
+  )
+})
+
+interface FacilityItemProps {
+  table: FloorPlanViewerTable
+}
+
+const FloorPlanViewerFacilityItem = React.memo(function FloorPlanViewerFacilityItem({ table }: FacilityItemProps) {
+  const facilityType = resolveViewerFacilityType(table)
+  const w = table.width || 120
+  const h = table.height || 60
+
+  return (
+    <div
+      className="absolute pointer-events-none select-none z-5"
+      style={{
+        left: table.positionX!,
+        top: table.positionY!,
+        width: w,
+        height: h,
+        transform: `rotate(${table.rotation || 0}deg)`,
+      }}
+    >
+      <FacilityGraphic
+        type={facilityType}
+        name={table.name}
+        width={w}
+        height={h}
+      />
+    </div>
+  )
+})
 
 /**
  * Read-only, scaled-to-fit rendering of the restaurant's planned floor
@@ -105,7 +219,7 @@ export function FloorPlanViewer({
     : (floors[0] ?? "Main Floor")
 
   const floorTables = useMemo(() => {
-  const onFloor = tables.filter((t) => t.floor === displayedFloor)
+    const onFloor = tables.filter((t) => t.floor === displayedFloor)
     // Fall back to a simple grid layout for tables that were never placed
     // on the floor plan, so they're still visible/selectable.
     const unplaced = onFloor.filter((t) => t.positionX == null || t.positionY == null)
@@ -215,14 +329,6 @@ export function FloorPlanViewer({
     }
   }, [fullscreen, handleToggleFullscreen])
 
-  // A CSS overlay rather than the Fullscreen API: iOS Safari doesn't support
-  // requestFullscreen() on non-video elements, which is exactly the mobile
-  // case this matters most for. Wrapping the whole component (not just the
-  // canvas) keeps the floor tabs reachable while expanded. The overlay is
-  // portaled to <body> so it can't be trapped by an ancestor that creates a
-  // containing block (a dialog's transform) or clips it (a dialog's
-  // overflow) — otherwise "fullscreen" would just squash the viewer into the
-  // dialog's box instead of covering the whole screen.
   const viewer = (
     <div
       data-radix-portal=""
@@ -388,7 +494,6 @@ export function FloorPlanViewer({
               setPinching(false)
             }
 
-            // Reset hasDragged on next tick so the click event on the button (which fires immediately after pointerup) can inspect it
             setTimeout(() => {
               hasDragged.current = false
             }, 50)
@@ -414,16 +519,13 @@ export function FloorPlanViewer({
           <div
             className={cn(
               "relative origin-top-left",
-              // Only animate discrete zoom-button/reset changes. Animating
-              // during a drag/pinch keeps the element permanently mid-transition,
-              // which pins it to a cached GPU layer that never re-rasterises
-              // at the current scale — that's what looks blurry on mobile.
               !dragging && !pinching && "transition-transform duration-75",
             )}
             style={{
               width: Math.max((bounds.maxX || 600) + 300, 2000),
               height: Math.max((bounds.maxY || 400) + 300, 1600),
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              willChange: dragging || pinching ? "transform" : "auto",
               backgroundImage:
                 "radial-gradient(circle, color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px, transparent 1px)",
               backgroundSize: "20px 20px",
@@ -434,94 +536,29 @@ export function FloorPlanViewer({
                 tb.elementType === "FACILITY" ||
                 Boolean(tb.facilityType) ||
                 tb.section?.startsWith("FACILITY:")
-              
-              const facilityType = (
-                tb.facilityType ||
-                (tb.section?.startsWith("FACILITY:") ? tb.section.replace("FACILITY:", "") : undefined) ||
-                (tb.name.toLowerCase().includes("bar") ? "BAR" :
-                 tb.name.toLowerCase().includes("restroom") || tb.name.toLowerCase().includes("toilet") || tb.name.toLowerCase().includes("wc") ? "RESTROOM" :
-                 tb.name.toLowerCase().includes("entrance") || tb.name.toLowerCase().includes("entry") ? "ENTRANCE" :
-                 tb.name.toLowerCase().includes("exit") ? "EXIT" :
-                 tb.name.toLowerCase().includes("kitchen") ? "KITCHEN" :
-                 tb.name.toLowerCase().includes("host") ? "HOST_STAND" :
-                 tb.name.toLowerCase().includes("wall") || tb.name.toLowerCase().includes("divider") ? "WALL" :
-                 tb.name.toLowerCase().includes("plant") ? "PLANT" : "BAR")
-              ) as FacilityType
-
-              const w = tb.width || (tb.shape === "CIRCLE" || tb.shape === "SQUARE" ? 100 : 140)
-              const h = tb.height || (tb.shape === "CIRCLE" || tb.shape === "SQUARE" ? 100 : 90)
 
               if (isFacility) {
                 return (
-                  <div
+                  <FloorPlanViewerFacilityItem
                     key={tb.id}
-                    className="absolute pointer-events-none select-none z-5"
-                    style={{
-                      left: tb.positionX!,
-                      top: tb.positionY!,
-                      width: w,
-                      height: h,
-                      transform: `rotate(${tb.rotation || 0}deg)`,
-                    }}
-                  >
-                    <FacilityGraphic
-                      type={facilityType}
-                      name={tb.name}
-                      width={w}
-                      height={h}
-                    />
-                  </div>
+                    table={tb}
+                  />
                 )
               }
 
               const isSelected = selectedTableId === tb.id
               const isCurrent = currentTableId === tb.id
-              const selectable = tb.available || isCurrent
 
               return (
-                <button
+                <FloorPlanViewerTableItem
                   key={tb.id}
-                  type="button"
-                  data-table
-                  data-table-id={tb.id}
-                  disabled={!selectable}
-                  aria-disabled={!selectable}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    if (hasDragged.current) return
-                    if (selectable) {
-                      onSelect(isSelected ? null : tb.id)
-                    }
-                  }}
-                  className={cn(
-                    "absolute p-0 border-0 bg-transparent text-left focus:outline-hidden z-10",
-                    selectable ? "cursor-pointer" : "cursor-not-allowed opacity-50",
-                  )}
-                  style={{
-                    left: tb.positionX!,
-                    top: tb.positionY!,
-                    width: w,
-                    height: h,
-                    transform: `rotate(${tb.rotation || 0}deg)`,
-                  }}
-                >
-                  <TableGraphic
-                    name={tb.name}
-                    capacity={tb.capacity}
-                    shape={tb.shape}
-                    status={tb.status ?? (selectable ? "AVAILABLE" : "RESERVED")}
-                    width={w}
-                    height={h}
-                    location={tb.section || undefined}
-                    seatsLabel={seatsLabel}
-                    isSelected={isSelected}
-                    isSelectable={selectable}
-                    showStatusBadge={!selectable}
-                    groupId={tb.groupId}
-                    groupName={tb.groupName}
-                  />
-                </button>
+                  table={tb}
+                  isSelected={isSelected}
+                  isCurrent={isCurrent}
+                  seatsLabel={seatsLabel}
+                  onSelect={onSelect}
+                  hasDraggedRef={hasDragged}
+                />
               )
             })}
             {floorTables.length === 0 && (
