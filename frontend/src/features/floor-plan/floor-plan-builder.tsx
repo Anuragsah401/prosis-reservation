@@ -1691,6 +1691,12 @@ function FloorPlanBuilderInner() {
     }
   }, [isFullscreen])
 
+  const tableDataSignature = useMemo(() => {
+    return nodes
+      .map((n) => (n.type === "table" ? `${n.id}:${(n.data as TableNodeData).status}:${(n.data as TableNodeData).capacity}` : ""))
+      .join("|")
+  }, [nodes])
+
   const statusCounts = useMemo(() => {
     const counts: Record<TableStatus, number> = { AVAILABLE: 0, OCCUPIED: 0, RESERVED: 0, MAINTENANCE: 0 }
     for (const n of nodes) {
@@ -1699,7 +1705,8 @@ function FloorPlanBuilderInner() {
       }
     }
     return counts
-  }, [nodes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableDataSignature])
 
   const activeFloorStats = useMemo(() => {
     let tableCount = 0
@@ -1711,7 +1718,21 @@ function FloorPlanBuilderInner() {
       }
     }
     return { tableCount, totalSeats }
-  }, [nodes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableDataSignature])
+
+  const floorCountsSignature = useMemo(() => {
+    return floors.map((f) => `${f}:${(nodesByFloor[f] ?? floorTables[f] ?? []).length}`).join("|")
+  }, [floors, nodesByFloor, floorTables])
+
+  const floorItemCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const floor of floors) {
+      counts[floor] = (nodesByFloor[floor] ?? floorTables[floor] ?? []).length
+    }
+    return counts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [floorCountsSignature])
 
   return (
     <div
@@ -1862,7 +1883,7 @@ function FloorPlanBuilderInner() {
           </div>
           {floors.map((floor) => {
             const isActive = floor === activeFloor
-            const floorItems = nodesByFloor[floor] ?? floorTables[floor] ?? []
+            const itemCount = floorItemCounts[floor] ?? 0
             return (
               <div key={floor} className="group relative inline-flex items-center">
                 <Button
@@ -1875,7 +1896,7 @@ function FloorPlanBuilderInner() {
                   )}
                 >
                   <span>{floor}</span>
-                  {floorItems.length > 0 && (
+                  {itemCount > 0 && (
                     <span
                       className={cn(
                         "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
@@ -1884,7 +1905,7 @@ function FloorPlanBuilderInner() {
                           : "bg-muted text-muted-foreground",
                       )}
                     >
-                      {floorItems.length}
+                      {itemCount}
                     </span>
                   )}
                 </Button>
@@ -1977,9 +1998,10 @@ function FloorPlanBuilderInner() {
       {/* Main Interactive Canvas Area */}
       <div
         className={cn(
-          "bg-muted/20 relative w-full overflow-hidden border border-border/80 shadow-xs transition-all",
+          "bg-muted/20 relative w-full overflow-hidden border border-border/80 shadow-xs transition-all touch-none select-none",
           isFullscreen ? "min-h-0 flex-1 rounded-xl" : "h-[calc(100vh-14.5rem)] min-h-[520px] rounded-2xl",
         )}
+        style={{ touchAction: "none" }}
       >
         {/* Floating Locked Safe-Mode HUD Badge */}
         {isLayoutLocked && !isLoadingPlan && (
@@ -2026,6 +2048,8 @@ function FloorPlanBuilderInner() {
             maxZoom={2.5}
             onlyRenderVisibleElements={true}
             elevateNodesOnSelect={false}
+            autoPanOnNodeDrag={false}
+            preventScrolling={true}
             onNodeDragStart={() => {
               takeSnapshot()
             }}
@@ -2038,7 +2062,8 @@ function FloorPlanBuilderInner() {
           >
             <Background
               variant={BackgroundVariant.Dots}
-              gap={16}
+              gap={24}
+              size={1.5}
               color={resolvedTheme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"}
             />
             {/* Custom high-polish controls replacing the buggy [ ] icon */}
@@ -2065,7 +2090,11 @@ function FloorPlanBuilderInner() {
             <MiniMap
               pannable
               zoomable
-              className="bg-card! h-22.5! w-30! sm:h-37.5! sm:w-50!"
+              nodeColor={(n) => (n.type === "table" ? "#10b981" : "#f59e0b")}
+              nodeStrokeColor="transparent"
+              nodeBorderRadius={4}
+              maskColor={resolvedTheme === "dark" ? "rgba(0, 0, 0, 0.6)" : "rgba(240, 242, 245, 0.6)"}
+              className="bg-card! h-22.5! w-30! sm:h-37.5! sm:w-50! rounded-lg overflow-hidden border border-border/60"
             />
           </ReactFlow>
         )}

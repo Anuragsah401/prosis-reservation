@@ -61,7 +61,7 @@ const TableFloatingToolbar = React.memo(function TableFloatingToolbar({
 
   return (
     <div
-      className="nodrag nopan absolute -top-12 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover/95 p-1 shadow-xl z-50 pointer-events-auto backdrop-blur-sm ring-1 ring-border"
+      className="nodrag nopan absolute -top-12 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-popover p-1 shadow-xl z-50 pointer-events-auto ring-1 ring-border"
       onPointerDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -210,7 +210,7 @@ export const TableNode = React.memo(function TableNode({
       />
       <div
         className={isLocked ? "cursor-pointer size-full select-none" : "cursor-grab active:cursor-grabbing size-full select-none"}
-        style={{ transform: `rotate(${data.rotation}deg)` }}
+        style={{ transform: `rotate(${data.rotation}deg)`, willChange: "transform" }}
       >
         <Handle type="target" position={Position.Top} className="opacity-0" />
         <TableGraphic

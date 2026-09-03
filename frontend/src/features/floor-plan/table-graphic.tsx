@@ -224,6 +224,25 @@ interface PlateItem {
   style: React.CSSProperties
 }
 
+const chairPlatesCache = new Map<string, { chairs: ChairItem[]; plates: PlateItem[] }>()
+
+function getCachedChairsAndPlates(
+  shape: TableShape,
+  capacity: number,
+  w: number,
+  h: number,
+  showPlates: boolean,
+): { chairs: ChairItem[]; plates: PlateItem[] } {
+  const key = `${shape}:${capacity}:${w}:${h}:${showPlates}`
+  let res = chairPlatesCache.get(key)
+  if (!res) {
+    res = computeChairsAndPlates(shape, capacity, w, h, showPlates)
+    if (chairPlatesCache.size > 300) chairPlatesCache.clear()
+    chairPlatesCache.set(key, res)
+  }
+  return res
+}
+
 /**
  * Computes realistic dining chairs and tableware place settings
  * that dynamically scale and position along the table perimeter.
@@ -643,7 +662,7 @@ export const TableGraphic = React.memo(function TableGraphic({
   const showPlates = minDim >= 80 && !isCompact
 
   const { chairs, plates } = useMemo(
-    () => computeChairsAndPlates(shape, capacity, width, height, showPlates),
+    () => getCachedChairsAndPlates(shape, capacity, width, height, showPlates),
     [shape, capacity, width, height, showPlates],
   )
 
@@ -654,11 +673,11 @@ export const TableGraphic = React.memo(function TableGraphic({
   return (
     <div
       className={cn(
-        "relative flex size-full items-center justify-center select-none overflow-visible",
+        "relative flex size-full items-center justify-center select-none overflow-visible [contain:layout_style]",
         !isSelectable && "opacity-45 grayscale-[25%]",
         className,
       )}
-      style={{ width: `${width}px`, height: `${height}px` }}
+      style={{ width: `${width}px`, height: `${height}px`, willChange: "transform" }}
     >
       {/* Selection Checkmark (Rendered on outer overflow-visible container so it is NEVER clipped) */}
       {isSelected && (
@@ -671,7 +690,7 @@ export const TableGraphic = React.memo(function TableGraphic({
       {(groupName || groupId) && groupTheme && (
         <span
           className={cn(
-            "absolute -top-3.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 rounded-full font-bold shadow-md px-2.5 py-0.5 border text-center transition-all whitespace-nowrap pointer-events-none select-none",
+            "absolute -top-3.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 rounded-full font-bold shadow-md px-2.5 py-0.5 border text-center transition-colors whitespace-nowrap pointer-events-none select-none",
             groupTheme.badgeBg,
             groupTheme.badgeText,
             groupTheme.badgeBorder,
@@ -693,7 +712,7 @@ export const TableGraphic = React.memo(function TableGraphic({
         <div
           key={chair.id}
           className={cn(
-            "absolute z-0 rounded-full border shadow-xs transition-colors pointer-events-none",
+            "absolute z-0 rounded-full border shadow-xs pointer-events-none",
             statusCfg.chairBg,
             statusCfg.chairBorder,
             groupTheme && groupTheme.chairRing,
@@ -709,7 +728,7 @@ export const TableGraphic = React.memo(function TableGraphic({
       {/* 2. Realistic Table Top Surface */}
       <div
         className={cn(
-          "relative z-10 flex size-full flex-col items-center justify-center text-center transition-all overflow-hidden",
+          "relative z-10 flex size-full flex-col items-center justify-center text-center transition-[border-color,box-shadow,background-color] duration-150 overflow-hidden",
           "border-2 shadow-md bg-gradient-to-b",
           tableRadiusClass,
           statusCfg.tableBorder,

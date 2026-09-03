@@ -21,18 +21,13 @@ export interface FacilityGraphicProps {
   children?: React.ReactNode
 }
 
-export const FacilityGraphic = React.memo(function FacilityGraphic({
-  type,
-  name,
-  width = 120,
-  height = 60,
-  isSelected = false,
-  className,
-  children,
-}: FacilityGraphicProps) {
-  // Compute bar stools dynamically along the front edge of the bar counter
-  const barStools = useMemo(() => {
-    if (type !== "BAR") return []
+const stoolCache = new Map<string, { id: string; style: React.CSSProperties }[]>()
+
+function getCachedBarStools(type: FacilityType, width: number, height: number) {
+  if (type !== "BAR") return []
+  const key = `${type}:${width}:${height}`
+  let res = stoolCache.get(key)
+  if (!res) {
     const count = Math.max(2, Math.min(10, Math.floor(width / 36)))
     const stools = []
     const stoolSize = Math.min(22, Math.max(14, Math.round(height * 0.28)))
@@ -50,16 +45,34 @@ export const FacilityGraphic = React.memo(function FacilityGraphic({
         },
       })
     }
-    return stools
+    if (stoolCache.size > 100) stoolCache.clear()
+    stoolCache.set(key, stools)
+    res = stools
+  }
+  return res
+}
+
+export const FacilityGraphic = React.memo(function FacilityGraphic({
+  type,
+  name,
+  width = 120,
+  height = 60,
+  isSelected = false,
+  className,
+  children,
+}: FacilityGraphicProps) {
+  // Compute bar stools dynamically along the front edge of the bar counter
+  const barStools = useMemo(() => {
+    return getCachedBarStools(type, width, height)
   }, [type, width, height])
 
   return (
     <div
       className={cn(
-        "relative flex size-full items-center justify-center select-none overflow-visible",
+        "relative flex size-full items-center justify-center select-none overflow-visible [contain:layout_style]",
         className,
       )}
-      style={{ width: `${width}px`, height: `${height}px` }}
+      style={{ width: `${width}px`, height: `${height}px`, willChange: "transform" }}
     >
       {/* 1. Facility-Specific Outer Props (e.g. Bar Stools) */}
       {type === "BAR" &&
@@ -77,7 +90,7 @@ export const FacilityGraphic = React.memo(function FacilityGraphic({
       {/* 2. Main Facility Body / Canvas */}
       <div
         className={cn(
-          "relative z-10 flex size-full flex-col items-center justify-center p-1.5 text-center transition-all overflow-hidden border-2 shadow-md",
+          "relative z-10 flex size-full flex-col items-center justify-center p-1.5 text-center transition-[border-color,box-shadow,background-color] duration-150 overflow-hidden border-2 shadow-md",
           isSelected
             ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
             : "",
