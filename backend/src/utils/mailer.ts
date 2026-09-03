@@ -295,8 +295,9 @@ export const mailer = {
     tableName?: string | null
     confirmUrl: string
     locale?: string | null
+    timezone?: string | null
   }) {
-    const { to, customerName, restaurantName, reservedFor, partySize, tableName, confirmUrl, locale: rawLocale } = input
+    const { to, customerName, restaurantName, reservedFor, partySize, tableName, confirmUrl, locale: rawLocale, timezone: rawTimezone } = input
     const locale = normalizeLocale(rawLocale)
     const t = RESERVATION_CONFIRMATION_I18N[locale] ?? RESERVATION_CONFIRMATION_I18N.da
 
@@ -305,7 +306,17 @@ export const mailer = {
     const safeTable = tableName ? escapeHtml(tableName) : null
     const safeConfirmUrl = escapeHtml(confirmUrl)
 
+    const resolvedTimezone =
+      rawTimezone && rawTimezone !== "UTC"
+        ? rawTimezone
+        : locale === "da"
+          ? "Europe/Copenhagen"
+          : locale === "tr"
+            ? "Europe/Istanbul"
+            : "Europe/Copenhagen"
+
     const when = reservedFor.toLocaleString(t.dateLocale, {
+      timeZone: resolvedTimezone,
       weekday: "long",
       month: "long",
       day: "numeric",

@@ -142,14 +142,25 @@ export const sms = {
     partySize: number
     confirmUrl: string
     locale?: string | null
+    timezone?: string | null
   }) {
-    const { to, customerName, restaurantName, reservedFor, partySize, confirmUrl, locale: rawLocale } = input
+    const { to, customerName, restaurantName, reservedFor, partySize, confirmUrl, locale: rawLocale, timezone: rawTimezone } = input
     const lang = rawLocale?.split(",")[0]?.split("-")[0]?.toLowerCase() || "da"
     const isDa = lang === "da" || lang === "dk"
     const isTr = lang === "tr"
 
+    const resolvedTimezone =
+      rawTimezone && rawTimezone !== "UTC"
+        ? rawTimezone
+        : isDa
+          ? "Europe/Copenhagen"
+          : isTr
+            ? "Europe/Istanbul"
+            : "Europe/Copenhagen"
+
     const dateLocale = isDa ? "da-DK" : isTr ? "tr-TR" : "en-US"
     const when = reservedFor.toLocaleString(dateLocale, {
+      timeZone: resolvedTimezone,
       month: "short",
       day: "numeric",
       hour: "numeric",

@@ -127,8 +127,28 @@ async function getNotificationContext(reservationId: string): Promise<Notificati
   })
 }
 
-function formatReservationDateTime(date: Date) {
+function getMinutesFromMidnight(date: Date, timeZone: string = "Europe/Copenhagen"): number {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timeZone && timeZone !== "UTC" ? timeZone : "Europe/Copenhagen",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+    })
+    const parts = formatter.formatToParts(date)
+    const hourStr = parts.find((p) => p.type === "hour")?.value
+    const minuteStr = parts.find((p) => p.type === "minute")?.value
+    const hour = hourStr !== undefined ? parseInt(hourStr, 10) % 24 : date.getUTCHours()
+    const minute = minuteStr !== undefined ? parseInt(minuteStr, 10) : date.getUTCMinutes()
+    return hour * 60 + minute
+  } catch {
+    return date.getHours() * 60 + date.getMinutes()
+  }
+}
+
+function formatReservationDateTime(date: Date, timeZone: string = "Europe/Copenhagen") {
   return date.toLocaleString("en-US", {
+    timeZone: timeZone && timeZone !== "UTC" ? timeZone : "Europe/Copenhagen",
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -413,10 +433,10 @@ export const reservationService = {
     if (data.status !== "CHECKED_IN") {
       const restaurant = await prisma.restaurant.findUnique({
         where: { id: data.restaurantId },
-        select: { openingTime: true, closingTime: true },
+        select: { openingTime: true, closingTime: true, timezone: true },
       })
       if (restaurant && restaurant.openingTime !== null && restaurant.closingTime !== null) {
-        const minutes = data.reservedFor.getHours() * 60 + data.reservedFor.getMinutes()
+        const minutes = getMinutesFromMidnight(data.reservedFor, restaurant.timezone)
         if (minutes < restaurant.openingTime || minutes > restaurant.closingTime) {
           const formatMin = (m: number) =>
             `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
@@ -458,7 +478,7 @@ export const reservationService = {
       },
       include: {
         customer: { select: { id: true, name: true, email: true, phone: true } },
-        restaurant: { select: { name: true } },
+        restaurant: { select: { name: true, timezone: true } },
         table: { select: { id: true, number: true, section: true, floor: true } },
       },
     })
@@ -496,6 +516,7 @@ export const reservationService = {
             tableName: reservation.table?.number ?? null,
             confirmUrl,
             locale: data.locale,
+            timezone: reservation.restaurant.timezone,
           })
         } else {
           await sms.sendReservationConfirmationSms({
@@ -506,6 +527,7 @@ export const reservationService = {
             partySize: reservation.partySize,
             confirmUrl,
             locale: data.locale,
+            timezone: reservation.restaurant.timezone,
           })
         }
         await prisma.reservation.update({
@@ -527,7 +549,7 @@ export const reservationService = {
     // the public booking page. Manual reservations created by logged-in staff
     // do not generate redundant notifications for themselves.
     if (data.isPublicBooking || !data.createdById) {
-      const when = formatReservationDateTime(reservation.reservedFor)
+      const when = formatReservationDateTime(reservation.reservedFor, reservation.restaurant.timezone)
       const tableName = reservation.table ? `Table ${reservation.table.number}` : null
       await notify(reservation.restaurantId, {
         type: "reservation_new",
@@ -738,7 +760,7 @@ export const reservationService = {
       where: { id: reservationId, restaurantId },
       include: {
         customer: { select: { name: true } },
-        restaurant: { select: { name: true } },
+        restaurant: { select: { name: true, timezone: true } },
         table: { select: { number: true } },
       },
     })
@@ -771,6 +793,7 @@ export const reservationService = {
       tableName: reservation.table?.number ?? null,
       confirmUrl,
       locale,
+      timezone: reservation.restaurant.timezone,
     })
 
     await prisma.reservation.update({
@@ -831,13 +854,17 @@ export const reservationService = {
       throw new Error("Reservation not found")
     }
 
+    let restaurantTimezone = "Europe/Copenhagen"
     if (data.reservedFor) {
       const restaurant = await prisma.restaurant.findUnique({
         where: { id: restaurantId },
-        select: { openingTime: true, closingTime: true },
+        select: { openingTime: true, closingTime: true, timezone: true },
       })
+      if (restaurant?.timezone) {
+        restaurantTimezone = restaurant.timezone
+      }
       if (restaurant && restaurant.openingTime !== null && restaurant.closingTime !== null) {
-        const minutes = data.reservedFor.getHours() * 60 + data.reservedFor.getMinutes()
+        const minutes = getMinutesFromMidnight(data.reservedFor, restaurant.timezone)
         if (minutes < restaurant.openingTime || minutes > restaurant.closingTime) {
           const formatMin = (m: number) =>
             `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
@@ -874,7 +901,7 @@ export const reservationService = {
     if (reservation.tableId) await syncTableStatus(reservation.tableId)
     const ctx = await getNotificationContext(reservation.id)
     if (ctx) {
-      const when = formatReservationDateTime(ctx.reservedFor)
+      const when = formatReservationDateTime(ctx.reservedFor, restaurantTimezone)
       await notify(reservation.restaurantId, {
         type: "reservation_updated",
         title: "Reservation updated",

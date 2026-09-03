@@ -71,7 +71,7 @@ export const authService = {
             slug,
             phone: data.restaurantPhone,
             logoUrl: data.restaurantLogoUrl || null,
-            timezone: data.restaurantTimezone || "UTC",
+            timezone: data.restaurantTimezone || "Europe/Copenhagen",
             email: data.email,
             openingTime: data.restaurantOpeningTime ?? 660, // 11:00 AM default
             closingTime: data.restaurantClosingTime ?? 1380, // 11:00 PM default

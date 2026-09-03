@@ -159,6 +159,7 @@ export function SignupPage() {
         restaurantName: restaurantName.trim(),
         restaurantPhone: phone?.trim() || undefined,
         restaurantLogoUrl: logoUrl || undefined,
+        restaurantTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Copenhagen",
         restaurantOpeningTime: openingMinutes,
         restaurantClosingTime: closingMinutes,
       })
