@@ -1,9 +1,16 @@
 import { useEffect, useState, useMemo } from "react"
-import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
-import { Loader2, Check, LayoutGrid, List, X, AlertCircle } from "lucide-react"
+import { Loader2, Check, LayoutGrid, List, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import type { FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 import { FloorPlanViewer } from "@/features/floor-plan/floor-plan-viewer"
@@ -67,18 +74,6 @@ export function TablePickerDialog({
     }
   }, [open, partySize, reservedFor, selectedTableId])
 
-  // Handle escape key to close
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onOpenChange(false)
-      }
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [open, onOpenChange])
-
   const floors = useMemo(
     () => [...new Set(tables.map((t) => t.floor).filter((f): f is string => Boolean(f)))],
     [tables],
@@ -122,28 +117,21 @@ export function TablePickerDialog({
     }
   }, [reservedFor])
 
-  if (!open) return null
-
-  const content = (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-200">
-      {/* Backdrop Overlay */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
-      />
-
-      {/* Dialog Container */}
-      <div className="relative z-10 flex flex-col w-full h-full sm:h-[90vh] sm:max-h-[850px] max-w-5xl bg-background sm:rounded-3xl border border-border shadow-2xl overflow-hidden">
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="sm:max-w-5xl w-[96vw] h-[90vh] sm:max-h-[850px] flex flex-col p-0 overflow-hidden gap-0 rounded-2xl sm:rounded-3xl border border-border shadow-2xl pointer-events-auto"
+      >
         {/* Header: Title, Reservation Context, View Switcher & Close */}
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/80 bg-card shrink-0 gap-3">
-          <div className="flex flex-col min-w-0">
-            <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
+        <DialogHeader className="flex flex-row items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/80 bg-card shrink-0 gap-3 space-y-0">
+          <div className="flex flex-col min-w-0 text-left">
+            <DialogTitle className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
               {t("pages.reservations.tablePicker.title", "Choose Table from Floor Plan")}
-            </h2>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground truncate mt-0.5">
               {partySize} {t("pages.reservations.newDialog.seats", "guests")}
               {formattedDate ? ` • ${formattedDate}` : ""}
-            </p>
+            </DialogDescription>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -178,17 +166,8 @@ export function TablePickerDialog({
                 </span>
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="size-9 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shrink-0 cursor-pointer"
-              aria-label="Close"
-            >
-              <X className="size-4" />
-            </button>
           </div>
-        </div>
+        </DialogHeader>
 
         {/* Dedicated Floor Selector Strip (Only shown when multiple floors exist) */}
         {floors.length > 1 && (
@@ -281,8 +260,8 @@ export function TablePickerDialog({
               </div>
             </div>
           ) : (
-            <div className="flex-1 relative w-full h-full overflow-hidden flex flex-col">
-              <div className="flex-1 w-full h-full relative overflow-hidden">
+            <div className="flex-1 relative w-full h-full overflow-hidden flex flex-col pointer-events-auto">
+              <div className="flex-1 w-full h-full relative overflow-hidden pointer-events-auto">
                 <FloorPlanViewer
                   tables={tables}
                   selectedTableId={selection}
@@ -319,17 +298,17 @@ export function TablePickerDialog({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-t border-border/80 bg-card shrink-0">
+        <DialogFooter className="flex flex-row items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-t border-border/80 bg-card shrink-0 space-x-0">
           <div className="flex items-center gap-2">
             {chosenTable ? (
-              <div className="flex flex-col">
+              <div className="flex flex-col text-left">
                 <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Selected Table</span>
                 <span className="text-xs sm:text-sm font-bold text-foreground">
                   {chosenTable.name} ({chosenTable.capacity} seats · {chosenTable.floor})
                 </span>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground italic">
+              <span className="text-xs text-muted-foreground italic text-left">
                 {t("pages.reservations.tablePicker.noSelection", "Tap any available table on the layout to select")}
               </span>
             )}
@@ -358,16 +337,14 @@ export function TablePickerDialog({
                   onOpenChange(false)
                 }
               }}
-              className="gap-1.5 font-semibold shadow-xs"
+              className="gap-1.5 font-semibold shadow-xs cursor-pointer"
             >
               <Check className="size-4" />
               <span>{t("pages.reservations.tablePicker.confirm", "Confirm Table")}</span>
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
-
-  return typeof document !== "undefined" ? createPortal(content, document.body) : content
 }
