@@ -8,7 +8,6 @@ import { ScreenSaverProvider } from '@/features/screensaver/screensaver-context'
 import { Toaster } from '@/components/ui/sonner'
 import { ChatWidget } from '@/components/chat/chat-widget'
 import { PWAStatusBar } from '@/components/pwa-install-dialog'
-import { AnimatedCursor } from '@/components/animated-cursor'
 import { Loader2 } from 'lucide-react'
 
 // Route-level lazy loading for performance & instant initial page loads
@@ -102,7 +101,6 @@ function App() {
         </Suspense>
         <ChatWidget />
         <PWAStatusBar />
-        <AnimatedCursor />
         </ScreenSaverProvider>
       </RealtimeProvider>
     </RestaurantProvider>
