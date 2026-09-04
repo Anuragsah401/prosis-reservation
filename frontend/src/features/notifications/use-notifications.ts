@@ -11,6 +11,7 @@ import {
 } from "@/features/notifications/notification-service"
 import { subscribeToNotificationRefresh } from "@/features/notifications/notification-events"
 import { useRealtimeListener } from "@/features/realtime"
+import { soundManager, triggerReservationConfirmedAlert } from "@/lib/sound"
 
 /**
  * Fallback poll interval. Real-time events push instantly via Server-Sent Events.
@@ -59,13 +60,48 @@ export function useNotifications(restaurantId?: string): UseNotificationsResult 
   // Real-time notification updates
   useRealtimeListener("NOTIFICATION_NEW", (event) => {
     if (event.payload) {
+      const notif = event.payload
       setNotifications((current) => {
-        const exists = current.some((n) => n.id === event.payload.id)
+        const exists = current.some((n) => n.id === notif.id)
         if (exists) return current
-        return [event.payload, ...current]
+        return [notif, ...current]
       })
+
+      if (notif.type === "reservation_confirmed") {
+        triggerReservationConfirmedAlert({
+          id: notif.id,
+          title: notif.title || "Reservation Confirmed by Customer",
+          message: notif.message,
+        })
+      }
     } else {
       void refresh()
+    }
+  })
+
+  useRealtimeListener("RESERVATION_STATUS_CHANGED", (event) => {
+    void refresh()
+    if (event.payload?.status === "CONFIRMED") {
+      const res = event.payload
+      const customerName = res.customer?.name || res.guestName
+      const when = res.reservedFor || res.start
+      const dateStr = when
+        ? new Date(when).toLocaleString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })
+        : ""
+      const tableName = res.table?.name || res.table?.number || res.tableName
+      triggerReservationConfirmedAlert({
+        id: res.id,
+        customerName,
+        partySize: res.partySize,
+        dateStr,
+        tableName,
+      })
     }
   })
 
@@ -87,6 +123,7 @@ export function useNotifications(restaurantId?: string): UseNotificationsResult 
 
   useRealtimeListener("RESERVATION_CREATED", (event) => {
     void refresh()
+    soundManager.playConfirmationChime()
     if (event.payload?.customer?.name) {
       const rawDate = event.payload.reservedFor || event.payload.start
       const dateStr = rawDate

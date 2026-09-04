@@ -10,6 +10,8 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { FloorPlanViewer, type FloorPlanViewerTable } from "@/features/floor-plan/floor-plan-viewer"
 import { API_URL } from "@/lib/config"
 import { SEOHead } from "@/components/seo"
+import { toast } from "sonner"
+import { soundManager } from "@/lib/sound"
 
 interface ConfirmationDetails {
   reservation: {
@@ -90,7 +92,15 @@ export function ReservationConfirmPage() {
     setSubmitError(null)
     setSubmitting(true)
     confirmReservation(token, selectedTableId ?? undefined)
-      .then(() => setConfirmed(true))
+      .then(() => {
+        setConfirmed(true)
+        soundManager.playConfirmationChime(true)
+        toast.success(t("reservationConfirm.confirmedTitle", "Reservation confirmed!"), {
+          description: t("reservationConfirm.confirmedSubtitle", {
+            restaurant: details?.reservation.restaurantName,
+          }),
+        })
+      })
       .catch((err: unknown) => {
         setSubmitError(err instanceof Error ? err.message : t("reservationConfirm.errorGeneric"))
       })

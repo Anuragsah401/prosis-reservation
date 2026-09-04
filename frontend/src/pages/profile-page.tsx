@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { soundManager } from "@/lib/sound"
 import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -347,7 +348,7 @@ export function ProfilePage() {
                     checked={soundAlerts}
                     onCheckedChange={(checked) => {
                       setSoundAlerts(checked)
-                      localStorage.setItem("prosisit:notify:sound", String(checked))
+                      soundManager.setSoundEnabled(checked)
                       toast.success(checked ? "Sound alerts enabled" : "Sound alerts disabled")
                     }}
                   />

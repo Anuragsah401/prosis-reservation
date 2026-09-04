@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { soundManager } from "@/lib/sound"
 import {
   Select,
   SelectTrigger,
@@ -680,7 +681,13 @@ function NotificationsSection() {
                 Play a subtle chime on staff tablets and POS screens when a new reservation arrives.
               </p>
             </div>
-            <Switch checked={soundAlerts} onCheckedChange={setSoundAlerts} />
+            <Switch
+              checked={soundAlerts}
+              onCheckedChange={(checked) => {
+                setSoundAlerts(checked)
+                soundManager.setSoundEnabled(checked)
+              }}
+            />
           </div>
 
           <div className="flex items-center justify-between gap-4 p-3.5 rounded-xl border bg-muted/20">
