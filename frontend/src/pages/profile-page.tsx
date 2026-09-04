@@ -17,13 +17,14 @@ import {
   Store,
   Globe,
   Lock,
+  Volume2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { soundManager } from "@/lib/sound"
+import { soundManager, SOUND_OPTIONS, type SoundTone } from "@/lib/sound"
 import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -74,6 +75,7 @@ export function ProfilePage() {
 
   // Preference States
   const [soundAlerts, setSoundAlerts] = useState(() => localStorage.getItem("prosisit:notify:sound") !== "false")
+  const [soundTone, setSoundTone] = useState<SoundTone>(() => soundManager.getSoundTone())
   const [emailDigests, setEmailDigests] = useState(true)
 
   useEffect(() => {
@@ -337,21 +339,69 @@ export function ProfilePage() {
               <Separator className="my-1" />
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-xl border bg-muted/20">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-foreground">Sound Notifications</span>
-                    <span className="text-muted-foreground text-[11px]">
-                      Play an audio chime on tablets when a new online reservation is placed.
-                    </span>
+                <div className="flex flex-col gap-3 p-3 rounded-xl border bg-muted/20">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-foreground">Sound Notifications</span>
+                      <span className="text-muted-foreground text-[11px]">
+                        Play an audio chime on tablets and devices when reservations are booked or confirmed.
+                      </span>
+                    </div>
+                    <Switch
+                      checked={soundAlerts}
+                      onCheckedChange={(checked) => {
+                        setSoundAlerts(checked)
+                        soundManager.setSoundEnabled(checked)
+                        toast.success(checked ? "Sound alerts enabled" : "Sound alerts disabled")
+                      }}
+                    />
                   </div>
-                  <Switch
-                    checked={soundAlerts}
-                    onCheckedChange={(checked) => {
-                      setSoundAlerts(checked)
-                      soundManager.setSoundEnabled(checked)
-                      toast.success(checked ? "Sound alerts enabled" : "Sound alerts disabled")
-                    }}
-                  />
+
+                  {soundAlerts && (
+                    <div className="pt-2 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in-50 duration-200">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-foreground">Notification Sound</span>
+                        <span className="text-muted-foreground text-[11px]">
+                          Choose the chime played for bookings and confirmations
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={soundTone}
+                          onValueChange={(val: SoundTone) => {
+                            setSoundTone(val)
+                            soundManager.setSoundTone(val)
+                          }}
+                        >
+                          <SelectTrigger className="w-44 rounded-xl text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SOUND_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.id} value={opt.id} className="text-xs cursor-pointer">
+                                <div className="flex flex-col text-left py-0.5">
+                                  <span className="font-semibold text-foreground">{opt.label}</span>
+                                  <span className="text-[10px] text-muted-foreground">{opt.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => soundManager.playTone(soundTone, true)}
+                          className="gap-1.5 text-xs rounded-xl shrink-0 cursor-pointer hover:bg-primary/10 hover:text-primary transition-all"
+                          title="Test selected sound"
+                        >
+                          <Volume2 className="size-3.5 text-primary" />
+                          <span>Test</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl border bg-muted/20">

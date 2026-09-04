@@ -6,6 +6,42 @@ import { toast } from "sonner"
  * Synthesizes crisp, modern hospitality chime alerts without needing external audio files.
  */
 
+export type SoundTone = "chime" | "bell" | "marimba" | "dingdong" | "crystal"
+
+export interface SoundOption {
+  id: SoundTone
+  label: string
+  description: string
+}
+
+export const SOUND_OPTIONS: SoundOption[] = [
+  {
+    id: "chime",
+    label: "Modern Chime",
+    description: "Bright 3-tone ascending hospitality chime",
+  },
+  {
+    id: "bell",
+    label: "Concierge Bell",
+    description: "Crisp brass reception desk bell",
+  },
+  {
+    id: "marimba",
+    label: "Soft Marimba",
+    description: "Warm, gentle acoustic wooden chords",
+  },
+  {
+    id: "dingdong",
+    label: "Melodic Ding-Dong",
+    description: "Classic two-tone hospitality chime",
+  },
+  {
+    id: "crystal",
+    label: "Crystal Glass",
+    description: "Pure shimmering harmonic bell resonance",
+  },
+]
+
 class SoundManager {
   private ctx: AudioContext | null = null
   private unlocked = false
@@ -66,50 +102,124 @@ class SoundManager {
     }
   }
 
+  getSoundTone(): SoundTone {
+    if (typeof window === "undefined") return "chime"
+    const saved = localStorage.getItem("prosisit:notify:soundTone") as SoundTone | null
+    if (saved && ["chime", "bell", "marimba", "dingdong", "crystal"].includes(saved)) {
+      return saved
+    }
+    return "chime"
+  }
+
+  setSoundTone(tone: SoundTone) {
+    if (typeof window === "undefined") return
+    localStorage.setItem("prosisit:notify:soundTone", tone)
+    this.playTone(tone, true)
+  }
+
   /**
-   * Plays a pleasant 3-tone ascending chime (C5 -> G5 -> C6).
-   * Perfect for reservation confirmations and new bookings.
+   * Synthesize a note with precise attack and exponential release.
    */
-  playConfirmationChime(force = false) {
+  private playNote(
+    ctx: AudioContext,
+    targetGain: GainNode,
+    freq: number,
+    startTime: number,
+    duration: number,
+    gainVal: number,
+    type: OscillatorType = "sine",
+  ) {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+
+    osc.type = type
+    osc.frequency.setValueAtTime(freq, startTime)
+
+    gain.gain.setValueAtTime(0.0001, startTime)
+    gain.gain.exponentialRampToValueAtTime(Math.max(gainVal, 0.001), startTime + 0.015)
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+
+    osc.connect(gain)
+    gain.connect(targetGain)
+
+    osc.start(startTime)
+    osc.stop(startTime + duration)
+  }
+
+  /**
+   * Plays the sound effect for a specific tone theme.
+   */
+  playTone(tone: SoundTone, force = false) {
     if (!force && !this.isSoundEnabled()) return
     const ctx = this.getContext()
     if (!ctx) return
 
     try {
       const now = ctx.currentTime
-
       const masterGain = ctx.createGain()
       masterGain.gain.setValueAtTime(0.35, now)
       masterGain.connect(ctx.destination)
 
-      // C5 (523.25 Hz) -> G5 (783.99 Hz) -> C6 (1046.50 Hz)
-      const notes = [
-        { freq: 523.25, time: 0, duration: 0.35, gain: 0.35 },
-        { freq: 783.99, time: 0.09, duration: 0.45, gain: 0.45 },
-        { freq: 1046.5, time: 0.2, duration: 0.9, gain: 0.55 },
-      ]
+      switch (tone) {
+        case "bell": {
+          // Concierge desk bell: double tap with metallic resonance
+          this.playNote(ctx, masterGain, 1318.51, now, 0.25, 0.35, "sine")
+          this.playNote(ctx, masterGain, 2637.0, now, 0.2, 0.1, "sine")
 
-      notes.forEach(({ freq, time, duration, gain: noteGainVal }) => {
-        const startTime = now + time
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
+          this.playNote(ctx, masterGain, 1318.51, now + 0.1, 1.1, 0.45, "sine")
+          this.playNote(ctx, masterGain, 2637.0, now + 0.1, 0.8, 0.15, "sine")
+          this.playNote(ctx, masterGain, 3955.5, now + 0.1, 0.5, 0.08, "triangle")
+          break
+        }
+        case "marimba": {
+          // Warm acoustic wooden marimba chord
+          const notes = [
+            { freq: 440.0, time: 0, dur: 0.35, gain: 0.4 },
+            { freq: 554.37, time: 0.06, dur: 0.35, gain: 0.45 },
+            { freq: 659.25, time: 0.12, dur: 0.4, gain: 0.5 },
+            { freq: 880.0, time: 0.18, dur: 0.6, gain: 0.55 },
+          ]
+          notes.forEach((n) => {
+            this.playNote(ctx, masterGain, n.freq, now + n.time, n.dur, n.gain, "triangle")
+          })
+          break
+        }
+        case "dingdong": {
+          // Melodic Ding-Dong: high Ding, warm Dong
+          this.playNote(ctx, masterGain, 783.99, now, 0.45, 0.45, "sine")
+          this.playNote(ctx, masterGain, 1568.0, now, 0.3, 0.1, "sine")
 
-        osc.type = "sine"
-        osc.frequency.setValueAtTime(freq, startTime)
-
-        gain.gain.setValueAtTime(0.0001, startTime)
-        gain.gain.exponentialRampToValueAtTime(noteGainVal, startTime + 0.02)
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
-
-        osc.connect(gain)
-        gain.connect(masterGain)
-
-        osc.start(startTime)
-        osc.stop(startTime + duration)
-      })
+          this.playNote(ctx, masterGain, 587.33, now + 0.22, 0.9, 0.55, "sine")
+          this.playNote(ctx, masterGain, 1174.66, now + 0.22, 0.6, 0.12, "sine")
+          break
+        }
+        case "crystal": {
+          // Crystal glass ping with harmonic shimmer
+          this.playNote(ctx, masterGain, 1046.5, now, 1.2, 0.45, "sine")
+          this.playNote(ctx, masterGain, 2093.0, now + 0.02, 1.0, 0.2, "sine")
+          this.playNote(ctx, masterGain, 3139.5, now + 0.04, 0.7, 0.1, "sine")
+          this.playNote(ctx, masterGain, 1050.0, now, 1.1, 0.15, "sine") // subtle detuned shimmer
+          break
+        }
+        case "chime":
+        default: {
+          // Modern ascending 3-tone arpeggio (C5 -> G5 -> C6)
+          this.playNote(ctx, masterGain, 523.25, now, 0.35, 0.35, "sine")
+          this.playNote(ctx, masterGain, 783.99, now + 0.09, 0.45, 0.45, "sine")
+          this.playNote(ctx, masterGain, 1046.5, now + 0.2, 0.9, 0.55, "sine")
+          break
+        }
+      }
     } catch (err) {
-      console.warn("[SoundManager] Failed to play chime:", err)
+      console.warn("[SoundManager] Failed to play tone:", err)
     }
+  }
+
+  /**
+   * Plays the currently configured sound chime.
+   */
+  playConfirmationChime(force = false) {
+    this.playTone(this.getSoundTone(), force)
   }
 }
 

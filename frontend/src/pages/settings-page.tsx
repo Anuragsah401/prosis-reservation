@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { soundManager } from "@/lib/sound"
+import { soundManager, SOUND_OPTIONS, type SoundTone } from "@/lib/sound"
 import {
   Select,
   SelectTrigger,
@@ -62,6 +62,7 @@ import {
   CheckCircle2,
   Download,
   Laptop,
+  Volume2,
 } from "lucide-react"
 
 export type SettingsSection =
@@ -627,6 +628,7 @@ function NotificationsSection() {
   const [smsReminders, setSmsReminders] = useState(() => localStorage.getItem("prosisit:notify:sms") === "true")
   const [staffAlerts, setStaffAlerts] = useState(() => localStorage.getItem("prosisit:notify:staff") !== "false")
   const [soundAlerts, setSoundAlerts] = useState(() => localStorage.getItem("prosisit:notify:sound") !== "false")
+  const [soundTone, setSoundTone] = useState<SoundTone>(() => soundManager.getSoundTone())
   const [reminderLeadTime, setReminderLeadTime] = useState(() => localStorage.getItem("prosisit:notify:lead") || "120")
   const [saving, setSaving] = useState(false)
 
@@ -636,6 +638,7 @@ function NotificationsSection() {
     localStorage.setItem("prosisit:notify:sms", String(smsReminders))
     localStorage.setItem("prosisit:notify:staff", String(staffAlerts))
     localStorage.setItem("prosisit:notify:sound", String(soundAlerts))
+    localStorage.setItem("prosisit:notify:soundTone", soundTone)
     localStorage.setItem("prosisit:notify:lead", reminderLeadTime)
 
     setTimeout(() => {
@@ -674,20 +677,68 @@ function NotificationsSection() {
             <Switch checked={staffAlerts} onCheckedChange={setStaffAlerts} />
           </div>
 
-          <div className="flex items-center justify-between gap-4 p-3.5 rounded-xl border bg-muted/20">
-            <div>
-              <p className="text-xs sm:text-sm font-semibold">Sound Notifications on New Booking</p>
-              <p className="text-muted-foreground text-[11px] sm:text-xs">
-                Play a subtle chime on staff tablets and POS screens when a new reservation arrives.
-              </p>
+          <div className="flex flex-col gap-3.5 p-3.5 rounded-xl border bg-muted/20">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs sm:text-sm font-semibold">Sound Notifications on Booking & Confirmation</p>
+                <p className="text-muted-foreground text-[11px] sm:text-xs">
+                  Play an audio chime on staff tablets, phones, and POS screens when reservations are booked or confirmed.
+                </p>
+              </div>
+              <Switch
+                checked={soundAlerts}
+                onCheckedChange={(checked) => {
+                  setSoundAlerts(checked)
+                  soundManager.setSoundEnabled(checked)
+                }}
+              />
             </div>
-            <Switch
-              checked={soundAlerts}
-              onCheckedChange={(checked) => {
-                setSoundAlerts(checked)
-                soundManager.setSoundEnabled(checked)
-              }}
-            />
+
+            {soundAlerts && (
+              <div className="pt-2 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in-50 duration-200">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-foreground">Notification Sound Tone</span>
+                  <span className="text-muted-foreground text-[11px]">
+                    Choose the chime played when customers book or confirm
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={soundTone}
+                    onValueChange={(val: SoundTone) => {
+                      setSoundTone(val)
+                      soundManager.setSoundTone(val)
+                    }}
+                  >
+                    <SelectTrigger className="w-52 rounded-xl text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOUND_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id} className="text-xs cursor-pointer">
+                          <div className="flex flex-col text-left py-0.5">
+                            <span className="font-semibold text-foreground">{opt.label}</span>
+                            <span className="text-[10px] text-muted-foreground">{opt.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => soundManager.playTone(soundTone, true)}
+                    className="gap-1.5 text-xs rounded-xl shrink-0 cursor-pointer hover:bg-primary/10 hover:text-primary transition-all"
+                    title="Test selected sound"
+                  >
+                    <Volume2 className="size-3.5 text-primary" />
+                    <span>Test Sound</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-4 p-3.5 rounded-xl border bg-muted/20">
